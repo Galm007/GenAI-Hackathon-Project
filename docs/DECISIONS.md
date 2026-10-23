@@ -19,3 +19,18 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - One target school per graph run; extra schools are child runs that skip Node 1 (plan §3.2).
 - All reasoning nodes use `claude-opus-5-5` with server-side refusal fallbacks enabled (plan §0.2). Changing models is a human decision.
 - No LLM ever outputs a user-visible probability or delta (plan §0.1).
+
+## D-002 — `etl/common.py` imports `app.config` lazily
+- Step: A05 · Date: 2026-10-23 · By: Jmar L. Pineda via Claude Code
+- Plan said: `from app.config import settings` at the top of `etl/common.py` (§2.9.1).
+- We did: import `settings` inside `supabase()` instead.
+- Why: `app/config.py` is B01's and its `Settings` requires `OPENAI_API_KEY` and Supabase keys at import time, so the scraper (which needs only paths and logging) would fail without a populated `.env`. Behavior is otherwise identical.
+- Impact on other tracks: none.
+
+## D-003 — PullPush refuses automated scraping (open, needs a human decision)
+- Step: A05 · Date: 2026-10-23 · By: Jmar L. Pineda via Claude Code
+- Plan said: scrape r/collegeresults and r/TransferToTop25 from `api.pullpush.io` at one request per 4 s (§2.9.2).
+- We found: the API answers 429 with the body "Rate limit exceeded. This website does not provide free scraping resources for agents. Please contact the administrator on Discord if you're interested in a paid scraping service." The same happens for a plain `size=1` request, so it is not a pacing problem.
+- We did: committed `etl/pullpush.py` as specified (its backoff worked as designed) and left A05 unchecked, because the "done when" live scrape could not run. We did not try to evade the block.
+- Options for the team: ask the PullPush administrator for access, use another source (the official Reddit API with the team's own credentials, or an academic dump), or run on pre-collected raw JSONL. This is a design choice for the humans.
+- Impact on other tracks: A07 (extraction) and everything after it need `data/raw/*.jsonl`.
