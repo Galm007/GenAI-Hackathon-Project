@@ -20,6 +20,10 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Creates `app/profile_text.py`, `app/embeddings.py` and `app/agents/prompts/rubrics.py` exactly as specified (the ETL and Node 1 must share them byte for byte).
   *Done when:* a unit test builds the profile text for a fixture and its output is deterministic; `embed_texts` is mocked in the test.
 
+- [ ] **S03 — Meterless Nightshift setup + smoke test** · Plan §1.7.1, §1.7.4 · Deps: S01 · Owner: whoever runs the demo machine
+  `docs/meterless-setup.md` and `scripts/smoke_meterless.py` exist (tests pass). A human must install Nightshift (Windows, Mac or DGX; no Linux edition), add the NVIDIA key in its Providers tab, configure a Nemotron lane and copy the Console URL and token into `.env`.
+  *Done when:* `uv run python -m scripts.smoke_meterless` prints three PASS lines and Nightshift's run details show a Nemotron model answered.
+
 ## A: Data, RAG & Zetaris
 
 - [x] **A01 — Migrations 0001–0003 (types, universities, twins)** · §2.2–2.4 · Deps: none — done by galm via Claude Code, 2026-10-23
@@ -96,6 +100,12 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* a second identical upload skips Node 1 but still fills the dossier panel; `/api/health` reports DB and Zetaris; the 429 paths are tested.
 - [ ] **B16 — API container + co-located compose** · §4.10 · Deps: B13
   *Done when:* `docker compose -f zetaris-platform/docker-compose.yml -f docker-compose.adcom.yml up -d adcom-api` serves `/api/health` with `zetaris: true`.
+- [ ] **B17 — Meterless provider in the LLM wrapper** · §1.7.2, §3.5.2 · Deps: B01, S03
+  Adds `app/meterless.py` and the `LLM_PROVIDER` switch (default `meterless`, `anthropic` stays selectable); `/api/health` reports `"meterless"`.
+  *Done when:* tests with a mocked Runtime cover chat, structured output (and its retry), `length` → `LLMTruncated`, refusal → `LLMRefusal`, and auth errors; a real committee turn answers through Nightshift (needs S03).
+- [ ] **B18 — World Model engine sidecar + committee integration** · §1.7.3, §3.8.1 · Deps: B11, B17
+  `services/world-model/` (TypeScript, upstream interface), `app/world_model.py`, and `agents/docket.py` reading the engine's context builder; Nodes 1–3 and the debate append observations.
+  *Done when:* the upstream conformance suite is green (scorecard saved to `docs/meterless-evidence/world-model-conformance.txt`), an integration test shows Nodes 2 and 3 appending concurrently without loss, and the sidecar being down degrades to the in-state docket.
 
 ## C: War Room UI
 
@@ -138,6 +148,8 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* the web app is on Vercel, the API is co-located with Zetaris (VM or laptop + tunnel), and a live run works from a phone. **H18 milestone with X01.**
 - [ ] **D09 — Pitch assets** · §5.9 ("About the data"), §7.5 · Deps: A15, A16
   *Done when:* the About-the-data modal shows real numbers, and `docs/pitch.md` has every §7.5 placeholder filled from real data (never invented).
+- [ ] **D10 — Meterless judging evidence** · §1.7, §7.4 · Deps: B17, B18, D07
+  *Done when:* a short recorded demo shows the app, its Meterless provider connection, and one real request through Nightshift answered by a Nemotron lane (all keys and tokens hidden), plus the World Model conformance scorecard.
 
 ## X: Integration & release
 

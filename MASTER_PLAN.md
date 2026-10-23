@@ -33,7 +33,9 @@
 
 | Purpose | Provider / model | Notes |
 |---|---|---|
-| All reasoning nodes (parse, grade, fact-check, twin analysis, debate, delta) | Anthropic `claude-opus-5-5` | Effort is set per node (see §1.5). Thinking is always on for this model and is controlled only by `output_config.effort`. |
+| **Primary model provider for the live agents (hackathon partner)** | **Meterless Nightshift** (Meterless Runtime, OpenAI-compatible API at `METERLESS_BASE_URL`), model route `meterless/auto`, with at least one **NVIDIA Nemotron** lane | The default `LLM_PROVIDER`. NVIDIA's key lives only in Nightshift's Providers tab, never in our `.env`. Contract, switch and evidence: §1.7. |
+| **Meterless Engine (hackathon partner)** | **World Model**: event-sourced shared state for the committee agents | Implemented as a TypeScript sidecar that passes the upstream conformance suite (§1.7.3). |
+| All reasoning nodes when `LLM_PROVIDER=anthropic` (selectable alternative) | Anthropic `claude-opus-5-5` | Effort is set per node (see §1.5). Thinking is always on for this model and is controlled only by `output_config.effort`. |
 | Structured outputs | `client.beta.messages.parse(..., output_format=PydanticModel)` | The result is validated into the Pydantic model and read from `.parsed_output`. |
 | Refusal safety net | `fallbacks="default"` + beta `server-side-fallback-2026-07-01` | If a safety classifier declines a request, it is re-run server-side on Anthropic's recommended fallback model. It's enabled in the shared `llm.py` wrapper and is a one-line removal if you don't want it. |
 | Offline Reddit extraction | Local **Gemma 4 E2B** (`ETL_MODEL=gemma4:e2b`) served by Ollama on this machine | Free and offline. Structured output goes through Ollama's `format` JSON-schema constraint (`app/local_llm.py::chat_structured`). Quality tradeoff in §2.9.11. CDS PDF extraction (A10) uses the same local runtime through `CDS_MODEL` (default `gemma4:e2b`). |
@@ -66,6 +68,13 @@ ZETARIS_PG_PASSWORD=...
 SUPABASE_POOLER_HOST=aws-0-<region>.pooler.supabase.com
 ZETARIS_ENABLED=true                             # false → pure-Supabase fallback mode
 
+# Meterless Nightshift (hackathon partner, §1.7). The values come from Nightshift's Console, top right.
+# The NVIDIA API key does NOT go here: it is entered in Nightshift's Setup > Providers tab.
+LLM_PROVIDER=meterless                          # meterless | anthropic (selectable alternative)
+METERLESS_BASE_URL=http://127.0.0.1:8088/v1     # the Console's address; use the reachable URL if Nightshift is on another machine
+METERLESS_RUNTIME_TOKEN=...                     # the Console's Runtime API key; never the NVIDIA key, never the placeholder rt-local
+METERLESS_MODEL=meterless/auto                  # a routing mode, not an NVIDIA model id; pin a Nemotron lane for award evidence
+
 # Tunables
 REASONING_MODEL=claude-opus-5-5
 ETL_MODEL=gemma4:e2b             # local Reddit extraction model (Ollama)
@@ -82,12 +91,15 @@ adcom/
 ├── apps/
 │   └── web/                          # Next.js App Router (Part II, §5)
 ├── services/
+│   ├── world-model/                  # Meterless World Model engine (TypeScript, passes the upstream conformance suite)
 │   └── api/
 │       ├── pyproject.toml
 │       ├── app/
 │       │   ├── main.py               # FastAPI app + SSE routes (Part II, §4)
 │       │   ├── config.py             # pydantic-settings
-│       │   ├── llm.py                # Anthropic wrapper: parse / stream_text / fallbacks / refusals
+│       │   ├── llm.py                # LLM doorway: parse / stream_text for both providers (Anthropic fallbacks / refusals; Meterless via meterless.py)
+│       │   ├── meterless.py          # Meterless Runtime client: OpenAI-compatible chat + model discovery (§1.7.2)
+│       │   ├── world_model.py        # Python client for the World Model sidecar (§1.7.3)
 │       │   ├── embeddings.py         # local EmbeddingGemma 768-d embeddings (Ollama)
 │       │   ├── db.py                 # Supabase async client + RPC helpers
 │       │   ├── web_research.py       # Tavily + Postgres cache
@@ -376,6 +388,68 @@ sequenceDiagram
 | `debate_turn_start` / `debate_token` / `debate_reset` / `debate_turn_end` | N4 | `turn`, `speaker`, `delta`, `citations[]`, `recommendation?` |
 | `counterfactuals` / `final_report` | N5 | `Counterfactual[]`, `DeltaReport` |
 | `error` / `done` | any / API | `node`, `message`, `recoverable` |
+
+### 1.7 Meterless (hackathon partner): Nightshift runtime and the World Model engine
+
+Source: the Open Agent Hackathon 2026 Participant Setup Guide (21 Oct 2026) and meterless.ai. Everything in this section that the guide or the Meterless repo does not state is marked **(verify)** and gets confirmed the first time the step runs against a real Nightshift.
+
+#### 1.7.1 What the event requires, and what we decided
+
+| Rule from the guide | AdCom's answer |
+|---|---|
+| **Eligibility:** Zetaris and Meterless must be running on your machine. | Zetaris runs in Docker (§2.10). Nightshift must be running on the demo machine; it has **no Linux edition** (§1.7.5). |
+| **Build rule:** implement at least one Meterless Engine in a *working feature*, with a conformance suite, evaluation or reproducible test as evidence. Mentioning an engine, copying a prompt or adding an unused dependency does not count. | **World Model** (human decision, D-011): the committee's shared case file, written in parallel by Nodes 1–3 and the debate agents, read through the engine's context builder (§1.7.3). |
+| **Power rule:** the app must support Nightshift as a primary AI provider; keep other providers available. | `LLM_PROVIDER=meterless` is the default for the live agents; `anthropic` stays selectable (§1.7.2). Offline ETL (Reddit and CDS extraction, embeddings) stays on local Ollama: it is a data pipeline, not the product answering at run time. |
+| **NVIDIA Nemotron award:** a working feature visibly powered by a Nemotron model through Nightshift. | One Nightshift lane is pinned to a Nemotron model, and the committee debate runs on it in the demo (§1.7.4). |
+| **Keys:** the NVIDIA key goes in Nightshift's Providers tab only. Your coding tool's model settings must not hold the Meterless token or the NVIDIA key. | `.env` holds only the Nightshift URL and Runtime token. Cursor, Claude Code and other coding tools never get either key. |
+
+#### 1.7.2 Nightshift as the primary provider (`app/meterless.py`, switch in `app/llm.py`)
+
+Runtime contract (from the guide's Power prompt; **(verify)** each line on first contact):
+
+| Item | Value |
+|---|---|
+| Provider id / default base URL | `meterless` / `http://127.0.0.1:8088/v1` (Auto Detect in the upstream prompt scans loopback ports 8088, 8090, 8787, 11434) |
+| Auth and headers | `Authorization: Bearer <METERLESS_RUNTIME_TOKEN>`, `meterless-app: adcom`, `meterless-scope: user` |
+| Health and discovery | `GET /v1/models` decides health: 200 with a model list is healthy, 401/403 is "unauthorized". `/healthz` is not proof that a real model is connected. |
+| Chat | OpenAI-compatible `POST /v1/chat/completions`, `model: meterless/auto` (a routing mode, not an NVIDIA id; `meterless/<class>` and `meterless/<disposition>` routes come from `/v1/models`) |
+| Timeouts | 180 s (model loads) |
+| Placeholder | The token `rt-local` is rejected. The token is the Console's real Runtime key. |
+
+How the switch works (B01 owns `llm.py`; step B17 adds this):
+- `Settings` gains `llm_provider: Literal["meterless", "anthropic"] = "meterless"`, `meterless_base_url`, `meterless_runtime_token`, `meterless_model`, and `meterless_app = "adcom"`.
+- `llm.parse(...)` and `llm.stream_text(...)` keep their signatures and dispatch on `settings.llm_provider`. The `anthropic` branch is the existing code, untouched.
+- Meterless `parse`: `POST /v1/chat/completions` with `response_format` set to a strict JSON schema built from the Pydantic model **(verify that Nightshift lanes honor it)**. If they do not, put the schema in the system prompt, parse the reply, and retry once on `ValidationError`. `finish_reason == "length"` raises `LLMTruncated`; a content-filter or refusal finish raises `LLMRefusal`, so callers see the same exceptions as with Claude.
+- Meterless `stream_text`: `stream: true` server-sent events. There are no fallback blocks, so `on_reset` is never called.
+- Anthropic-only features (`effort`, prompt caching, server-side fallbacks, adaptive thinking) are ignored on this path. Node prompts are unchanged; numbers still come only from `app/scoring/` (§0.1).
+- A startup check calls `GET /v1/models`; `/api/health` reports `"meterless": true|false` next to `"zetaris"`. If the Runtime is unreachable at demo time, set `LLM_PROVIDER=anthropic` (the mock/fallback ladder in §6.3 gains this rung).
+
+#### 1.7.3 World Model engine: the committee's shared case file (step B18)
+
+What the engine is (upstream `engines/world-model/AGENTS.md`): an append-only, event-sourced shared state. Snapshots, events and observations are appended and canonical views are recomputed from the log; one running job per aggregate with a FIFO backlog; stable content-derived entity ids (`type:system:externalId`, or `ent_` + SHA-256 prefix); and a *read surface* (a context builder that takes an intent and returns a structured, budget-truncated payload). Its done-line is a green conformance scorecard: `WORLD_MODEL_IMPL=/abs/path/to/index.ts npx tsx conformance/runner.ts`, run from a clone of github.com/Meterless/Meterless.
+
+How AdCom uses it:
+- **Aggregate** = one evaluation run (`run:<id>`).
+- **Writers** (append observations, in parallel): Node 1 dossier facts and metrics, Node 2 institutional facts (each tagged with its Zetaris query id), Node 3 twin findings and baseline, the debate agents' claims, the delta engine's counterfactuals. Nodes 2 and 3 already run in parallel (§1.4); the engine is what keeps their shared state consistent instead of last-write-wins.
+- **Reader**: the committee docket (§3.8.1) is built from the engine's context builder (`intent` = "debate this school"), and citation tokens (`[[cds:…]]`, `[[twin:…]]`, `[[web:…]]`) resolve to World Model entity ids. `agents/docket.py` becomes a thin adapter over `app/world_model.py`.
+- **Process boundary**: the conformance suite loads a TypeScript module, so the engine is a small Node sidecar, `services/world-model/` (`src/index.ts` implementing the upstream interface, plus a minimal HTTP wrapper), and the Python graph talks to it through `app/world_model.py`. The upstream repository is cloned outside our repo (for example `~/meterless`) to run the suite and is not vendored. **(verify)** the exact interface the runner expects from `conformance/` and `reference/` when B18 starts.
+- **Degradation**: if the sidecar is down, `docket.py` falls back to the in-state docket and the run still completes (the feature is lost, the demo is not).
+- **Evidence** (what the guide asks for): the conformance scorecard saved to `docs/meterless-evidence/world-model-conformance.txt`; an integration test where Nodes 2 and 3 append concurrently and the docket contains both without loss; and a live demo moment where the debate shows a claim citing an entity written by a parallel node.
+
+#### 1.7.4 Nightshift setup and Nemotron lanes (human steps; `docs/meterless-setup.md`)
+
+1. Install the Nightshift edition for your machine from meterless.ai (Windows, Mac, or DGX Spark) and keep it running. The free browser edition does not expose the local Runtime our app needs.
+2. In Nightshift: **Setup > Providers > NVIDIA**, paste your NVIDIA API key (from build.nvidia.com/models). Confirm NVIDIA shows as connected.
+3. **NIGHT > LANES**: Lane 1 (fast worker) a small Nemotron model, Lane 2 (deep worker) a larger one, optionally a judge lane. The guide's examples are `nvidia/nemotron-3.5-lightning-30b-a3b` and `nvidia/nemotron-3.5-super-vl-120b-a12b`; they are not guaranteed entitlements, so pick the exact names from your catalog.
+4. **Console** (top right): copy the Nightshift URL and Runtime API key into `.env` as `METERLESS_BASE_URL` and `METERLESS_RUNTIME_TOKEN`.
+5. Verify with `uv run python -m scripts.smoke_meterless` (checks discovery, auth, and one chat request), then run one real committee turn and confirm in Nightshift's run details which model answered. `meterless/auto` may route to a non-NVIDIA model, so pin the Nemotron lane for award evidence.
+
+#### 1.7.5 Open risks specific to Meterless
+
+- **No Linux edition.** meterless.ai lists Windows, Mac (M1+, M5+ preorder) and a DGX Spark AppImage whose download link is not live yet. A Linux x86 dev machine cannot run Nightshift. The demo machine must be a teammate's Windows or Mac laptop (or a DGX), which also satisfies "running on your machine" for that person; ask the organizers in the HackOS Help desk if our team's eligibility needs the submitting machine to run it.
+- **Engine language mismatch.** The conformance suite is TypeScript; our backend is Python (§1.7.3 sidecar).
+- **Provider contract unverified.** Structured output, streaming and model discovery details are marked **(verify)** until run against a real Runtime.
+- **Pre-built code.** The guide says to check the event rules on how much project code may be prepared before kickoff. We have prepared a lot; confirm with the organizers.
 
 ---
 
@@ -3992,9 +4066,9 @@ class Settings(BaseSettings):
 settings = Settings()
 ```
 
-#### 3.5.2 `app/llm.py`: the single doorway to Claude
+#### 3.5.2 `app/llm.py`: the single doorway to the model
 
-Every Claude call goes through this module, so models, fallbacks, refusal handling and caching are each configured in one place.
+Every live-agent call goes through this module, so models, fallbacks, refusal handling and caching are each configured in one place. The code below is the `anthropic` provider. With `LLM_PROVIDER=meterless` (the default, §1.7.2) the same `parse` / `stream_text` functions dispatch to `app/meterless.py` and raise the same `LLMRefusal` / `LLMTruncated` exceptions.
 
 ```python
 from __future__ import annotations
@@ -8325,6 +8399,8 @@ export function WarRoom({ source }: { source: RunSource }) {
 | Web research | Postgres cache, then DB-only brief (`institutional_brief = None`) | H10 | unset `TAVILY_API_KEY` |
 | Sparse school | Peer-group widening in Node 3 | H10 | automatic |
 | Debate turn failure | Template turn, marked `degraded` | H14 | automatic |
+| Model provider | Nightshift (`LLM_PROVIDER=meterless`) → Claude (`LLM_PROVIDER=anthropic`) when the Runtime is unreachable (§1.7.2) | B17 | env var |
+| World Model | `docket.py` falls back to the in-state docket when the sidecar is down (§1.7.3) | B18 | automatic |
 | Zetaris reads | `zetaris_repo` → Supabase fallback; Node 2 skips the SQL tool | H10 | `ZETARIS_ENABLED=false` or automatic on `ZetarisError` |
 | Whole live run | Recorded replay (`/room/demo/<name>`) | H18 | `Shift+R` in the War Room |
 | Whole venue network | Backup screen recording (MP4) on two laptops + a USB stick | H22 / H32 | play the file |
@@ -8335,6 +8411,9 @@ export function WarRoom({ source }: { source: RunSource }) {
 |---|---|---|---|---|
 | Zetaris driver won't start (memory) or first queries are slow | Med | High | Docker ≥ 8 GB, `ZSPARK_DRIVER_MEM=4g` on 16 GB laptops; `shuffle.partitions 4`; pre-warm at API startup; gold Iceberg table on the hot path; TTL cache | A |
 | A Zetaris DDL detail differs from the docs (filestore local path, GRANT principal form, DDL over REST) | Med | Med | Every such line is marked "(verify at Hour 1)"; fall back to the UI SQL editor / Files upload; the views only depend on the confirmed statements | A |
+| Nightshift has no Linux edition, or is not running on the demo machine (eligibility and the Power rule) | High | High | Run it on a teammate's Windows/Mac laptop or a DGX; ask the organizers early (§1.7.5); `LLM_PROVIDER=anthropic` keeps the app working meanwhile | B |
+| Nemotron lane slow, rate-limited (free tier) or routed wrong by `meterless/auto` | Med | Med | Pin a Nemotron lane; keep the replayed demo run (§4.8) as backup; show Nightshift's run details as evidence | B |
+| World Model conformance fails or the sidecar is down | Med | Med | Diff against the upstream `reference/` implementation; `docket.py` falls back to the in-state docket (§1.7.3) | B |
 | Zetaris unreachable during judging | Low | High | Supabase fallback for every read (§2.10.10); the demo replay carries the Zetaris evidence chips anyway | B |
 | Arctic Shift is slow, rate-limited or down | Med | High | Start the scrape at H1; checkpoint/resume; keep partial data. If it's down for more than 2 h, download Watchful1's per-subreddit `.zst` dumps for the two subreddits from Academic Torrents and convert them to the same JSONL shape. (PullPush was the original source but now refuses automated clients: DECISIONS D-003.) | A |
 | Extraction cost or time overrun | Med | Med | H4 gate on the 20-post smoke test; the run is capped at 3,000 posts (`CAPS`); extract demo-school posts first (filter by school mentions); `--limit` | A |
@@ -8416,6 +8495,7 @@ Two people present. **Presenter (P)** talks and owns the story. **Driver (D)** r
 
 ### 7.4 Pre-demo setup (the 30 minutes before you present)
 
+- [ ] **Meterless ready (§1.7).** Nightshift is running on the demo machine, `uv run python -m scripts.smoke_meterless` shows PASS, a Nemotron lane is pinned, and the World Model sidecar answers. Know where to show judges the Console-provided Runtime URL (hide every key and token), one real request passing through Nightshift, and the conformance scorecard.
 - [ ] **Dossier cache warm.** Run Maya's exact files once through production 30 minutes before the pitch. `RunManager` keeps an in-memory cache keyed by a hash of the uploaded bytes and text (24 h TTL, same privacy window as runs), so the on-stage run **skips Node 1** and the committee starts about 25 s sooner:
 
 ```python
