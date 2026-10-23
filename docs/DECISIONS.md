@@ -86,3 +86,9 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - Not done: `etl/reddit_schema.py`, `etl/prompts.py`, `etl/extract_reddit.py` are still unwritten; they import `app.schemas.common` (B02) and `app.scoring.metrics` (B05). The plan text above is their spec. The auto-pause therefore takes effect only once A07 exists.
 - Not measured: e2b speed and accuracy on the real schema. The 20-post read-through is still required before any larger run.
 - Impact on other tracks: none. `AGENTS.md` §4 spend rule ("hundreds of dollars on Opus") is now obsolete for the ETL; it is human-owned.
+
+## D-009 — Separate `CDS_MODEL`; documentation sweep after D-006/D-007/D-008
+- Step: docs · Date: 2026-10-23 · By: Jmar L. Pineda via Claude Code
+- Problem found: the plan's CDS PDF loader (A10, §2.9.9) read `settings.etl_model`, which is now a local Gemma tag, while it calls the Anthropic PDF API.
+- We did: added `cds_model` (env `CDS_MODEL`, default `claude-opus-5-5`) to the plan's `Settings` (B01), §0.3 and `.env.example`, and pointed the CDS loader at it. Whether CDS extraction should also move to a local model is still a human decision (A10).
+- Stale text fixed: `AGENTS.md` §4 (not everything uses Claude; spend/heads-up rule now covers local model runs; PullPush rate-limit note replaced with Arctic Shift), plan schedule rows and risk row (Opus-vs-Haiku comparison, 200-post smoke test, ~2 h full extraction), `services/api/README.md` (local models section), `docs/zetaris-setup.md` (auto-pause note), `docs/ROADMAP.md` (A10 note). `AGENTS.md` is human-owned; the edits were made at the human's explicit request.

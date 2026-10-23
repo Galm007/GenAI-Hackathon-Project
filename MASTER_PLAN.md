@@ -36,7 +36,7 @@
 | All reasoning nodes (parse, grade, fact-check, twin analysis, debate, delta) | Anthropic `claude-opus-5-5` | Effort is set per node (see §1.5). Thinking is always on for this model and is controlled only by `output_config.effort`. |
 | Structured outputs | `client.beta.messages.parse(..., output_format=PydanticModel)` | The result is validated into the Pydantic model and read from `.parsed_output`. |
 | Refusal safety net | `fallbacks="default"` + beta `server-side-fallback-2026-07-01` | If a safety classifier declines a request, it is re-run server-side on Anthropic's recommended fallback model. It's enabled in the shared `llm.py` wrapper and is a one-line removal if you don't want it. |
-| Offline Reddit extraction | Local **Gemma 4 E2B** (`ETL_MODEL=gemma4:e2b`) served by Ollama on this machine | Free and offline. Structured output goes through Ollama's `format` JSON-schema constraint (`app/local_llm.py::chat_structured`). Quality tradeoff in §2.9.11. CDS PDF extraction (A10) is a separate decision. |
+| Offline Reddit extraction | Local **Gemma 4 E2B** (`ETL_MODEL=gemma4:e2b`) served by Ollama on this machine | Free and offline. Structured output goes through Ollama's `format` JSON-schema constraint (`app/local_llm.py::chat_structured`). Quality tradeoff in §2.9.11. CDS PDF extraction (A10) is a separate decision: for now it keeps using Claude through `CDS_MODEL`. |
 | Embeddings (768-d) | Local **EmbeddingGemma 300M** (`EMBEDDING_MODEL=embeddinggemma`) via Ollama `/api/embed` | Free and offline; no embeddings API key. 768-d, so the schema uses `vector(768)`. Twins and live applicants are both embedded with the "sentence similarity" task prefix so they share one space. |
 | Live web research | Tavily (`AsyncTavilyClient`) | Results are cached in Postgres. If Tavily is down, Node 2 degrades to DB-only. |
 | **Data fabric (hackathon partner)** | **Zetaris Lightning 2.4.3** (local Docker bundle in `zetaris-platform/`) | The federated query engine, semantic views, Iceberg gold table, RBAC and audit log. Agents query it over its REST API (§2.10). pgvector stays in Supabase for sub-50 ms KNN. |
@@ -68,7 +68,8 @@ ZETARIS_ENABLED=true                             # false → pure-Supabase fallb
 
 # Tunables
 REASONING_MODEL=claude-opus-5-5
-ETL_MODEL=gemma4:e2b             # local extraction model (Ollama)
+ETL_MODEL=gemma4:e2b             # local Reddit extraction model (Ollama)
+CDS_MODEL=claude-opus-5-5        # CDS PDF extraction (A10) still uses the Anthropic API
 EMBEDDING_MODEL=embeddinggemma   # local embedding model (Ollama), 768-d
 OLLAMA_URL=http://localhost:11434
 DEMO_MODE=false                  # true → replay recorded event logs (Part II, §4)
@@ -2080,7 +2081,7 @@ async def load_cds() -> None:
                     {"type": "text", "text": f"Extract the CDS fields for school slug '{slug}'."},
                 ]}],
                 effort="medium",
-                model=settings.etl_model,
+                model=settings.cds_model,
             )
             upd = to_update(extract, url)
             current = (await sb.table("universities_cds").select("source_urls").eq("slug", slug).single().execute()).data
@@ -3895,7 +3896,8 @@ class Settings(BaseSettings):
 
     reasoning_model: str = "claude-opus-5-5"
     ollama_url: str = "http://localhost:11434"   # local Gemma models (app/local_llm.py also reads these)
-    etl_model: str = "gemma4:e2b"
+    etl_model: str = "gemma4:e2b"                # local Reddit extraction (Ollama)
+    cds_model: str = "claude-opus-5-5"           # CDS PDF extraction via the Anthropic API (A10)
     embedding_model: str = "embeddinggemma"
     embedding_dim: int = 768
     demo_mode: bool = False
@@ -8173,8 +8175,8 @@ export function WarRoom({ source }: { source: RunSource }) {
 | 0–1 | Create the Supabase project, apply migrations 0001–0009, add school seed CSV + aliases. **Start the Zetaris bring-up in parallel** (`preflight.sh` → `compose pull` → `up -d`; ~20 min of waiting, §2.10.2) | Repo scaffold, `uv` env, `config.py`, `.env` template, `llm.py`, smoke-test the Claude call | `create-next-app`, Tailwind v4 tokens (§5.1), shadcn init, fonts | Choose the demo story: **Maya, CS → UIUC Grainger**, backups CMU and Michigan |
 | 1–2 | **Start the Arctic Shift scrape in the background** (`etl.run_etl scrape`, ~25 min); Scorecard key + `load_scorecard`; `./verify.sh` green, change the Zetaris admin password, set `shuffle.partitions 4` | Write Pydantic schemas (§3.3) | Write `lib/types.ts` (§5.4.1) | Write Maya's fictional transcript (PDF), activities, essay; 2 backup personas |
 | **2** | **CONTRACT FREEZE**: event taxonomy, schemas, TS types reviewed together (20 min) | ← | ← | ← |
-| 2–4 | Extraction smoke test on 200 posts; **Opus vs Haiku comparison on 50 posts** (§2.9.11), decision at H4; download the Scorecard bulk CSV + IPEDS ADM file and `docker compose cp` them into Zetaris | FastAPI skeleton + `RunManager` + **scripted fake SSE** that replays a hand-written event list; `app/zetaris.py` client, smoke-tested with `SELECT 7` and `SELECT * FROM NY_TAXI.customers LIMIT 3` | Store + reducer + `useRunStream` against the fake SSE; 3-column shell | Gauge + waterfall against static JSON |
-| 4–6 | Launch the **full extraction** (background, ~2 h); collect CDS PDF URLs for the 5 demo schools | Node 1 (extract + metrics + grade + guardrails) on Maya's transcript via CLI | Committee room bubbles + citation tokenizer on a hand-written debate | Twin cards + radar on static JSON |
+| 2–4 | Extraction smoke test on 20 posts with local `gemma4:e2b`, read against their posts, decision at H4 on the cap (§2.9.11); download the Scorecard bulk CSV + IPEDS ADM file and `docker compose cp` them into Zetaris | FastAPI skeleton + `RunManager` + **scripted fake SSE** that replays a hand-written event list; `app/zetaris.py` client, smoke-tested with `SELECT 7` and `SELECT * FROM NY_TAXI.customers LIMIT 3` | Store + reducer + `useRunStream` against the fake SSE; 3-column shell | Gauge + waterfall against static JSON |
+| 4–6 | Launch the **capped extraction** (background, ~3,000 posts, an estimated 4–12 h; Zetaris pauses itself); collect CDS PDF URLs for the 5 demo schools | Node 1 (extract + metrics + grade + guardrails) on Maya's transcript via CLI | Committee room bubbles + citation tokenizer on a hand-written debate | Twin cards + radar on static JSON |
 
 **Hour 6 gate:** the fake SSE drives the whole War Room end to end. At least 5K raw posts are scraped. Node 1 produces a sensible `DossierGrade` for Maya. The ETL model decision is made.
 
@@ -8249,7 +8251,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 | A Zetaris DDL detail differs from the docs (filestore local path, GRANT principal form, DDL over REST) | Med | Med | Every such line is marked "(verify at Hour 1)"; fall back to the UI SQL editor / Files upload; the views only depend on the confirmed statements | A |
 | Zetaris unreachable during judging | Low | High | Supabase fallback for every read (§2.10.10); the demo replay carries the Zetaris evidence chips anyway | B |
 | Arctic Shift is slow, rate-limited or down | Med | High | Start the scrape at H1; checkpoint/resume; keep partial data. If it's down for more than 2 h, download Watchful1's per-subreddit `.zst` dumps for the two subreddits from Academic Torrents and convert them to the same JSONL shape. (PullPush was the original source but now refuses automated clients: DECISIONS D-003.) | A |
-| Extraction cost or time overrun | Med | Med | H4 model decision gate; extract demo-school posts first (filter by school mentions); `--limit` | A |
+| Extraction cost or time overrun | Med | Med | H4 gate on the 20-post smoke test; the run is capped at 3,000 posts (`CAPS`); extract demo-school posts first (filter by school mentions); `--limit` | A |
 | CDS PDFs are scanned or messy | Med | Med | Send the whole PDF (Claude reads scanned pages); hand-enter C7 for the 5 demo schools (15 min) | A |
 | Debate is too long or too slow | Med | High | `effort=low`, 110–170 words per turn; reduce to 2 turns via `TURN_BRIEFS` if needed; demo uses a cached dossier | B |
 | LLM grades are inflated | Med | Med | Anchors + clamps (§3.6.1); prompt calibration language; show warnings in UI | B |

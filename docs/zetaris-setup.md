@@ -4,6 +4,8 @@ Steps only. No secrets in this file; the bundle's `.env` and every password stay
 
 ## 1. Bring up the bundle
 
+> The Reddit extraction run pauses this stack automatically (`etl/resources.py`, `docker compose stop` then `start`) so the local Gemma model has RAM. Give it about a minute to become healthy afterwards; re-run `./verify.sh` if in doubt.
+
 1. Give Docker 8 GB of memory and 4 CPUs. On a 16 GB laptop set `ZSPARK_DRIVER_MEM=4g` and `ZSPARK_DRIVER_CORES=4` in `zetaris-platform/.env` before the first start.
 2. `docker login zetarishackathon.azurecr.io` (the command from the Zetaris Cloud download page).
 3. From `zetaris-platform/`: `./preflight.sh`, `docker compose pull`, `docker compose up -d`. The first start takes 5-10 minutes.
