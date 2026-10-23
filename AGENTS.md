@@ -19,7 +19,7 @@ Each human owns one track, and their agent works **only on that track's steps** 
 
 | Track | Scope | Human | AI tool |
 |---|---|---|---|
-| **A: Data, RAG & Zetaris** | Supabase migrations, ETL, pgvector RPCs, Zetaris data fabric, backtest | _name_ | _tool_ |
+| **A: Data, RAG & Zetaris** | Supabase migrations, ETL, pgvector RPCs, Zetaris data fabric, backtest | Jmar L. Pineda | Claude Code |
 | **B: Agents & API** | LLM wrapper, schemas, prompts, scoring, LangGraph nodes, FastAPI/SSE | _name_ | _tool_ |
 | **C: War Room UI** | Next.js shell, store/stream, committee room, dossier panel, intake | _name_ | _tool_ |
 | **D: Viz, Demo & Integration** | Charts, twin cards, what-if, demo personas/fixtures/replays, deploy, pitch assets | _name_ | _tool_ |
