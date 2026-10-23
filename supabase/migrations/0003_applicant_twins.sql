@@ -60,7 +60,7 @@ create table public.applicant_twins (
 
   -- retrieval
   profile_text           text not null,                         -- deterministic canonical text (app/profile_text.py)
-  embedding              extensions.vector(1536),
+  embedding              extensions.vector(768),
   fts                    tsvector generated always as (to_tsvector('english', profile_text)) stored,
 
   -- extraction metadata

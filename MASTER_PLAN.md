@@ -36,8 +36,8 @@
 | All reasoning nodes (parse, grade, fact-check, twin analysis, debate, delta) | Anthropic `claude-opus-5-5` | Effort is set per node (see §1.5). Thinking is always on for this model and is controlled only by `output_config.effort`. |
 | Structured outputs | `client.beta.messages.parse(..., output_format=PydanticModel)` | The result is validated into the Pydantic model and read from `.parsed_output`. |
 | Refusal safety net | `fallbacks="default"` + beta `server-side-fallback-2026-07-01` | If a safety classifier declines a request, it is re-run server-side on Anthropic's recommended fallback model. It's enabled in the shared `llm.py` wrapper and is a one-line removal if you don't want it. |
-| Offline Reddit/CDS extraction | `ETL_MODEL` env var, default `claude-opus-5-5` | Cost tradeoff in §2.9.11. You decide whether to switch to a cheaper model. |
-| Embeddings (1536-d) | OpenAI `text-embedding-3-small` | Anthropic has no embeddings endpoint. The spec's `vector(1536)` matches this model. If you use Voyage instead, change it to `vector(1024)` everywhere. |
+| Offline Reddit extraction | Local **Gemma 4 E4B** (`ETL_MODEL=gemma4:e4b`) served by Ollama on this machine | Free and offline. Structured output goes through Ollama's `format` JSON-schema constraint (`app/local_llm.py::chat_structured`). Quality tradeoff in §2.9.11. CDS PDF extraction (A10) is a separate decision. |
+| Embeddings (768-d) | Local **EmbeddingGemma 300M** (`EMBEDDING_MODEL=embeddinggemma`) via Ollama `/api/embed` | Free and offline; no embeddings API key. 768-d, so the schema uses `vector(768)`. Twins and live applicants are both embedded with the "sentence similarity" task prefix so they share one space. |
 | Live web research | Tavily (`AsyncTavilyClient`) | Results are cached in Postgres. If Tavily is down, Node 2 degrades to DB-only. |
 | **Data fabric (hackathon partner)** | **Zetaris Lightning 2.4.3** (local Docker bundle in `zetaris-platform/`) | The federated query engine, semantic views, Iceberg gold table, RBAC and audit log. Agents query it over its REST API (§2.10). pgvector stays in Supabase for sub-50 ms KNN. |
 
@@ -46,7 +46,6 @@
 ```bash
 # LLM / embeddings / search
 ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...            # embeddings only
 TAVILY_API_KEY=tvly-...
 
 # Supabase (backend uses the service-role key; never ship it to the browser)
@@ -69,8 +68,9 @@ ZETARIS_ENABLED=true                             # false → pure-Supabase fallb
 
 # Tunables
 REASONING_MODEL=claude-opus-5-5
-ETL_MODEL=claude-opus-5-5
-EMBEDDING_MODEL=text-embedding-3-small
+ETL_MODEL=gemma4:e4b             # local extraction model (Ollama)
+EMBEDDING_MODEL=embeddinggemma   # local embedding model (Ollama), 768-d
+OLLAMA_URL=http://localhost:11434
 DEMO_MODE=false                  # true → replay recorded event logs (Part II, §4)
 ```
 
@@ -87,7 +87,7 @@ adcom/
 │       │   ├── main.py               # FastAPI app + SSE routes (Part II, §4)
 │       │   ├── config.py             # pydantic-settings
 │       │   ├── llm.py                # Anthropic wrapper: parse / stream_text / fallbacks / refusals
-│       │   ├── embeddings.py         # OpenAI 1536-d embeddings
+│       │   ├── embeddings.py         # local EmbeddingGemma 768-d embeddings (Ollama)
 │       │   ├── db.py                 # Supabase async client + RPC helpers
 │       │   ├── web_research.py       # Tavily + Postgres cache
 │       │   ├── zetaris.py            # Zetaris Lightning REST client (login, query)
@@ -155,7 +155,6 @@ dependencies = [
   "python-multipart",
   "langgraph>=1.0",
   "anthropic",               # pin exact version at Hour 0 with `uv lock`
-  "openai",
   "supabase",
   "tavily-python",
   "pydantic>=2.7",
@@ -182,12 +181,12 @@ flowchart TB
   subgraph OFFLINE["OFFLINE DATA PLANE (Hours 0-14, re-runnable)"]
     direction TB
     PP["Arctic Shift API<br/>arctic-shift.photon-reddit.com<br/>r/collegeresults<br/>r/TransferToTop25"] -->|"paginate by created_utc<br/>4s/request, checkpointed"| RAW[("data/raw/*.jsonl")]
-    RAW --> EXT["Claude structured extraction<br/>RedditApplicantRecord (Pydantic)<br/>+ Tier 1-4 EC grading"]
+    RAW --> EXT["Local Gemma 4 structured extraction<br/>RedditApplicantRecord (Pydantic)<br/>+ Tier 1-4 EC grading"]
     EXT --> RES["School resolver<br/>alias table + rapidfuzz<br/>'UMich' → umich"]
     RES --> QG{"Quality gates<br/>is_results_post, ranges,<br/>>=1 resolved decision"}
     QG -->|pass| PT["Canonical profile_text<br/>(shared builder)"]
     QG -->|fail| REJ[("rejects.jsonl")]
-    PT --> EMB["OpenAI text-embedding-3-small<br/>1536-d, batch 256"]
+    PT --> EMB["EmbeddingGemma (local, Ollama)<br/>768-d, batch 32"]
     EMB --> UP1["Upsert applicant_twins"]
 
     SC["College Scorecard API<br/>api.data.gov"] --> UP2["Upsert universities_cds<br/>(seed: names, unitids, peer groups)"]
@@ -200,7 +199,7 @@ flowchart TB
 
   subgraph DB["SUPABASE (Postgres 15+ / pgvector 0.8 / pg_trgm / pg_cron)"]
     T1[("universities_cds")]
-    T2[("applicant_twins<br/>embedding vector(1536)")]
+    T2[("applicant_twins<br/>embedding vector(768)")]
     T3[("school_aliases")]
     T4[("evaluation_runs<br/>(24h TTL)")]
     T5[("web_research_cache")]
@@ -248,7 +247,7 @@ flowchart TB
   ADV -->|"messages.stream"| CLAUDE
   CH --> CLAUDE
   N5 --> CLAUDE
-  N1 -->|embed profile| OAI["OpenAI Embeddings"]
+  N1 -->|embed profile| OAI["EmbeddingGemma (local Ollama)"]
   N2 -->|"3 parallel queries"| TAV["Tavily Search"]
   N2 -->|"school profile + SQL tool (≤3 queries)"| ZQ
   N3 -->|"calibration, admitted medians"| ZQ
@@ -612,7 +611,7 @@ create table public.applicant_twins (
 
   -- retrieval
   profile_text           text not null,                         -- deterministic canonical text (app/profile_text.py)
-  embedding              extensions.vector(1536),
+  embedding              extensions.vector(768),
   fts                    tsvector generated always as (to_tsvector('english', profile_text)) stored,
 
   -- extraction metadata
@@ -758,7 +757,7 @@ create table public.evaluation_runs (
   scoring_inputs      jsonb,     -- frozen ScoringInputs so /api/what-if can recompute without the graph
   counterfactuals     jsonb,
   delta_report        jsonb,
-  profile_embedding   extensions.vector(1536),
+  profile_embedding   extensions.vector(768),
   event_log           jsonb not null default '[]'::jsonb   -- full SSE log → DEMO_MODE replay
 );
 create index evaluation_runs_session_idx on public.evaluation_runs (session_id, created_at desc);
@@ -791,7 +790,7 @@ If you add a `WHERE target school in applied_schools` filter to an HNSW scan, pg
 
 ```sql
 create or replace function public.match_applicant_twins(
-  query_embedding  extensions.vector(1536),
+  query_embedding  extensions.vector(768),
   target_schools   text[],                                  -- usually one slug; peer fallback passes several
   match_count      int                    default 5,
   applicant_kind   public.applicant_type  default 'first_year',
@@ -886,7 +885,7 @@ Five twins make a good story but not a statistic. This function aggregates the t
 
 ```sql
 create or replace function public.twin_neighborhood_stats(
-  query_embedding  extensions.vector(1536),
+  query_embedding  extensions.vector(768),
   target_schools   text[],
   k                int                   default 50,
   applicant_kind   public.applicant_type default 'first_year',
@@ -940,7 +939,7 @@ $$;
 
 ```sql
 create or replace function public.major_arbitrage_candidates(
-  query_embedding  extensions.vector(1536),
+  query_embedding  extensions.vector(768),
   target_school    text,
   query_gpa_uw     numeric default null,
   query_sat        int     default null,
@@ -1007,7 +1006,7 @@ $$;
 
 ```python
 res = await sb.rpc("match_applicant_twins", {
-    "query_embedding": embedding,          # list[float] of length 1536; PostgREST casts the JSON array to vector
+    "query_embedding": embedding,          # list[float] of length 768; PostgREST casts the JSON array to vector
     "target_schools": ["uiuc"],
     "match_count": 25,
     "query_gpa_uw": 3.94,
@@ -1462,11 +1461,10 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timezone
 
-import anthropic
+import httpx
 from pydantic import ValidationError
 
-from app import llm
-from app.config import settings
+from app.local_llm import LocalLLMError, chat_structured, settings
 from app.profile_text import ProfileFacts, build_profile_text
 from app.scoring.metrics import ec_score, ec_rating_from_tiers
 
@@ -1477,27 +1475,19 @@ from .school_resolver import SchoolResolver
 
 OUT = PROCESSED_DIR / "twins.jsonl"
 REJECTS = PROCESSED_DIR / "rejects.jsonl"
-CONCURRENCY = 12
+CONCURRENCY = 1          # one local GPU; Ollama serves requests one at a time at this model size
 OUTCOME_RANK = {"accepted": 3, "waitlisted": 2, "rejected": 1}
 
 
 async def extract_post(post: dict, sem: asyncio.Semaphore) -> tuple[dict, RedditApplicantRecord | None, str | None]:
     async with sem:
         try:
-            rec = await llm.parse(
-                RedditApplicantRecord,
-                system=REDDIT_EXTRACTOR_SYSTEM,
-                messages=[{"role": "user", "content": render_post(post)}],
-                effort="low",
-                max_tokens=12000,
-                model=settings.etl_model,
-            )
+            rec = await chat_structured(RedditApplicantRecord, REDDIT_EXTRACTOR_SYSTEM, render_post(post))
             return post, rec, None
-        except (llm.LLMRefusal, llm.LLMTruncated, ValidationError) as exc:
+        except (LocalLLMError, ValidationError) as exc:      # truncated or schema-invalid output
             return post, None, f"{type(exc).__name__}: {exc}"
-        except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
-            # SDK already retried 429/5xx/connection errors (max_retries=4); record and move on.
-            return post, None, f"api_error: {exc}"
+        except httpx.HTTPError as exc:                        # Ollama down or model not loaded; record and move on
+            return post, None, f"ollama_error: {exc}"
 
 
 def _cycle_year(rec: RedditApplicantRecord, created: datetime) -> int:
@@ -1679,6 +1669,7 @@ def _fmt(v, spec: str = "") -> str:
 
 
 def build_profile_text(f: ProfileFacts) -> str:
+    first_gen = "yes" if f.first_gen else "no" if f.first_gen is False else "unknown"
     acts = sorted(f.activities, key=lambda a: a[0])[:MAX_ACTIVITIES]          # strongest tiers first
     lines = [
         f"Applicant type: {f.applicant_type.replace('_', '-')}",
@@ -1693,26 +1684,44 @@ def build_profile_text(f: ProfileFacts) -> str:
         "Awards:",
         *[f"- [{lvl}] {name[:MAX_DESC]}" for lvl, name in f.awards[:MAX_AWARDS]],
         (f"Context: {f.school_type or 'unknown'} school; {f.residency_state or 'unknown state'}; "
-         f"income {f.income_bracket or 'unknown'}; first-gen {'yes' if f.first_gen else 'no' if f.first_gen is False else 'unknown'}"),
+         f"income {f.income_bracket or 'unknown'}; first-gen {first_gen}"),
         f"Hooks: {', '.join(sorted(f.hooks)) or 'none'}",
     ]
     return "\n".join(lines)
 ```
 
 ```python
-# app/embeddings.py
-from openai import AsyncOpenAI
+# app/embeddings.py (settings and the Ollama client live in app/local_llm.py)
+import httpx
 
-from .config import settings
+from .local_llm import LocalLLMError, settings
 
-_client = AsyncOpenAI(api_key=settings.openai_api_key)
+# EmbeddingGemma is prompt-conditioned. Twins and live applicants must be embedded identically so that
+# their vectors share one space, so both sides use the symmetric "sentence similarity" task prefix.
+SIMILARITY_PREFIX = "task: sentence similarity | query: "
 
 
-async def embed_texts(texts: list[str], batch_size: int = 256) -> list[list[float]]:
+async def embed_texts(
+    texts: list[str], batch_size: int = 32, client: httpx.AsyncClient | None = None
+) -> list[list[float]]:
+    owns = client is None
+    http = client or httpx.AsyncClient(timeout=300)
     out: list[list[float]] = []
-    for i in range(0, len(texts), batch_size):
-        resp = await _client.embeddings.create(model=settings.embedding_model, input=texts[i : i + batch_size])
-        out.extend(d.embedding for d in sorted(resp.data, key=lambda d: d.index))
+    try:
+        for i in range(0, len(texts), batch_size):
+            batch = [SIMILARITY_PREFIX + t for t in texts[i : i + batch_size]]
+            resp = await http.post(
+                f"{settings.ollama_url}/api/embed",
+                json={"model": settings.embedding_model, "input": batch, "truncate": True, "keep_alive": "5m"},
+            )
+            resp.raise_for_status()
+            vectors = resp.json()["embeddings"]
+            if len(vectors) != len(batch) or any(len(v) != settings.embedding_dim for v in vectors):
+                raise LocalLLMError(f"expected {len(batch)} vectors of {settings.embedding_dim} dims")
+            out.extend(vectors)
+    finally:
+        if owns:
+            await http.aclose()
     return out
 
 
@@ -1738,7 +1747,7 @@ async def load_twins() -> None:
     log.info("embedding %d profiles", len(rows))
     vectors = await embed_texts([r["profile_text"] for r in rows])
     for r, v in zip(rows, vectors, strict=True):
-        r["embedding"] = v                                          # PostgREST casts JSON array → vector(1536)
+        r["embedding"] = v                                          # PostgREST casts JSON array → vector(768)
     for i in range(0, len(rows), UPSERT_BATCH):
         await sb.table("applicant_twins").upsert(rows[i : i + UPSERT_BATCH], on_conflict="reddit_id").execute()
         log.info("upserted %d/%d", min(i + UPSERT_BATCH, len(rows)), len(rows))
@@ -2212,8 +2221,8 @@ select count(*) filter (where c7_weights <> '{}') as with_c7, count(*) as total 
 | Stage | Volume | Wall clock | Cost |
 |---|---|---|---|
 | Scrape (Arctic Shift) | ~150–250 pages @ 4 s | 15–25 min | free |
-| Extract (12 concurrent) | ~12K posts × ~2.5K in / ~1.2K out tokens (incl. thinking at `effort=low`) | ~2–2.5 h | **Opus 5.5: ~$120 in + ~$290 out ≈ $400.** The same job on Claude Haiku 5.5 ($0.10/$0.50) costs about **$10**, and the Message Batches API halves either price but disables server-side fallbacks. This is your call. Our recommendation is to smoke-test 200 posts on Opus, compare 50 of them against Haiku, and switch `ETL_MODEL` only if tier and decision agreement is ≥ 95%. |
-| Embeddings | 10K × ~350 tokens | 2 min | ~$0.07 |
+| Extract (1 at a time, local) | ~12K posts × ~2.5K in / ~1.2K out tokens | **Estimate: several hours**; measure tokens/s on the first `--limit 20` run before committing to the full run | **$0** (electricity). Quality is the cost: Gemma 4 E4B is much smaller than the Claude model this section used to assume. Smoke-test 20 posts, read every record against its post, and look at the `rejects.jsonl` reasons before running the full set. Posts that fail validation are skipped, not guessed. |
+| Embeddings | 10K × ~350 tokens | a few minutes on the GPU | $0 (local EmbeddingGemma) |
 | CDS extraction | 50 PDFs × ~25K tokens | 10 min | ~$6 |
 
 ### 2.10 Zetaris Lightning: the federated data fabric (hackathon partner platform)
@@ -2990,7 +2999,7 @@ async def run_zetaris_research(*, slug: str, major_category: str, applicant_summ
 To move the vector search into Zetaris too, materialize twins with `embedding` as `array<float>` in the lakehouse (export the vector as a float array from Postgres in a batch job), then compute cosine similarity with Spark higher-order functions inside the same hybrid query. Prefiltering by school keeps the scan to a few thousand rows:
 
 ```sql
--- query vector inlined by the client as array(…1536 floats…); norms precomputed at load time
+-- query vector inlined by the client as array(…768 floats…); norms precomputed at load time
 WITH q AS (SELECT array(${QUERY_VECTOR}) AS v, ${QUERY_NORM} AS n)
 SELECT t.twin_id, t.outcome,
        aggregate(zip_with(t.embedding, q.v, (a, b) -> a * b), 0D, (acc, x) -> acc + x) / (t.norm * q.n) AS cosine
@@ -3877,16 +3886,16 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     anthropic_api_key: str | None = None        # the SDK also reads ANTHROPIC_API_KEY directly
-    openai_api_key: str
     tavily_api_key: str | None = None
     supabase_url: str
     supabase_service_role_key: str
     scorecard_api_key: str | None = None
 
     reasoning_model: str = "claude-opus-5-5"
-    etl_model: str = "claude-opus-5-5"
-    embedding_model: str = "text-embedding-3-small"
-    embedding_dim: int = 1536
+    ollama_url: str = "http://localhost:11434"   # local Gemma models (app/local_llm.py also reads these)
+    etl_model: str = "gemma4:e4b"
+    embedding_model: str = "embeddinggemma"
+    embedding_dim: int = 768
     demo_mode: bool = False
 
 
@@ -8243,7 +8252,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 | Debate is too long or too slow | Med | High | `effort=low`, 110–170 words per turn; reduce to 2 turns via `TURN_BRIEFS` if needed; demo uses a cached dossier | B |
 | LLM grades are inflated | Med | Med | Anchors + clamps (§3.6.1); prompt calibration language; show warnings in UI | B |
 | SSE buffered by a proxy | Low | High | `X-Accel-Buffering: no`; test on the production host by H16 | B/D |
-| Supabase free-tier limits | Low | Med | 10K × 1536 float4 ≈ 60 MB of vectors, well under 500 MB; HNSW build takes about 1 min | A |
+| Supabase free-tier limits | Low | Med | 10K × 768 float4 ≈ 30 MB of vectors, well under 500 MB; HNSW build takes about 1 min | A |
 | Anthropic rate limits during judging | Low | High | `max_concurrent_runs=6`; dossier cache; replay fallback | B |
 | A judge challenges on data ethics or legality | High | Med | §7.3 answers rehearsed; data card; no usernames; race excluded | D |
 | Presenter exhaustion | High | High | Staggered sleep; presenter sleeps H22–26 at minimum | Lead |

@@ -35,10 +35,10 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [x] **A06 — School seed data + resolver** · §2.9.5, §2.9.8 (seed CSV) · Deps: S01 — done by Jmar L. Pineda via Claude Code, 2026-10-23
   Writes `data/schools_seed.csv` (verify every unitid), `data/school_aliases.yaml` and `etl/school_resolver.py`.
   *Done when:* resolver tests pass: "UMich" → `umich`, "CMU SCS" → `cmu`, "UW" → `None` (ambiguous), unknown names land in the unresolved counter.
-- [ ] **A07 — Reddit structured extraction** · §2.9.3, §2.9.4, §2.9.6 · Deps: A05, A06, S02, B01, B05
-  *Done when:* `--limit 20` (≈$1, tell your human first) produces rows in `data/processed/twins.jsonl` and `rejects.jsonl` with reasons; quality gates are unit-tested on two synthetic records.
+- [ ] **A07 — Reddit structured extraction** · §2.9.3, §2.9.4, §2.9.6 · Deps: A05, A06, S02, B02, B05 (B01 no longer needed: extraction uses local Gemma, DECISIONS D-007)
+  *Done when:* `--limit 20` on local Gemma (free, but it loads the GPU and RAM: tell your human first so they can close their browser) produces rows in `data/processed/twins.jsonl` and `rejects.jsonl` with reasons; quality gates are unit-tested on two synthetic records.
 - [ ] **A08 — Embeddings + twin loader** · §2.9.7 (`load_twins.py`) · Deps: A07, A03
-  *Done when:* the 20 smoke rows are upserted with 1536-d vectors, and `match_applicant_twins` returns them for a school they applied to.
+  *Done when:* the 20 smoke rows are upserted with 768-d vectors, and `match_applicant_twins` returns them for a school they applied to.
 - [ ] **A09 — College Scorecard API loader** · §2.9.8 · Deps: A01, A06
   *Done when:* ≥200 schools and their aliases are in Supabase; `resolve_school('michigan')` returns `umich`.
 - [ ] **A10 — CDS PDF loader (5 demo schools)** · §2.9.9 · Deps: A09, B01

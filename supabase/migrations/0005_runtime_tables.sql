@@ -22,7 +22,7 @@ create table public.evaluation_runs (
   scoring_inputs      jsonb,     -- frozen ScoringInputs so /api/what-if can recompute without the graph
   counterfactuals     jsonb,
   delta_report        jsonb,
-  profile_embedding   extensions.vector(1536),
+  profile_embedding   extensions.vector(768),
   event_log           jsonb not null default '[]'::jsonb   -- full SSE log → DEMO_MODE replay
 );
 create index evaluation_runs_session_idx on public.evaluation_runs (session_id, created_at desc);

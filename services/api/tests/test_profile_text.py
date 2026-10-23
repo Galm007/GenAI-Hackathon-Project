@@ -1,4 +1,3 @@
-from app import embeddings
 from app.agents.prompts.rubrics import HARVARD_RUBRIC, TIER_RUBRIC
 from app.profile_text import ProfileFacts, build_profile_text
 
@@ -33,24 +32,3 @@ def test_profile_text_handles_missing_values():
 def test_rubrics_present():
     assert "Harvard-style reader ratings" in HARVARD_RUBRIC
     assert "Tier 1" in TIER_RUBRIC
-
-
-async def test_embed_texts_batches_and_orders(monkeypatch):
-    calls: list[list[str]] = []
-
-    class Item:
-        def __init__(self, index, embedding):
-            self.index, self.embedding = index, embedding
-
-    class FakeEmbeddings:
-        async def create(self, model, input):
-            calls.append(list(input))
-            return type("R", (), {"data": [Item(i, [float(len(t))]) for i, t in reversed(list(enumerate(input)))]})()
-
-    fake = type("C", (), {"embeddings": FakeEmbeddings()})()
-    monkeypatch.setattr(embeddings, "_get_client", lambda: fake)
-    monkeypatch.setitem(__import__("sys").modules, "app.config",
-                        type("M", (), {"settings": type("S", (), {"embedding_model": "m"})()}))
-    out = await embeddings.embed_texts(["a", "bb", "ccc"], batch_size=2)
-    assert out == [[1.0], [2.0], [3.0]]
-    assert [len(c) for c in calls] == [2, 1]

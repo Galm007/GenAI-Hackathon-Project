@@ -9,7 +9,6 @@ dependencies = [
   "python-multipart",
   "langgraph>=1.0",
   "anthropic",               # pin exact version at Hour 0 with `uv lock`
-  "openai",
   "supabase",
   "tavily-python",
   "pydantic>=2.7",

@@ -55,3 +55,16 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - Verified: a live scrape of the last day for both subreddits wrote `data/raw/*.jsonl` plus checkpoints. The first request returned a transient 422 and succeeded on retry.
 - Fallback if the API is unavailable: Watchful1's per-subreddit `.zst` dumps on Academic Torrents (noted in the plan's risk table).
 - Impact on other tracks: A11 imports `scrape_all` from `etl.reddit_archive`. `AGENTS.md` §4 still says "PullPush allows one request per 4 s"; it is human-owned, so it needs a one-word edit by a human.
+
+## D-007 — Local Gemma models for extraction and embeddings (no OpenAI key, no Anthropic key for the ETL)
+- Step: S02 / A01–A03 / A07 / A08 prep · Date: 2026-10-23 · By: Jmar L. Pineda via Claude Code (human decision: "Use Gemma for both extraction and embedding")
+- Plan said: Reddit extraction with `claude-opus-5-5` (`ETL_MODEL`), embeddings with OpenAI `text-embedding-3-small` as `vector(1536)`.
+- We did:
+  - Extraction: `gemma4:e4b` served by Ollama (`app/local_llm.py::chat_structured`, schema-constrained via Ollama's `format`, temperature 0, thinking off). `etl/extract_reddit.py` (A07) calls it instead of `app.llm.parse`; concurrency drops from 12 to 1.
+  - Embeddings: `embeddinggemma` (300M, 768-d) via Ollama `/api/embed`, with the "task: sentence similarity | query: " prefix on both twins and live applicants so they share one space. The `openai` dependency is removed.
+  - Dimension: `vector(1536)` → `vector(768)` in migrations 0003, 0005 and 0006 (edited in place; none have been applied to any database yet), the plan's SQL, `embedding_dim` and the storage estimate.
+  - Runtime: the Ollama binary lives in git-ignored `.local/ollama/` (downloaded from ollama.com, no sudo); models in `.local/ollama/models/`.
+  - Plan text updated in §0.2 stack table, §0.3 env, §0.4, §1.1 diagrams, §2.4/§2.6/§2.7 SQL, §2.9.6, §2.9.7, §2.9.11, §3.5.1 settings, §7 risk table. Settings fields `ollama_url`, `etl_model`, `embedding_model`, `embedding_dim` are the same in `app/local_llm.py` (usable now) and in B01's `Settings` (per the plan).
+- Not changed: the live agents (Track B, Claude) and CDS PDF extraction (A10), which still need a human decision.
+- Risks: Gemma 4 E4B is much smaller than the model the plan assumed, so extraction accuracy (GPA scale, tiers, round/outcome) is unproven. A07's first run is a 20-post smoke test that gets read by a human before any full run. The embedding swap changes retrieval behaviour, which hasn't been measured against the old model either.
+- Impact on other tracks: Track B's code that calls `match_applicant_twins` or embeds a live applicant must use `app.embeddings.embed_one` (768-d). Anything hard-coding 1536 must change. `AGENTS.md` §4 still describes Opus-priced extraction and `OPENAI` assumptions; it is human-owned.

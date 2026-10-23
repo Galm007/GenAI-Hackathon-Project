@@ -1,5 +1,5 @@
 create or replace function public.match_applicant_twins(
-  query_embedding  extensions.vector(1536),
+  query_embedding  extensions.vector(768),
   target_schools   text[],                                  -- usually one slug; peer fallback passes several
   match_count      int                    default 5,
   applicant_kind   public.applicant_type  default 'first_year',
@@ -88,7 +88,7 @@ as $$
 $$;
 
 create or replace function public.twin_neighborhood_stats(
-  query_embedding  extensions.vector(1536),
+  query_embedding  extensions.vector(768),
   target_schools   text[],
   k                int                   default 50,
   applicant_kind   public.applicant_type default 'first_year',
@@ -138,7 +138,7 @@ as $$
 $$;
 
 create or replace function public.major_arbitrage_candidates(
-  query_embedding  extensions.vector(1536),
+  query_embedding  extensions.vector(768),
   target_school    text,
   query_gpa_uw     numeric default null,
   query_sat        int     default null,
