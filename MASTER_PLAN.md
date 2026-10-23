@@ -26,7 +26,8 @@
 2. **Every claim cites.** Debate messages carry inline citation tokens (`[[cds:c7.essay]]`, `[[twin:3]]`, `[[web:W2]]`). A validator checks them against the docket, and the UI renders them as clickable chips. If a citation can't be resolved, the UI shows it as unverified.
 3. **Stream everything.** The first byte reaches the screen in under 2 s. Every node emits progress, tool-call and partial-result events, so the user never sees a bare spinner.
 4. **Precompute the expensive parts, cache the rest.** Reddit extraction, embeddings and CDS parsing all happen offline. Prompt caching covers system prompts and the shared debate docket. Tavily results are cached for 7 days. Demo mode can replay a recorded event log if the venue Wi-Fi dies.
-5. **Privacy by construction.** We never store the raw PDF. PII is stripped before anything persists. Evaluation runs auto-expire after 24 h. Race/ethnicity is excluded from embeddings, from the probability model and from the context the LLM sees.
+5. **One governed data plane: Zetaris Lightning** (hackathon partner). Every institutional fact and cross-source statistic the agents use is a federated SQL query through Zetaris (College Scorecard + IPEDS files read in place, Supabase over JDBC, an Iceberg gold layer). It runs as a least-privilege service user, every query is audit-logged, and each one surfaces in the debate as a `[[sql:Z#]]` citation that shows its exact SQL (§2.10).
+6. **Privacy by construction.** We never store the raw PDF. PII is stripped before anything persists. Evaluation runs auto-expire after 24 h. Race/ethnicity is excluded from embeddings, from the probability model and from the context the LLM sees.
 
 ### 0.2 Model & provider choices
 
@@ -38,6 +39,7 @@
 | Offline Reddit/CDS extraction | `ETL_MODEL` env var, default `claude-opus-5-5` | Cost tradeoff in §2.9.11. You decide whether to switch to a cheaper model. |
 | Embeddings (1536-d) | OpenAI `text-embedding-3-small` | Anthropic has no embeddings endpoint. The spec's `vector(1536)` matches this model. If you use Voyage instead, change it to `vector(1024)` everywhere. |
 | Live web research | Tavily (`AsyncTavilyClient`) | Results are cached in Postgres. If Tavily is down, Node 2 degrades to DB-only. |
+| **Data fabric (hackathon partner)** | **Zetaris Lightning 2.4.3** (local Docker bundle in `zetaris-platform/`) | The federated query engine, semantic views, Iceberg gold table, RBAC and audit log. Agents query it over its REST API (§2.10). pgvector stays in Supabase for sub-50 ms KNN. |
 
 ### 0.3 Environment variables (`.env`)
 
@@ -52,7 +54,18 @@ SUPABASE_URL=https://<project>.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 
 # Public datasets
-SCORECARD_API_KEY=...            # free key from api.data.gov
+SCORECARD_API_KEY=...            # free key from api.data.gov (seeds names/unitids; the bulk CSV goes to Zetaris)
+
+# Zetaris Lightning (hackathon partner platform, §2.10)
+ZETARIS_URL=http://localhost:3000                # UI API proxy (same route verify.sh uses); http://ui:3000 inside compose
+ZETARIS_AGENT_EMAIL=adcom-agent@adcom.local      # least-privilege service user created by zetaris/sql/04_security.sql
+ZETARIS_AGENT_PASSWORD=...
+ZETARIS_ADMIN_EMAIL=admin@zetaris.com            # setup scripts only
+ZETARIS_ADMIN_PASSWORD=...                       # the password you changed it to after first sign-in
+ZETARIS_PG_USER=zetaris_reader.<project-ref>     # Supabase session-pooler user for the JDBC datasource
+ZETARIS_PG_PASSWORD=...
+SUPABASE_POOLER_HOST=aws-0-<region>.pooler.supabase.com
+ZETARIS_ENABLED=true                             # false → pure-Supabase fallback mode
 
 # Tunables
 REASONING_MODEL=claude-opus-5-5
@@ -77,6 +90,8 @@ adcom/
 │       │   ├── embeddings.py         # OpenAI 1536-d embeddings
 │       │   ├── db.py                 # Supabase async client + RPC helpers
 │       │   ├── web_research.py       # Tavily + Postgres cache
+│       │   ├── zetaris.py            # Zetaris Lightning REST client (login, query)
+│       │   ├── zetaris_repo.py       # typed reads from the ADCOM views + guarded agent SQL
 │       │   ├── profile_text.py       # canonical profile string (shared by ETL + live applicant)
 │       │   ├── schemas/
 │       │   │   ├── common.py  dossier.py  institution.py  twins.py  debate.py  delta.py  inputs.py
@@ -90,6 +105,7 @@ adcom/
 │       │       ├── events.py         # custom stream events
 │       │       ├── docket.py         # committee docket builder + citation validator
 │       │       ├── graph.py          # StateGraph assembly
+│       │       ├── zetaris_tool.py   # Node 2's bounded Zetaris SQL tool loop
 │       │       ├── prompts/
 │       │       │   ├── rubrics.py  dossier.py  institutional.py  twins.py  committee.py  delta.py
 │       │       └── nodes/
@@ -97,7 +113,7 @@ adcom/
 │       ├── etl/
 │       │   ├── common.py  pullpush.py  reddit_schema.py  prompts.py  school_resolver.py
 │       │   ├── extract_reddit.py  load_twins.py  load_scorecard.py  load_cds.py
-│       │   ├── refresh_stats.py  fit_coefficients.py  run_etl.py
+│       │   ├── refresh_stats.py  fit_coefficients.py  zetaris_setup.py  run_etl.py
 │       └── scripts/
 │           └── run_graph_cli.py      # run a full evaluation in the terminal
 ├── supabase/
@@ -108,7 +124,12 @@ adcom/
 │       ├── 0004_stats_views.sql
 │       ├── 0005_runtime_tables.sql
 │       ├── 0006_rpc.sql
-│       └── 0007_rls_cron.sql
+│       ├── 0007_rls_cron.sql
+│       ├── 0008_radar.sql
+│       └── 0009_zetaris_export.sql
+├── zetaris/
+│   └── sql/                          # Lightning SQL: 01_sources 02_views 03_gold 04_security (§2.10.4)
+├── zetaris-platform/                 # the Zetaris Docker bundle (gitignored: holds .env secrets + JDBC jar)
 └── data/
     ├── schools_seed.csv              # curated unitid → slug, peer group, aliases
     ├── school_aliases.yaml           # Reddit abbreviations ("CMU", "UMich", "Cal")
@@ -116,6 +137,7 @@ adcom/
     ├── major_overrides.yaml          # verified capped/direct-admit majors
     ├── raw/                          # PullPush JSONL (gitignored)
     ├── processed/                    # extracted twins JSONL (gitignored)
+    ├── public/                       # Scorecard + IPEDS bulk CSVs copied into Zetaris (gitignored)
     └── demo_dossiers/                # 3 golden demo applicants
 ```
 
@@ -168,7 +190,8 @@ flowchart TB
     PT --> EMB["OpenAI text-embedding-3-small<br/>1536-d, batch 256"]
     EMB --> UP1["Upsert applicant_twins"]
 
-    SC["College Scorecard API<br/>api.data.gov"] --> UP2["Upsert universities_cds<br/>(admit rate, SAT/ACT 25/75)"]
+    SC["College Scorecard API<br/>api.data.gov"] --> UP2["Upsert universities_cds<br/>(seed: names, unitids, peer groups)"]
+    BULK["Scorecard bulk CSV +<br/>IPEDS ADM CSV"] -->|"docker compose cp"| ZF
     CDS["Common Data Set PDFs<br/>(C1, C7, C9, C11-12, C21, D)"] --> CDSX["Claude PDF extraction<br/>CDSExtract (Pydantic)"]
     CDSX --> UP2
     MO["major_overrides.yaml<br/>(verified capped majors)"] --> UP2
@@ -184,13 +207,27 @@ flowchart TB
     RPC["RPCs: match_applicant_twins<br/>twin_neighborhood_stats<br/>major_arbitrage_candidates<br/>resolve_school"]
   end
 
+  subgraph ZET["ZETARIS LIGHTNING (hackathon partner · Docker bundle)"]
+    ZF["LIGHTNING DATABASE ADCOM_PUBLIC<br/>filestore: scorecard_institutions, ipeds_adm"]
+    ZDS["DATASOURCE ADCOM_PG<br/>(JDBC → Supabase zetaris_export)"]
+    ZV["SCHEMASTORE CONTAINER ADCOM<br/>v_school_profile · v_school_c7_long · v_major_stats<br/>v_reddit_calibration · v_admitted_medians · v_peer_benchmarks"]
+    ZG[("ADCOM_LAKE (Iceberg)<br/>gold.school_profile")]
+    ZQ["REST query API<br/>/api/proxy/query/sql/start<br/>(service user adcom_agent · audit-logged)"]
+    ZF --> ZV
+    ZDS --> ZV
+    ZV --> ZG
+    ZG --> ZQ
+    ZV --> ZQ
+  end
+
   UP1 --> T2
   UP2 --> T1
   RES -.-> T3
+  MV -->|"refresh_twin_stats() → zetaris_export"| ZDS
 
   subgraph ONLINE["ONLINE REQUEST PLANE"]
     direction TB
-    UI["Next.js War Room<br/>(Vercel)"] -->|"POST /api/evaluate (multipart) → 202 run_id<br/>GET /api/evaluate/{run_id}/stream"| API["FastAPI<br/>(Railway / Fly.io, long-lived SSE)"]
+    UI["Next.js War Room<br/>(Vercel)"] -->|"POST /api/evaluate (multipart) → 202 run_id<br/>GET /api/evaluate/{run_id}/stream"| API["FastAPI<br/>(co-located with Zetaris, long-lived SSE)"]
     API -->|"graph.astream(stream_mode=['updates','custom'])"| LG["LangGraph StateGraph"]
     LG --> N1["N1 Dossier Parser<br/>& Rubric Grader"]
     N1 --> N2["N2 Institutional<br/>Fact-Checker"]
@@ -213,7 +250,8 @@ flowchart TB
   N5 --> CLAUDE
   N1 -->|embed profile| OAI["OpenAI Embeddings"]
   N2 -->|"3 parallel queries"| TAV["Tavily Search"]
-  N2 --> T1
+  N2 -->|"school profile + SQL tool (≤3 queries)"| ZQ
+  N3 -->|"calibration, admitted medians"| ZQ
   N2 <--> T5
   N3 --> RPC
   N5 --> RPC
@@ -231,6 +269,7 @@ sequenceDiagram
   participant G as LangGraph
   participant C as Claude
   participant S as Supabase
+  participant Z as Zetaris Lightning
   participant T as Tavily
 
   U->>F: POST /api/evaluate (transcript.pdf, resume.pdf, essay, intake JSON)
@@ -245,14 +284,19 @@ sequenceDiagram
   G->>C: parse(DossierGrade)
   G-->>U: scorecard (Harvard 1-6 badges + Tier tags)
   par Node 2
-    G->>S: select universities_cds where slug
+    G->>Z: SELECT … FROM ADCOM_LAKE.gold.school_profile WHERE slug = …
     G->>T: 3 searches (cached 7d)
     G-->>U: tool_call tavily.search ×3
+    G->>C: tool loop with zetaris_sql (≤3 read-only queries)
+    C-->>G: tool_use {sql, purpose}
+    G->>Z: guarded SELECT on ADCOM views (audit-logged)
+    G-->>U: tool_call zetaris.sql Z1…Z3
     G->>C: parse(InstitutionalBrief)
     G-->>U: school_rubric + fact_checks
   and Node 3
     G->>S: rpc match_applicant_twins / twin_neighborhood_stats
-    G-->>U: twins (5 cards) + baseline
+    G->>Z: v_reddit_calibration, v_admitted_medians
+    G-->>U: twins (5 cards) + baseline + radar
     G->>C: parse(TwinAnalysis)
     G-->>U: twin_analysis
   end
@@ -287,8 +331,9 @@ sequenceDiagram
 | **Agent orchestration** | LangGraph ≥ 1.0 `StateGraph`: parallel fan-out/fan-in, a debate cycle, `get_stream_writer()` custom events, `InMemorySaver` checkpointer, per-node `RetryPolicy` | Real stateful graph semantics (cycles, joins, retries) with first-class streaming. |
 | **LLM SDK** | Anthropic Python SDK used directly in nodes (no LangChain chat-model wrapper) | Native `messages.parse` structured outputs, native streaming, prompt caching and fallbacks, with fewer abstraction layers to debug at 3 a.m. |
 | **Database** | Supabase Postgres + `pgvector` (HNSW + exact filtered KNN), `pg_trgm` (fuzzy school names), `pg_cron` (TTL purge) | SQL filtering and vector ranking in one RPC call. Free tier is enough. |
+| **Data fabric** (hackathon partner) | **Zetaris Lightning**: federated Spark SQL over Supabase (JDBC) + Scorecard/IPEDS files (filestore tables) + an Iceberg gold table; schema-store views as the semantic layer; RBAC + audit log; REST query API | Joins three public datasets with the Reddit corpus without copy-ETL, and gives the agents one governed, audited SQL surface (§2.10). |
 | **Web research** | Tavily `AsyncTavilyClient.search(search_depth="advanced")` | One call returns clean snippets with URLs, which are needed for citations. |
-| **Hosting** | Vercel (web), Railway or Fly.io (API: long-lived SSE connections, no 10–60 s serverless timeouts), Supabase Cloud | All three deploy in under 10 minutes. |
+| **Hosting** | Vercel (web); **one VM (16 GB, 4 vCPU) running the Zetaris compose stack + the FastAPI container on the same Docker network**; Supabase Cloud | The API must reach Zetaris's loopback-bound ports, so they're co-located (§4.10). Local laptop + tunnel works for judging too. |
 | **Python tooling** | `uv` for env/lock, `ruff`, `pytest` | Fast installs on hackathon Wi-Fi. |
 
 ### 1.4 Why the system is shaped this way
@@ -297,6 +342,7 @@ sequenceDiagram
 - **The committee docket is a deterministic node.** It does three jobs. It joins the parallel branches. It computes the model probability *before* the debate, so both agents argue about the same number. And it builds one byte-stable context packet that all 4 debate turns share, which makes prompt-cache hits on turns 2–4.
 - **The debate is a real graph cycle** (`chair → advocate` while `turn < 4`), not a single prompt pretending to be two people. Each turn sees the full transcript and its own role brief.
 - **Node 5 never invents deltas.** It receives a menu of counterfactuals whose deltas were already computed by re-running the probability model with modified inputs (SAT → 75th percentile, add a Tier 2 activity, switch major, apply ED). It ranks and explains them, and the UI binds numbers by `counterfactual_id`.
+- **Zetaris is the data plane, Supabase is the vector index.** Agents read institutional facts and cross-source statistics through Zetaris views (federated, cached, audit-logged), while the latency-critical KNN over twin embeddings stays in pgvector. Each source does what it's best at, and the boundary is a single `zetaris_repo` module with Supabase fallbacks (§2.10.10).
 - **`/api/what-if` bypasses the graph.** Sliders call the same `compute_probability()` with overrides. It needs no LLM, so it responds in under 50 ms and the gauge animates live.
 
 ### 1.5 Latency, effort & cost budget (per evaluation)
@@ -305,12 +351,12 @@ sequenceDiagram
 |---|---|---|---|---|
 | N1 Dossier Parser | 1 parse (PDF in) | `medium` | 12–20 s | parse progress, then `dossier_parsed` |
 | N1 Rubric Grader | 1 parse | `high` | 8–15 s | `scorecard` badges animate in |
-| N2 Institutional | 3 Tavily + 1 parse | `medium` | 6–10 s (parallel with N3) | `tool_call` chips, `school_rubric`, `fact_checks` |
-| N3 Twins | 2 RPC + 1 parse | `medium` | 4–8 s (parallel) | `twins` cards fly in **first**, because the RPC returns before the LLM finishes |
+| N2 Institutional | 1 Zetaris profile read + ≤3 Zetaris SQL tool queries + 3 Tavily + 1 parse | `low` (tool loop) / `medium` (brief) | 10–16 s (parallel with N3) | `tool_call` chips (`zetaris.sql`, `tavily.search`), `school_rubric`, `fact_checks` |
+| N3 Twins | 2 RPC + 2 Zetaris reads + 1 parse | `medium` | 4–8 s (parallel) | `twins` cards fly in **first**, because the RPC returns before the LLM finishes |
 | Docket | 0 | — | under 50 ms | `probability` gauge sweeps |
 | N4 Debate ×4 | 4 streams | `low` | 6–9 s per turn | `debate_token` typing |
 | N5 Delta | 1 RPC + 1 parse | `high` | 10–15 s | `counterfactuals` first, then `final_report` |
-| **Total** | **10 LLM calls** | | **~65–90 s cold, ~45 s with cached dossier** | Something visibly happens every ~1.5 s |
+| **Total** | **10–14 LLM calls** | | **~65–90 s cold, ~45 s with cached dossier** | Something visibly happens every ~1.5 s |
 
 **Cost.** Roughly 70–90K input tokens per evaluation (about 40% are cache reads on the debate docket and system prompts) plus 15–25K output/thinking tokens. At Opus 5.5 rates ($4 / $20 per MTok) that is **about $0.60–$1.00 per full evaluation**. What-if calls are free.
 
@@ -321,10 +367,10 @@ sequenceDiagram
 | `run_started` | API | `run_id`, `school_slug` |
 | `node_start` / `node_end` / `node_complete` | nodes / nodes / API (from LangGraph `updates`) | `node`, `label`, `elapsed_ms` |
 | `progress` | any node | `node`, `message`, `pct?` |
-| `tool_call` | N2, N3, N5 | `tool` (`tavily.search`, `rpc.match_applicant_twins`…), `args`, `status`, `result_count` |
+| `tool_call` | N2, N3, N5 | `tool` (`zetaris.sql`, `zetaris.profile`, `tavily.search`, `rpc.match_applicant_twins`…), `args`, `status`, `result_count`; Zetaris calls add `id` (Z#), `purpose`, `sql` |
 | `dossier_parsed` | N1 | redacted `ParsedDossier` |
 | `scorecard` | N1 | `DossierGrade` + `ComputedMetrics` |
-| `school_rubric` / `fact_checks` | N2 | `SchoolRubric`, `InstitutionalBrief.fact_checks` |
+| `school_rubric` / `fact_checks` | N2 | `SchoolRubric`; `InstitutionalBrief`, web `snippets`, `zetaris_queries` (Z# id, purpose, sql, rows) |
 | `twins` / `baseline` / `radar` / `twin_analysis` | N3 | `TwinCard[5]`, `EmpiricalBaseline`, 6-axis `RadarData` (§4.7), `TwinAnalysis` |
 | `probability` | Docket | `ProbabilityBreakdown` |
 | `debate_turn_start` / `debate_token` / `debate_reset` / `debate_turn_end` | N4 | `turn`, `speaker`, `delta`, `citations[]`, `recommendation?` |
@@ -340,9 +386,12 @@ sequenceDiagram
 | Source | What we take | Access | Target volume | Lands in |
 |---|---|---|---|---|
 | **PullPush** `api.pullpush.io/reddit/search/submission/` | r/collegeresults (first-year) and r/TransferToTop25 (transfer) results posts, about 2019 to now | Public JSON, `size≤100`, paginate with `before=<epoch>` | 12–18K raw posts → **10K+ clean twins** | `applicant_twins` |
-| **US College Scorecard** `api.data.gov/ed/collegescorecard/v1/schools` | `id` (IPEDS unitid), name, city/state, ownership, admit rate, SAT/ACT 25th/75th | Free API key | ~250 schools with admit rate ≤ 40% | `universities_cds` |
+| **US College Scorecard API** `api.data.gov/ed/collegescorecard/v1/schools` | `id` (IPEDS unitid), name, city/state, ownership: seeds the curated school list | Free API key | ~250 schools with admit rate ≤ 40% | `universities_cds` (seed) |
+| **US College Scorecard bulk CSV** ("Most Recent Institution-Level Data" from collegescorecard.ed.gov/data) | `UNITID, INSTNM, CITY, STABBR, CONTROL, ADM_RATE, SATVR25/75, SATMT25/75, ACTCM25/75, UGDS, ADMCON7` for every institution | Download once → copied into Zetaris | ~6,500 institutions | **Zetaris** filestore table `ADCOM_PUBLIC.scorecard_institutions` (read in place) |
 | **Common Data Set PDFs** | C1 (apps/admits/enrolled), **C7 factor weights**, C9 test percentiles, C11–C12 GPA, C21 ED/EA, **Section D transfers** | PDF links collected by hand from each school's Institutional Research page → Claude PDF extraction | 40–60 schools (all demo schools + top targets) | `universities_cds.c7_weights`, etc. |
 | **IPEDS** (via Scorecard IDs) | unitid as the canonical school key | Implicit (Scorecard `id` = IPEDS unitid) | — | `universities_cds.unitid` |
+| **IPEDS ADM complete data file** (`ADMyyyy.csv`, IPEDS Data Center) | Admission considerations `ADMCON*` (GPA, rank, record, recommendations, test scores), applicants/admits, SAT/ACT bands | Download once → copied into Zetaris | ~2,000 institutions | **Zetaris** filestore table `ADCOM_PUBLIC.ipeds_adm` → coarse C7 fallback for schools without a parsed CDS |
+| **Zetaris Lightning** (hackathon partner) | Federation, semantic views, Iceberg gold, RBAC, audit log | Local Docker bundle (`zetaris-platform/`) | — | §2.10 |
 | **Major overrides** | Verified capped / direct-admit majors (e.g., CS at UIUC, UW, UT Austin, CMU SCS) with source URLs | Hand-curated YAML (Track A, Hour 10) | 15–25 rows | `universities_cds.major_competitiveness` |
 | **SFFA / Harberson rubrics** | Rating anchors | Encoded in prompts (§3.4) | — | prompt constants |
 
@@ -1004,7 +1053,7 @@ select cron.schedule('prune-research-cache', '0 4 * * 0',
 Run order (`python -m etl.run_etl all`):
 
 ```
-seed-schools → scorecard → cds → scrape → extract → load-twins → refresh-stats → (optional) fit-coefficients
+seed-schools → scorecard → cds → scrape → extract → load-twins → refresh-stats → zetaris-setup (once) → zetaris-refresh → (optional) fit-coefficients
 ```
 
 Every stage is **idempotent and resumable**. Scraping checkpoints by `created_utc`. Extraction skips post IDs already present in `processed/` or `rejects/`. Loads are upserts.
@@ -2101,11 +2150,13 @@ from .load_scorecard import load_scorecard
 from .load_twins import load_twins
 from .pullpush import scrape_all
 from .refresh_stats import refresh_stats
+from .zetaris_setup import refresh_gold, setup as zetaris_setup
 
 
 def main() -> None:
     p = argparse.ArgumentParser(prog="etl")
-    p.add_argument("stage", choices=["scorecard", "cds", "scrape", "extract", "load-twins", "refresh-stats", "all"])
+    p.add_argument("stage", choices=["scorecard", "cds", "scrape", "extract", "load-twins", "refresh-stats",
+                                     "zetaris-setup", "zetaris-refresh", "all"])
     p.add_argument("--since", default="2019-06-01", help="earliest post date for scraping")
     p.add_argument("--limit", type=int, default=None, help="extract at most N posts (smoke tests)")
     a = p.parse_args()
@@ -2118,6 +2169,8 @@ def main() -> None:
         "extract": lambda: run_extraction(a.limit),
         "load-twins": load_twins,
         "refresh-stats": refresh_stats,
+        "zetaris-setup": zetaris_setup,           # idempotent: "already exists" is treated as success
+        "zetaris-refresh": refresh_gold,
     }
     order = list(stages) if a.stage == "all" else [a.stage]
     for name in order:
@@ -2160,6 +2213,801 @@ select count(*) filter (where c7_weights <> '{}') as with_c7, count(*) as total 
 | Embeddings | 10K × ~350 tokens | 2 min | ~$0.07 |
 | CDS extraction | 50 PDFs × ~25K tokens | 10 min | ~$6 |
 
+### 2.10 Zetaris Lightning: the federated data fabric (hackathon partner platform)
+
+Zetaris Lightning is the hackathon's partner platform. It is a federated query engine (Spark-based) with a catalog, a semantic layer of "schema store" views, an Iceberg lakehouse, role-based access control and an audit log. In AdCom it is the **single governed SQL plane** between the raw data and the agents. Every institutional fact the committee cites, and every cross-source statistic, is computed by a Zetaris query and shown in the UI as a clickable `[[sql:Z#]]` citation.
+
+> **Provenance of the details below.** The DDL syntax was confirmed against the Zetaris knowledge base: `CREATE DATASOURCE … OPTIONS (jdbcdriver, jdbcurl, username, password)` + `REGISTER DATASOURCE TABLES FROM …`, `CREATE LIGHTNING DATABASE`, `CREATE LIGHTNING FILESTORE TABLE … FORMAT csv OPTIONS (path, header, inferSchema)`, `CREATE DATALAKE … storageType 'Local'`, `CREATE TABLE … USING iceberg AS SELECT`, `CREATE SCHEMASTORE CONTAINER/VIEW`, `ADD USER`, `CREATE ROLE`, `ASSIGN USER … TO ROLE`, `GRANT SELECT ON …`. The REST query route and its headers come from the bundle's own `verify.sh` (`POST /api/proxy/query/sql/start` with a Bearer JWT, `X-Org-ID` and `X-Request-ID`; rows come back as JSON objects with string values). Anything not confirmed either way is marked **(verify at Hour 1)**.
+
+#### 2.10.1 Who owns what
+
+| Concern | Owner | Why |
+|---|---|---|
+| Federal datasets: College Scorecard bulk CSV, IPEDS ADM (admissions) CSV | **Zetaris** filestore tables, queried in place | No copy-ETL. Scorecard and IPEDS cover every institution, so the CDS gaps are filled by federation rather than a loader. |
+| Curated school list + CDS extracts (C7, C9, C21, Section D) | Supabase (`universities_cds`) → exposed to **Zetaris** over JDBC | The CDS extractor (§2.9.9) writes rows; Zetaris joins them with the federal files |
+| School profile served to the agents | **Zetaris** view `ADCOM.v_school_profile`, materialized to an Iceberg gold table | Precedence is coalesced in one place: CDS over Scorecard over IPEDS |
+| Cross-source stats: Reddit calibration, admitted medians, peer benchmarks, major stats | **Zetaris** Spark SQL views | Joins of Reddit outcomes (Postgres) with official rates (files + CDS) |
+| Agent data access (Node 2 SQL tool; Nodes 3 and 5 stat lookups) | **Zetaris** REST query API as a least-privilege service user | Every agent query lands in the Zetaris audit log: the governance story (§7.3) |
+| Vector KNN over 10K+ twin embeddings (under 50 ms) | Supabase pgvector RPCs (§2.7) | Spark JDBC cannot push pgvector's `<=>` down. Zetaris's built-in vector integrations target Milvus, OpenSearch and Pinecone, which aren't in this stack. A Zetaris-native alternative is benchmarked as a stretch goal (§2.10.9). |
+| Probability math | Python (§3.6) | Deterministic and unit-tested |
+
+```mermaid
+flowchart LR
+  subgraph PUBLIC["Public files (downloaded once)"]
+    SCF["Scorecard<br/>Most-Recent-Cohorts-Institution.csv"]
+    IPF["IPEDS ADMyyyy.csv<br/>(admission considerations)"]
+  end
+  subgraph SB["Supabase Postgres"]
+    EXP["schema zetaris_export<br/>(plain tables, no vector/tsvector)"]
+    VEC["applicant_twins + pgvector RPCs"]
+  end
+  subgraph Z["Zetaris Lightning (docker compose: postgres · driver · api · ui)"]
+    DS["DATASOURCE ADCOM_PG<br/>(JDBC → zetaris_export)"]
+    LDB["LIGHTNING DATABASE ADCOM_PUBLIC<br/>filestore: scorecard_institutions, ipeds_adm"]
+    V["SCHEMASTORE CONTAINER ADCOM<br/>v_school_profile · v_school_c7_long · v_major_stats<br/>v_reddit_calibration · v_admitted_medians · v_peer_benchmarks"]
+    G["DATALAKE ADCOM_LAKE (Iceberg)<br/>gold.school_profile"]
+    AUD[("audit log")]
+    DS --> V
+    LDB --> V
+    V -->|"INSERT OVERWRITE (refresh)"| G
+  end
+  SCF --> LDB
+  IPF --> LDB
+  EXP --> DS
+  API["FastAPI agents"] -->|"POST /api/proxy/query/sql/start<br/>(service user adcom_agent)"| V
+  API --> G
+  API -->|"rpc.match_applicant_twins"| VEC
+  V -.-> AUD
+```
+
+#### 2.10.2 Bring-up (Track A, Hours 0–1; the bundle is in `zetaris-platform/`)
+
+1. Docker gets **8 GB of memory and 4 CPUs**. On a 16 GB laptop, raise `ZSPARK_DRIVER_MEM` to `4g` and `ZSPARK_DRIVER_CORES` to `4` in `zetaris-platform/.env` *before* the first start.
+2. `docker login zetarishackathon.azurecr.io` (the command from the Zetaris Cloud download page) → `./preflight.sh` → `docker compose pull` → `docker compose up -d` → `./verify.sh`, which should report nine PASS lines. The first start takes 5–10 minutes.
+3. In `conf/spark-defaults.conf`, set `spark.sql.shuffle.partitions 4`. That is the bundle README's single biggest speedup on a few cores. Then run `docker compose restart driver`.
+4. Sign in at `http://localhost:3000` and **change the admin password** (user menu, top right).
+5. **Keep the bundle out of git.** Its `.env` holds the field-encryption keypair password and the registry image tags, and `jdbc/` contains a 27 MB jar. `zetaris-platform/` and `zetaris-platform.zip` are listed in the repo's `.gitignore`.
+
+#### 2.10.3 Migration `0009_zetaris_export.sql`: a Spark-friendly contract schema in Postgres
+
+`REGISTER DATASOURCE TABLES` registers every table it can see. pgvector's `vector` and Postgres's `tsvector` have no Spark type, so we never expose `applicant_twins` directly. Zetaris reads a dedicated schema of plain tables through a read-only role, and `refresh_twin_stats()` rebuilds them after each load.
+
+```sql
+create schema if not exists zetaris_export;
+
+-- Read-only login role for the Zetaris JDBC datasource (password set out of band, never committed).
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'zetaris_reader') then
+    create role zetaris_reader login;
+  end if;
+end $$;
+grant usage on schema zetaris_export to zetaris_reader;
+alter default privileges in schema zetaris_export grant select on tables to zetaris_reader;
+
+create table if not exists zetaris_export.universities (
+  slug text primary key, unitid integer, name text, peer_group text, control text, state text,
+  admit_rate double precision, ed_admit_rate double precision, ea_admit_rate double precision,
+  rd_admit_rate double precision, in_state_admit_rate double precision, out_state_admit_rate double precision,
+  test_policy text, sat_composite_25 integer, sat_composite_75 integer, act_composite_25 integer,
+  act_composite_75 integer, cds_year text,
+  c7_weights text, early_plans text, major_competitiveness text, transfer_profile text   -- JSON as text
+);
+
+create table if not exists zetaris_export.twin_school_outcomes (
+  twin_id uuid, slug text, outcome text, applicant_type text, major_category text, cycle_year integer,
+  gpa_uw double precision, sat_score integer, ap_count integer, advanced_courses integer,
+  tier1 integer, tier2 integer, tier_derived_ec_rating double precision, hooks text,  -- comma-joined
+  primary key (twin_id, slug)
+);
+
+create table if not exists zetaris_export.school_major_stats (
+  slug text, major_category text, n integer, n_accepted integer, n_waitlisted integer, n_rejected integer,
+  reddit_admit_rate double precision, school_reddit_admit_rate double precision, smoothed_multiplier double precision,
+  primary key (slug, major_category)
+);
+
+grant select on all tables in schema zetaris_export to zetaris_reader;
+
+-- Extends 0004's refresh: rebuild the export tables in the same transaction as the MVs.
+create or replace function public.refresh_twin_stats()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  refresh materialized view concurrently public.twin_school_outcomes;
+  refresh materialized view concurrently public.school_major_stats;
+
+  truncate zetaris_export.universities, zetaris_export.twin_school_outcomes, zetaris_export.school_major_stats;
+
+  insert into zetaris_export.universities
+  select slug, unitid, name, peer_group, control::text, state, admit_rate, ed_admit_rate, ea_admit_rate,
+         rd_admit_rate, in_state_admit_rate, out_state_admit_rate, test_policy::text, sat_composite_25,
+         sat_composite_75, act_composite_25, act_composite_75, cds_year,
+         c7_weights::text, early_plans::text, major_competitiveness::text, transfer_profile::text
+  from public.universities_cds;
+
+  insert into zetaris_export.twin_school_outcomes
+  select o.twin_id, o.slug, o.outcome, o.applicant_type::text, o.major_category, o.cycle_year,
+         t.gpa_uw, t.sat_score, t.ap_count, coalesce(t.ap_count, 0) + coalesce(t.dual_enrollment_count, 0),
+         coalesce((t.ec_tier_summary ->> 'tier1')::int, 0), coalesce((t.ec_tier_summary ->> 'tier2')::int, 0),
+         (t.ec_tier_summary ->> 'tier_derived_ec_rating')::double precision, array_to_string(t.hooks, ',')
+  from public.twin_school_outcomes o
+  join public.applicant_twins t on t.id = o.twin_id;
+
+  insert into zetaris_export.school_major_stats
+  select slug, major_category, n, n_accepted, n_waitlisted, n_rejected, reddit_admit_rate,
+         school_reddit_admit_rate, smoothed_multiplier
+  from public.school_major_stats;
+end $$;
+```
+
+> **Supabase + Docker networking:** Supabase's direct host (`db.<ref>.supabase.co`) is IPv6-only, and Docker bridge networks usually lack IPv6. Point the Zetaris datasource at the **session pooler** (`aws-0-<region>.pooler.supabase.com:5432`, user `zetaris_reader.<project-ref>`) with `sslmode=require`.
+
+#### 2.10.4 Lightning SQL: `zetaris/sql/*.sql` (applied by `etl/zetaris_setup.py`, §2.10.6)
+
+`${VAR}` placeholders are filled from the environment at apply time. The files are committed; the secrets are not.
+
+```sql
+-- zetaris/sql/01_sources.sql ------------------------------------------------------------------
+-- (a) Supabase, federated over JDBC (Postgres driver 42.7 ships in the Zetaris driver image)
+CREATE DATASOURCE ADCOM_PG DESCRIBE BY "AdCom Supabase export schema" OPTIONS (
+  jdbcdriver "org.postgresql.Driver",
+  jdbcurl "jdbc:postgresql://${SUPABASE_POOLER_HOST}:5432/postgres?sslmode=require&currentSchema=zetaris_export",
+  username "${ZETARIS_PG_USER}",
+  password "${ZETARIS_PG_PASSWORD}"
+);
+REGISTER DATASOURCE TABLES FROM ADCOM_PG;
+
+-- (b) Federal files, read in place. Copy them into the driver's shared volume first:
+--   docker compose cp data/public/scorecard/. driver:/home/zetaris/customer-data/shared/adcom/scorecard/
+--   docker compose cp data/public/ipeds_adm/. driver:/home/zetaris/customer-data/shared/adcom/ipeds_adm/
+-- (verify at Hour 1) local-path syntax. If the filestore table rejects a file:// path, upload through the
+-- UI's Files page and paste the path it shows.
+CREATE LIGHTNING DATABASE ADCOM_PUBLIC DESCRIBE BY "College Scorecard + IPEDS public files" OPTIONS ();
+
+CREATE LIGHTNING FILESTORE TABLE scorecard_institutions FROM ADCOM_PUBLIC
+FORMAT csv
+OPTIONS (
+  path "file:///home/zetaris/customer-data/shared/adcom/scorecard",
+  header "true",
+  inferSchema "false"
+);
+
+CREATE LIGHTNING FILESTORE TABLE ipeds_adm FROM ADCOM_PUBLIC
+FORMAT csv
+OPTIONS (
+  path "file:///home/zetaris/customer-data/shared/adcom/ipeds_adm",
+  header "true",
+  inferSchema "false"
+);
+
+-- (c) Local Iceberg lakehouse for the gold tables on the hot path
+CREATE DATALAKE ADCOM_LAKE OPTIONS (
+  storageType 'Local',
+  storagePath '/home/zetaris/customer-data/shared/adcom/lake'
+);
+```
+
+`inferSchema "false"` keeps every CSV column a string. That is deliberate: Scorecard uses `NULL` and `PrivacySuppressed` as values, so the views below cast with `TRY_CAST`, which turns them into NULL instead of failing the query.
+
+```sql
+-- zetaris/sql/02_views.sql: the semantic layer the agents query ---------------------------------
+CREATE SCHEMASTORE CONTAINER ADCOM;
+
+-- IPEDS admission considerations → coarse C7-style levels for schools without a parsed CDS.
+-- IPEDS codes: 1 required, 2 recommended, 3 neither required nor recommended, 5 considered but not required.
+-- (verify at Hour 1) the ADMCON column list in your file year's data dictionary.
+CREATE SCHEMASTORE VIEW v_ipeds_c7 WITH CONTAINER ADCOM AS (
+  SELECT TRY_CAST(UNITID AS INT) AS unitid,
+         to_json(named_struct(
+           'academic_gpa',    CASE ADMCON1 WHEN '1' THEN 'important' WHEN '2' THEN 'considered' WHEN '5' THEN 'considered' ELSE 'not_considered' END,
+           'class_rank',      CASE ADMCON2 WHEN '1' THEN 'important' WHEN '2' THEN 'considered' WHEN '5' THEN 'considered' ELSE 'not_considered' END,
+           'rigor',           CASE ADMCON3 WHEN '1' THEN 'important' WHEN '2' THEN 'considered' WHEN '5' THEN 'considered' ELSE 'not_considered' END,
+           'recommendations', CASE ADMCON5 WHEN '1' THEN 'important' WHEN '2' THEN 'considered' WHEN '5' THEN 'considered' ELSE 'not_considered' END,
+           'test_scores',     CASE ADMCON7 WHEN '1' THEN 'important' WHEN '2' THEN 'considered' WHEN '5' THEN 'considered' ELSE 'not_considered' END
+         )) AS c7_json,
+         TRY_CAST(APPLCN AS DOUBLE) AS applicants, TRY_CAST(ADMSSN AS DOUBLE) AS admits,
+         TRY_CAST(SATVR25 AS INT) + TRY_CAST(SATMT25 AS INT) AS sat_25,
+         TRY_CAST(SATVR75 AS INT) + TRY_CAST(SATMT75 AS INT) AS sat_75
+  FROM ADCOM_PUBLIC.ipeds_adm
+);
+
+CREATE SCHEMASTORE VIEW v_school_profile WITH CONTAINER ADCOM AS (
+  SELECT
+    u.slug, u.unitid,
+    COALESCE(u.name, sc.INSTNM)                                             AS name,
+    sc.CITY                                                                 AS city,
+    COALESCE(u.state, sc.STABBR)                                            AS state,
+    COALESCE(u.control, CASE sc.CONTROL WHEN '1' THEN 'public' WHEN '2' THEN 'private_nonprofit'
+                                         WHEN '3' THEN 'private_forprofit' END) AS control,
+    u.peer_group,
+    COALESCE(u.admit_rate, TRY_CAST(sc.ADM_RATE AS DOUBLE), ip.admits / NULLIF(ip.applicants, 0)) AS admit_rate,
+    CASE WHEN u.admit_rate IS NOT NULL THEN 'cds'
+         WHEN sc.ADM_RATE IS NOT NULL AND sc.ADM_RATE NOT IN ('NULL', 'PrivacySuppressed') THEN 'scorecard'
+         ELSE 'ipeds' END                                                   AS admit_rate_source,
+    u.ed_admit_rate, u.ea_admit_rate, u.rd_admit_rate, u.in_state_admit_rate, u.out_state_admit_rate,
+    COALESCE(u.sat_composite_25, TRY_CAST(sc.SATVR25 AS INT) + TRY_CAST(sc.SATMT25 AS INT), ip.sat_25) AS sat_composite_25,
+    COALESCE(u.sat_composite_75, TRY_CAST(sc.SATVR75 AS INT) + TRY_CAST(sc.SATMT75 AS INT), ip.sat_75) AS sat_composite_75,
+    COALESCE(u.act_composite_25, TRY_CAST(sc.ACTCM25 AS INT))               AS act_composite_25,
+    COALESCE(u.act_composite_75, TRY_CAST(sc.ACTCM75 AS INT))               AS act_composite_75,
+    COALESCE(NULLIF(u.test_policy, 'unknown'),
+             CASE sc.ADMCON7 WHEN '1' THEN 'required' WHEN '2' THEN 'optional' WHEN '5' THEN 'optional'
+                             WHEN '3' THEN 'blind' END, 'unknown')          AS test_policy,
+    CASE WHEN u.c7_weights IS NOT NULL AND u.c7_weights <> '{}' THEN u.c7_weights ELSE ip.c7_json END AS c7_weights,
+    CASE WHEN u.c7_weights IS NOT NULL AND u.c7_weights <> '{}' THEN 'cds' ELSE 'ipeds' END AS c7_source,
+    u.early_plans, u.major_competitiveness, u.transfer_profile, u.cds_year,
+    TRY_CAST(sc.UGDS AS INT)                                                AS undergrad_enrollment
+  FROM ADCOM_PG.universities u
+  LEFT JOIN ADCOM_PUBLIC.scorecard_institutions sc ON TRY_CAST(sc.UNITID AS INT) = u.unitid
+  LEFT JOIN ADCOM.v_ipeds_c7 ip ON ip.unitid = u.unitid
+);
+
+-- One row per (school, factor): the easiest shape for the agent's SQL tool
+CREATE SCHEMASTORE VIEW v_school_c7_long WITH CONTAINER ADCOM AS (
+  SELECT p.slug, p.name, p.c7_source, f.factor, f.level
+  FROM ADCOM.v_school_profile p
+  LATERAL VIEW explode(from_json(p.c7_weights, 'map<string,string>')) f AS factor, level
+);
+
+CREATE SCHEMASTORE VIEW v_major_stats WITH CONTAINER ADCOM AS (
+  SELECT m.slug, m.major_category, m.n, m.n_accepted, m.n_waitlisted, m.n_rejected,
+         m.reddit_admit_rate, m.school_reddit_admit_rate, m.smoothed_multiplier
+  FROM ADCOM_PG.school_major_stats m
+);
+
+-- Reddit self-selection: odds(reddit) / odds(official), clamped to [1, 8] (same rule as §2.5)
+CREATE SCHEMASTORE VIEW v_reddit_calibration WITH CONTAINER ADCOM AS (
+  SELECT p.slug, p.admit_rate AS official_admit_rate, r.reddit_n, r.reddit_admit_rate,
+         CASE WHEN p.admit_rate > 0 AND p.admit_rate < 1 AND r.reddit_admit_rate > 0 AND r.reddit_admit_rate < 1
+              THEN LEAST(8.0, GREATEST(1.0,
+                     (r.reddit_admit_rate / (1 - r.reddit_admit_rate)) / (p.admit_rate / (1 - p.admit_rate))))
+              ELSE 1.0 END AS odds_inflation
+  FROM ADCOM.v_school_profile p
+  JOIN (SELECT slug, COUNT(*) AS reddit_n, AVG(CASE WHEN outcome = 'accepted' THEN 1.0 ELSE 0.0 END) AS reddit_admit_rate
+        FROM ADCOM_PG.twin_school_outcomes WHERE applicant_type = 'first_year' GROUP BY slug) r
+    ON r.slug = p.slug
+);
+
+-- Radar baseline (§4.7): median admitted Reddit applicant per school
+CREATE SCHEMASTORE VIEW v_admitted_medians WITH CONTAINER ADCOM AS (
+  SELECT slug, COUNT(*) AS n,
+         percentile_approx(gpa_uw, 0.5)                 AS gpa_uw,
+         percentile_approx(sat_score, 0.5)              AS sat,
+         percentile_approx(advanced_courses, 0.5)       AS advanced,
+         percentile_approx(tier_derived_ec_rating, 0.5) AS ec_rating,
+         percentile_approx(2 * tier1 + tier2, 0.5)      AS spike_points
+  FROM ADCOM_PG.twin_school_outcomes
+  WHERE outcome = 'accepted' AND applicant_type = 'first_year'
+  GROUP BY slug
+);
+
+-- How a school compares with its peer group (the fact-checker's favorite query)
+CREATE SCHEMASTORE VIEW v_peer_benchmarks WITH CONTAINER ADCOM AS (
+  SELECT p.slug, p.name, p.peer_group, p.admit_rate, p.sat_composite_25, p.sat_composite_75,
+         g.peer_n, g.peer_median_admit_rate, g.peer_median_sat_75
+  FROM ADCOM.v_school_profile p
+  JOIN (SELECT peer_group, COUNT(*) AS peer_n,
+               percentile_approx(admit_rate, 0.5)       AS peer_median_admit_rate,
+               percentile_approx(sat_composite_75, 0.5) AS peer_median_sat_75
+        FROM ADCOM.v_school_profile GROUP BY peer_group) g
+    ON g.peer_group = p.peer_group
+);
+```
+
+```sql
+-- zetaris/sql/03_gold.sql: hot-path materialization (re-run INSERT OVERWRITE after each data refresh) ---
+CREATE TABLE ADCOM_LAKE.gold.school_profile USING iceberg AS SELECT * FROM ADCOM.v_school_profile;
+-- refresh:
+INSERT OVERWRITE ADCOM_LAKE.gold.school_profile SELECT * FROM ADCOM.v_school_profile;
+```
+
+```sql
+-- zetaris/sql/04_security.sql: least privilege for the agents --------------------------------------
+ADD USER WITH (
+  email '${ZETARIS_AGENT_EMAIL}',
+  name 'adcom_agent',
+  level 'general',
+  password '${ZETARIS_AGENT_PASSWORD}'
+);
+CREATE ROLE adcom_agent_role DESCRIBE BY "AdCom agents: read-only semantic layer";
+ASSIGN USER ${ZETARIS_AGENT_EMAIL} TO ROLE adcom_agent_role;
+GRANT SELECT ON ADCOM.v_school_profile     TO ROLE adcom_agent_role;
+GRANT SELECT ON ADCOM.v_school_c7_long     TO ROLE adcom_agent_role;
+GRANT SELECT ON ADCOM.v_major_stats        TO ROLE adcom_agent_role;
+GRANT SELECT ON ADCOM.v_reddit_calibration TO ROLE adcom_agent_role;
+GRANT SELECT ON ADCOM.v_admitted_medians   TO ROLE adcom_agent_role;
+GRANT SELECT ON ADCOM.v_peer_benchmarks    TO ROLE adcom_agent_role;
+GRANT SELECT ON ADCOM_LAKE.gold.school_profile TO ROLE adcom_agent_role;
+-- (verify at Hour 1) principal_spec form ("ROLE x" vs "x") and whether ASSIGN USER takes the email or the
+-- name. SHOW ROLE ASSIGNED TO USER confirms it. The agent never sees ADCOM_PG or the raw files directly.
+```
+
+#### 2.10.5 `app/zetaris.py`: async client for the Lightning query API
+
+```python
+"""Async client for the Zetaris Lightning query API.
+
+Uses the route that the bundle's verify.sh exercises end to end:
+  POST {ZETARIS_URL}/api/auth/login              {"username", "password"} → JWT + orgId
+  POST {ZETARIS_URL}/api/proxy/query/sql/start   {"select": <sql>, "pageLimit": n}
+       headers: Authorization: Bearer <jwt>, X-Org-ID: <orgId>, X-Request-ID: <uuid>
+Rows come back as JSON objects with string values ({"seven": "7"}), so callers cast.
+"""
+from __future__ import annotations
+
+import asyncio
+import re
+import uuid
+from typing import Any
+
+import httpx
+
+from .config import settings
+
+JWT_RE = re.compile(r"^[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}$")
+
+
+class ZetarisError(RuntimeError):
+    pass
+
+
+def _find_jwt(obj: Any) -> str | None:
+    """verify.sh takes the first JWT-shaped string in the login response; do the same, field-name agnostic."""
+    if isinstance(obj, str):
+        return obj if JWT_RE.match(obj) else None
+    values = obj.values() if isinstance(obj, dict) else obj if isinstance(obj, list) else []
+    for v in values:
+        if tok := _find_jwt(v):
+            return tok
+    return None
+
+
+def _find_records(body: Any) -> list[dict] | None:
+    """Rows sit under `records` (possibly nested); return the first list of row objects found."""
+    if isinstance(body, list):
+        return body if all(isinstance(r, dict) for r in body) else None
+    if isinstance(body, dict):
+        for key in ("records", "result", "data", "rows"):
+            if key in body and (found := _find_records(body[key])) is not None:
+                return found
+    return None
+
+
+class ZetarisClient:
+    def __init__(self, base_url: str, username: str, password: str, *, max_concurrency: int = 4):
+        self._http = httpx.AsyncClient(base_url=base_url.rstrip("/"), timeout=httpx.Timeout(60.0, connect=5.0))
+        self._username, self._password = username, password
+        self._jwt: str | None = None
+        self._org_id: str | None = None
+        self._login_lock = asyncio.Lock()
+        self._sem = asyncio.Semaphore(max_concurrency)       # Spark on a few cores: don't stampede it
+
+    async def _login(self, *, force: bool = False) -> None:
+        async with self._login_lock:
+            if self._jwt and not force:
+                return
+            resp = await self._http.post("/api/auth/login",
+                                         json={"username": self._username, "password": self._password})
+            if resp.status_code != 200:
+                raise ZetarisError(f"login failed: HTTP {resp.status_code}")
+            body = resp.json()
+            jwt, org = _find_jwt(body), body.get("orgId") if isinstance(body, dict) else None
+            if not jwt or org is None:
+                raise ZetarisError("login response carried no token or orgId")
+            self._jwt, self._org_id = jwt, str(org)
+
+    async def query(self, sql: str, *, page_limit: int = 1000) -> list[dict[str, str | None]]:
+        """Run one statement. Every query we issue carries a LIMIT, so one page is enough."""
+        await self._login()
+        async with self._sem:
+            for attempt in (1, 2):
+                resp = await self._http.post(
+                    "/api/proxy/query/sql/start",
+                    json={"select": sql, "pageLimit": page_limit},
+                    headers={"Authorization": f"Bearer {self._jwt}", "X-Org-ID": self._org_id or "",
+                             "X-Request-ID": str(uuid.uuid4())},
+                )
+                if resp.status_code in (401, 403) and attempt == 1:    # expired JWT → log in once more
+                    await self._login(force=True)
+                    continue
+                break
+        if resp.status_code != 200:
+            raise ZetarisError(f"query failed: HTTP {resp.status_code}: {resp.text[:300]}")
+        rows = _find_records(resp.json())
+        if rows is None:
+            raise ZetarisError(f"unexpected response shape: {resp.text[:200]}")
+        return rows
+
+    async def aclose(self) -> None:
+        await self._http.aclose()
+
+
+# Hot-path and agent reads run as the least-privilege user; setup scripts use the admin account.
+zetaris = ZetarisClient(settings.zetaris_url, settings.zetaris_agent_email, settings.zetaris_agent_password)
+```
+
+Settings additions (`app/config.py`):
+
+```python
+class Settings(BaseSettings):
+    ...                                                   # existing fields (§3.5.1, §4.3)
+    zetaris_url: str = "http://localhost:3000"            # the UI's API proxy; "http://ui:3000" from inside the compose network
+    zetaris_agent_email: str = "adcom-agent@adcom.local"
+    zetaris_agent_password: str                           # .env only
+    zetaris_admin_email: str = "admin@zetaris.com"        # setup scripts only
+    zetaris_admin_password: str | None = None
+    zetaris_gold_profile: str = "ADCOM_LAKE.gold.school_profile"
+    zetaris_enabled: bool = True                          # False → every read falls back to Supabase (§2.10.10)
+```
+
+`app/zetaris_repo.py` holds the typed reads used by the nodes, plus the guarded SQL entry point for the agent's tool:
+
+```python
+from __future__ import annotations
+
+import json
+import re
+import time
+from typing import Any
+
+from . import db
+from .config import settings
+from .zetaris import ZetarisError, zetaris
+
+SLUG_RE = re.compile(r"^[a-z0-9_]+$")
+ALLOWED_RELATIONS = {
+    "adcom.v_school_profile", "adcom.v_school_c7_long", "adcom.v_major_stats",
+    "adcom.v_reddit_calibration", "adcom.v_admitted_medians", "adcom.v_peer_benchmarks",
+}
+FORBIDDEN = re.compile(r"\b(insert|update|delete|merge|drop|create|alter|truncate|register|grant|revoke|upsert|"
+                       r"uncache|cache|refresh|assign|load|turn|invalidate)\b", re.IGNORECASE)
+RELATION_RE = re.compile(r"\b(?:from|join)\s+([`\w.]+)", re.IGNORECASE)
+CTE_RE = re.compile(r"(?:\bwith|,)\s*(\w+)\s+as\s*\(", re.IGNORECASE)
+LIMIT_RE = re.compile(r"\blimit\s+(\d+)\s*$", re.IGNORECASE)
+MAX_AGENT_ROWS = 50
+TTL_S = 600
+
+_cache: dict[str, tuple[float, Any]] = {}
+
+
+class SqlNotAllowed(ValueError):
+    pass
+
+
+def _f(v: str | None) -> float | None:
+    return None if v in (None, "", "null", "NULL") else float(v)
+
+
+def _i(v: str | None) -> int | None:
+    return None if v in (None, "", "null", "NULL") else int(float(v))
+
+
+def _j(v: str | None, default: Any) -> Any:
+    try:
+        return json.loads(v) if v else default
+    except (TypeError, ValueError):
+        return default
+
+
+async def _cached(key: str, fn):
+    hit = _cache.get(key)
+    if hit and time.monotonic() - hit[0] < TTL_S:
+        return hit[1]
+    value = await fn()
+    _cache[key] = (time.monotonic(), value)
+    return value
+
+
+def _profile_row(r: dict) -> dict:
+    """Same shape as a universities_cds row (§2.3), so every consumer is source-agnostic."""
+    return {
+        "slug": r["slug"], "unitid": _i(r.get("unitid")), "name": r.get("name"), "city": r.get("city"),
+        "state": r.get("state"), "control": r.get("control"), "peer_group": r.get("peer_group") or "other",
+        "admit_rate": _f(r.get("admit_rate")), "admit_rate_source": r.get("admit_rate_source"),
+        "ed_admit_rate": _f(r.get("ed_admit_rate")), "ea_admit_rate": _f(r.get("ea_admit_rate")),
+        "rd_admit_rate": _f(r.get("rd_admit_rate")), "in_state_admit_rate": _f(r.get("in_state_admit_rate")),
+        "out_state_admit_rate": _f(r.get("out_state_admit_rate")), "test_policy": r.get("test_policy") or "unknown",
+        "sat_composite_25": _i(r.get("sat_composite_25")), "sat_composite_75": _i(r.get("sat_composite_75")),
+        "act_composite_25": _i(r.get("act_composite_25")), "act_composite_75": _i(r.get("act_composite_75")),
+        "c7_weights": _j(r.get("c7_weights"), {}), "c7_source": r.get("c7_source"),
+        "early_plans": _j(r.get("early_plans"), {}), "major_competitiveness": _j(r.get("major_competitiveness"), {}),
+        "transfer_profile": _j(r.get("transfer_profile"), {}), "cds_year": r.get("cds_year"),
+        "data_source": "zetaris",
+    }
+
+
+async def school_profile(slug: str) -> dict:
+    if not SLUG_RE.match(slug):
+        raise ValueError(f"invalid slug: {slug!r}")
+    if not settings.zetaris_enabled:
+        return await db.get_school(slug)
+
+    async def load() -> dict:
+        try:
+            rows = await zetaris.query(f"SELECT * FROM {settings.zetaris_gold_profile} WHERE slug = '{slug}' LIMIT 1")
+        except ZetarisError:
+            return await db.get_school(slug)                  # degrade to the operational copy
+        if not rows:
+            raise ValueError(f"unknown school slug: {slug}")
+        return _profile_row(rows[0])
+
+    return await _cached(f"profile:{slug}", load)
+
+
+async def peer_schools(slug: str, peer_group: str, limit: int = 6) -> list[str]:
+    if not SLUG_RE.match(peer_group):
+        return []
+    try:
+        rows = await zetaris.query(f"SELECT slug FROM {settings.zetaris_gold_profile} "
+                                   f"WHERE peer_group = '{peer_group}' AND slug <> '{slug}' LIMIT {int(limit)}")
+        return [r["slug"] for r in rows]
+    except ZetarisError:
+        return await db.peer_schools(slug, peer_group, limit)
+
+
+async def reddit_calibration(slug: str) -> float:
+    async def load() -> float:
+        try:
+            rows = await zetaris.query(f"SELECT odds_inflation FROM ADCOM.v_reddit_calibration WHERE slug = '{slug}' LIMIT 1")
+            return _f(rows[0]["odds_inflation"]) or 1.0 if rows else 1.0
+        except ZetarisError:
+            return await db.school_calibration(slug)
+    return await _cached(f"calib:{slug}", load)
+
+
+async def admitted_medians(slug: str) -> dict:
+    async def load() -> dict:
+        try:
+            rows = await zetaris.query(f"SELECT * FROM ADCOM.v_admitted_medians WHERE slug = '{slug}' LIMIT 1")
+        except ZetarisError:
+            return await db.admitted_medians(slug)
+        if not rows:
+            return {"n": 0}
+        r = rows[0]
+        return {"n": _i(r.get("n")) or 0, "gpa_uw": _f(r.get("gpa_uw")), "sat": _f(r.get("sat")),
+                "advanced": _f(r.get("advanced")), "ec_rating": _f(r.get("ec_rating")),
+                "spike_points": _f(r.get("spike_points"))}
+    return await _cached(f"medians:{slug}", load)
+
+
+def guard_agent_sql(sql: str) -> str:
+    """Application-level guard; the Zetaris role grants (04_security.sql) are the second wall."""
+    s = sql.strip().rstrip(";").strip()
+    if ";" in s:
+        raise SqlNotAllowed("Send exactly one statement.")
+    if not re.match(r"(?is)^(select|with)\b", s):
+        raise SqlNotAllowed("Only SELECT queries are allowed.")
+    if FORBIDDEN.search(s):
+        raise SqlNotAllowed("Read-only access: that keyword is not allowed.")
+    ctes = {c.lower() for c in CTE_RE.findall(s)}
+    relations = {r.strip("`").lower() for r in RELATION_RE.findall(s)} - ctes
+    if not relations or not relations <= ALLOWED_RELATIONS:
+        raise SqlNotAllowed("Query only these views: " + ", ".join(sorted(ALLOWED_RELATIONS)))
+    m = LIMIT_RE.search(s)
+    if m is None:
+        return f"SELECT * FROM ({s}) q LIMIT {MAX_AGENT_ROWS}"
+    if int(m.group(1)) > MAX_AGENT_ROWS:
+        return s[: m.start(1)] + str(MAX_AGENT_ROWS)
+    return s
+
+
+async def agent_query(sql: str) -> tuple[str, list[dict]]:
+    safe = guard_agent_sql(sql)
+    return safe, await zetaris.query(safe, page_limit=MAX_AGENT_ROWS)
+```
+
+#### 2.10.6 `etl/zetaris_setup.py` (applies the DDL) and the refresh hook
+
+```python
+from __future__ import annotations
+
+import asyncio
+import os
+import re
+import string
+from pathlib import Path
+
+from app.config import settings
+from app.zetaris import ZetarisClient, ZetarisError
+
+from .common import ROOT, log
+
+SQL_DIR = ROOT / "zetaris" / "sql"
+ALREADY = re.compile(r"already exist|already registered|duplicate", re.IGNORECASE)
+
+
+def statements(path: Path) -> list[str]:
+    """Split on semicolons at line ends, drop comments, then substitute ${VARS} from the environment."""
+    text = "\n".join(line for line in path.read_text().splitlines() if not line.lstrip().startswith("--"))
+    text = string.Template(text).substitute(os.environ)       # KeyError on a missing secret = loud failure
+    return [s.strip() for s in re.split(r";\s*\n", text) if s.strip()]
+
+
+async def apply(files: list[str]) -> None:
+    admin = ZetarisClient(settings.zetaris_url, settings.zetaris_admin_email, settings.zetaris_admin_password or "")
+    try:
+        for name in files:
+            for stmt in statements(SQL_DIR / name):
+                head = " ".join(stmt.split())[:80]
+                if stmt.upper().startswith("INSERT OVERWRITE") and name == "03_gold.sql":
+                    continue                                    # refresh-only statement; see refresh_gold()
+                try:
+                    await admin.query(stmt, page_limit=1)
+                    log.info("zetaris ✓ %s", head)
+                except ZetarisError as exc:
+                    if ALREADY.search(str(exc)):
+                        log.info("zetaris = %s (exists)", head)
+                    else:
+                        log.error("zetaris ✗ %s → %s", head, exc)
+                        raise
+    finally:
+        await admin.aclose()
+
+
+async def refresh_gold() -> None:
+    admin = ZetarisClient(settings.zetaris_url, settings.zetaris_admin_email, settings.zetaris_admin_password or "")
+    try:
+        await admin.query(f"INSERT OVERWRITE {settings.zetaris_gold_profile} SELECT * FROM ADCOM.v_school_profile",
+                          page_limit=1)
+        log.info("zetaris gold.school_profile refreshed")
+    finally:
+        await admin.aclose()
+
+
+async def setup() -> None:
+    await apply(["01_sources.sql", "02_views.sql", "03_gold.sql", "04_security.sql"])
+```
+
+If the REST route refuses DDL, paste the four files into the Zetaris UI's SQL editor in order. They're written to be re-runnable, and "already exists" responses are harmless. The CLI gains two stages: `run_etl zetaris-setup` (once, after `scorecard`) and `zetaris-refresh` (after every `refresh-stats`). The full order becomes:
+
+```
+seed-schools → scorecard → cds → scrape → extract → load-twins → refresh-stats → zetaris-setup (once) → zetaris-refresh
+```
+
+#### 2.10.7 Node 2's Zetaris SQL tool: an agent that queries the data fabric
+
+Before writing its brief, the Institutional agent gets up to **three read-only SQL queries** against the `ADCOM` views. It might compare the school with its peer group, look up how the applicant's major fares there, or check the C7 provenance. Each query becomes evidence `Z1…Z3`. The tool ticker shows it live (`⚙ zetaris.sql · v_peer_benchmarks`), and the debate cites it as `[[sql:Z2]]`. In the UI, hovering that chip shows the exact SQL and its result rows.
+
+```python
+# app/agents/zetaris_tool.py
+from __future__ import annotations
+
+import json
+
+import anthropic
+
+from app import llm, zetaris_repo
+from app.config import settings
+from app.zetaris import ZetarisError
+
+from .events import tool_call
+
+MAX_QUERIES = 3
+
+ZETARIS_SQL_TOOL = {
+    "name": "zetaris_sql",
+    "description": (
+        "Run ONE read-only Spark SQL SELECT against the AdCom semantic layer in Zetaris Lightning and get up to "
+        "50 rows back (values are strings). Views:\n"
+        "- ADCOM.v_school_profile(slug, name, state, control, peer_group, admit_rate, admit_rate_source, "
+        "ed_admit_rate, rd_admit_rate, sat_composite_25, sat_composite_75, test_policy, c7_source, cds_year, "
+        "undergrad_enrollment)\n"
+        "- ADCOM.v_school_c7_long(slug, name, c7_source, factor, level)\n"
+        "- ADCOM.v_major_stats(slug, major_category, n, n_accepted, n_waitlisted, n_rejected, reddit_admit_rate, "
+        "school_reddit_admit_rate, smoothed_multiplier)\n"
+        "- ADCOM.v_reddit_calibration(slug, official_admit_rate, reddit_n, reddit_admit_rate, odds_inflation)\n"
+        "- ADCOM.v_admitted_medians(slug, n, gpa_uw, sat, advanced, ec_rating, spike_points)\n"
+        "- ADCOM.v_peer_benchmarks(slug, name, peer_group, admit_rate, sat_composite_25, sat_composite_75, "
+        "peer_n, peer_median_admit_rate, peer_median_sat_75)\n"
+        "Use single quotes for string literals. Always filter or aggregate; never select whole views."
+    ),
+    "strict": True,
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "purpose": {"type": "string", "description": "One sentence: what this query checks and why."},
+            "sql": {"type": "string"},
+        },
+        "required": ["purpose", "sql"],
+        "additionalProperties": False,
+    },
+}
+
+INSTITUTIONAL_SQL_SYSTEM = """\
+You are the institutional research analyst for a simulated admissions committee, with read-only SQL access \
+to the AdCom semantic layer in Zetaris Lightning through the zetaris_sql tool. You may run at most three \
+queries. Choose the ones that most change how the committee should read this applicant at this school:
+- how the school compares with its peer group (selectivity, test band),
+- how applicants in the applicant's major category fare there (sample size matters; say so when n < 15),
+- where the C7 weights come from (CDS vs. the coarser IPEDS fallback) and what they emphasize.
+Query only the listed views. When you have what you need, stop calling the tool and reply with a short \
+plain-text summary of what you found."""
+
+
+async def run_zetaris_research(*, slug: str, major_category: str, applicant_summary: str) -> list[dict]:
+    """Bounded manual tool loop; returns [{id, purpose, sql, rows, error}] for the brief and the docket."""
+    findings: list[dict] = []
+    messages: list[dict] = [{"role": "user", "content": (
+        f"Target school slug: '{slug}'. Applicant major category: '{major_category}'.\n"
+        f"Applicant summary: {applicant_summary}\nInvestigate.")}]
+
+    for _ in range(MAX_QUERIES + 1):
+        resp = await llm.client.beta.messages.create(
+            model=settings.reasoning_model, max_tokens=8000,
+            system=llm.cached_system(INSTITUTIONAL_SQL_SYSTEM),
+            tools=[ZETARIS_SQL_TOOL], messages=messages,
+            output_config={"effort": "low"},
+            betas=[llm.FALLBACK_BETA], fallbacks="default",
+        )
+        if resp.stop_reason == "refusal":
+            raise llm.LLMRefusal("zetaris research refused")
+        messages.append({"role": "assistant", "content": resp.content})
+        uses = [b for b in resp.content if b.type == "tool_use"]
+        if resp.stop_reason != "tool_use" or not uses:
+            break
+
+        results = []
+        for use in uses:                                       # all results go back in ONE user message
+            if len(findings) >= MAX_QUERIES:
+                results.append({"type": "tool_result", "tool_use_id": use.id, "is_error": True,
+                                "content": "Query budget used up. Summarize what you found."})
+                continue
+            fid = f"Z{len(findings) + 1}"
+            sql, purpose = str(use.input.get("sql", "")), str(use.input.get("purpose", ""))
+            tool_call("institutional", "zetaris.sql", "started", id=fid, purpose=purpose, sql=sql)
+            try:
+                safe_sql, rows = await zetaris_repo.agent_query(sql)
+                findings.append({"id": fid, "purpose": purpose, "sql": safe_sql, "rows": rows[:20], "error": None})
+                tool_call("institutional", "zetaris.sql", "done", id=fid, result_count=len(rows))
+                results.append({"type": "tool_result", "tool_use_id": use.id,
+                                "content": json.dumps(rows[:50])[:12000]})
+            except (zetaris_repo.SqlNotAllowed, ZetarisError) as exc:
+                tool_call("institutional", "zetaris.sql", "failed", id=fid, error=str(exc)[:200])
+                results.append({"type": "tool_result", "tool_use_id": use.id, "is_error": True,
+                                "content": f"Query rejected: {exc}"})
+        messages.append({"role": "user", "content": results})
+    return findings
+```
+
+> Opus 5.5 rejects a forced `tool_choice` (`any` / `tool`). The loop uses the default `auto` plus a system prompt that asks for the tool, with `strict: true` guaranteeing schema-valid inputs. Rejected or failed queries go back as `is_error` tool results so the model can correct its SQL, and they don't count as evidence.
+
+#### 2.10.8 Latency & caching
+
+| Read | Path | Typical (laptop, 2–4 cores) | Mitigation |
+|---|---|---|---|
+| `school_profile(slug)` | Iceberg gold, single-row filter | 0.4–1.2 s | 10-min TTL cache + **pre-warm the 5 demo schools at API startup** |
+| `reddit_calibration`, `admitted_medians` | federated view over Postgres (pushdown of `WHERE slug=`) | 0.8–2 s | TTL cache; both run in parallel with the pgvector RPC in Node 3 |
+| Agent SQL tool (×≤3) | federated views | 1–3 s each | Runs concurrently with Node 3; time-boxed at 12 s total, after which the brief is written with whatever was found |
+| `/api/what-if` | never touches Zetaris | under 50 ms | — |
+
+#### 2.10.9 Stretch: Zetaris-native twin similarity search (benchmark, adopt only if p95 < 1.5 s)
+
+To move the vector search into Zetaris too, materialize twins with `embedding` as `array<float>` in the lakehouse (export the vector as a float array from Postgres in a batch job), then compute cosine similarity with Spark higher-order functions inside the same hybrid query. Prefiltering by school keeps the scan to a few thousand rows:
+
+```sql
+-- query vector inlined by the client as array(…1536 floats…); norms precomputed at load time
+WITH q AS (SELECT array(${QUERY_VECTOR}) AS v, ${QUERY_NORM} AS n)
+SELECT t.twin_id, t.outcome,
+       aggregate(zip_with(t.embedding, q.v, (a, b) -> a * b), 0D, (acc, x) -> acc + x) / (t.norm * q.n) AS cosine
+FROM ADCOM_LAKE.gold.twins t CROSS JOIN q
+WHERE array_contains(t.applied_schools, '${SLUG}')
+ORDER BY cosine DESC
+LIMIT 25;
+```
+
+If it misses the latency bar, keep pgvector for KNN and say so plainly: "Zetaris federates and governs; pgvector does nearest-neighbor."
+
+#### 2.10.10 Failure modes
+
+| Failure | Behavior |
+|---|---|
+| Zetaris stack down or the driver restarting | `zetaris_repo` falls back to Supabase for every typed read (`db.get_school`, `db.school_calibration`, `db.admitted_medians`, the RPC in §4.7). Node 2 skips the SQL tool and emits a recoverable `error`. The run completes. |
+| JWT expired | The client re-logs in once on 401/403 |
+| Agent writes bad or forbidden SQL | `SqlNotAllowed` / `ZetarisError` go back as `is_error` tool results; the model retries within its 3-query budget |
+| `ZETARIS_ENABLED=false` | Pure-Supabase mode, for venue emergencies and for frontend devs without Docker memory |
+
 ---
 
 ## 3. Multi-Agent LangGraph Workflow & System Prompts
@@ -2185,8 +3033,8 @@ flowchart LR
 | Node | Kind | Reads (state) | Writes (state) | Retry |
 |---|---|---|---|---|
 | `dossier_parser` | 2 LLM parses + embed | `inputs` | `dossier`, `grade`, `metrics`, `profile_text`, `profile_embedding` | 2 attempts |
-| `institutional` | DB + Tavily + 1 LLM parse | `inputs`, `dossier`, `grade` | `school`, `school_rubric`, `institutional_brief` | 2 attempts |
-| `twins` | 2–3 RPCs + 1 LLM parse | `profile_embedding`, `metrics`, `inputs` | `twins`, `baseline`, `twin_analysis` | 2 attempts |
+| `institutional` | Zetaris profile + Zetaris SQL tool loop (≤3) + Tavily + 1 LLM parse | `inputs`, `dossier`, `grade` | `school`, `school_rubric`, `institutional_brief`, `web_snippets`, `zetaris_queries` | 2 attempts |
+| `twins` | 2–3 pgvector RPCs + 2 Zetaris reads + 1 LLM parse | `profile_embedding`, `metrics`, `inputs` | `twins`, `baseline`, `twin_analysis` | 2 attempts |
 | `committee_docket` | pure Python | everything above | `scoring_inputs`, `probability`, `docket`, `docket_index` | — |
 | `advocate` / `chair` | streaming LLM | `docket`, `debate`, `debate_turn` | `debate` (append), `debate_turn` | none: streamed tokens can't be un-sent; a template fallback is used instead |
 | `delta_engine` | RPC + 1 LLM parse + DB write | everything | `counterfactuals`, `delta_report` | 2 attempts |
@@ -2227,6 +3075,7 @@ class AdComState(TypedDict, total=False):
     school_rubric: SchoolRubric
     institutional_brief: InstitutionalBrief | None   # None when web research degraded
     web_snippets: list[WebSnippet]       # W1..Wn, citable in the debate as [[web:Wn]]
+    zetaris_queries: list[dict]          # Z1..Zn {id, purpose, sql, rows}, citable as [[sql:Zn]] (§2.10.7)
 
     # ---- Node 3 ----
     twins: list[TwinCard]
@@ -2623,7 +3472,7 @@ Recommendation = Literal["ADMIT", "LIKELY ADMIT", "WAITLIST", "LIKELY DENY", "DE
 
 
 class Citation(BaseModel):
-    kind: Literal["dossier", "cds", "twin", "web", "model"]
+    kind: Literal["dossier", "cds", "twin", "web", "model", "sql"]
     ref: str
     valid: bool
     span: tuple[int, int]                          # char offsets in content, for UI chip placement
@@ -2868,9 +3717,13 @@ You receive:
 1. The school's database record (Common Data Set + College Scorecard), including the CDS year.
 2. A deterministic rubric derived from the school's C7 factor weights.
 3. Numbered web snippets (W1, W2, …) retrieved minutes ago.
-4. A short summary of the applicant.
+4. Numbered Zetaris query results (Z1, Z2, …): SQL you or a colleague ran against the AdCom data fabric \
+   (federated Common Data Set, College Scorecard, IPEDS and Reddit-outcome views), each with its purpose and rows.
+5. A short summary of the applicant.
 
 Rules
+- Zetaris results (Z#) are first-party data; cite them in `source_ids` exactly like snippets when a priority, \
+  fit signal or fact-check rests on them (e.g., peer-group comparisons, major-level outcome counts).
 - Every claim drawn from the web must cite the snippet ids that directly support it. If no snippet supports a \
   claim, leave it out. Do not rely on background knowledge for school facts that change from year to year \
   (test policy, admit rates, major caps, new programs); the database and snippets are your only sources for \
@@ -2934,6 +3787,7 @@ Ground rules
     [[twin:<1-5>]]
     [[web:<id>]]        e.g. [[web:W3]]
     [[model:<key>]]     e.g. [[model:p_final]], [[model:major]], [[model:twins]]
+    [[sql:<id>]]        e.g. [[sql:Z2]]  (a Zetaris query result in the docket's zetaris_queries)
   The interface turns these into clickable evidence chips, and unresolvable citations are shown to the \
   student as unverified — so cite only keys that appear in the docket.
 - Never state a number that isn't in the docket.
@@ -4022,7 +4876,8 @@ from datetime import date
 import anthropic
 import orjson
 
-from app import db, llm
+from app import llm, zetaris_repo
+from app.config import settings
 from app.schemas.institution import InstitutionalBrief, WebSnippet
 from app.scoring.rubric import apply_brief_adjustments, build_school_rubric
 from app.web_research import research_school
@@ -4030,11 +4885,14 @@ from app.web_research import research_school
 from ..events import emit, tool_call
 from ..prompts.institutional import INSTITUTIONAL_SYSTEM
 from ..state import AdComState
+from ..zetaris_tool import run_zetaris_research
 
 NODE = "institutional"
-SCHOOL_FIELDS = ("slug", "name", "state", "control", "admit_rate", "ed_admit_rate", "rd_admit_rate", "test_policy",
-                 "sat_composite_25", "sat_composite_75", "act_composite_25", "act_composite_75", "c7_weights",
-                 "early_plans", "major_competitiveness", "strategic_priorities", "cds_year")
+ZETARIS_BUDGET_S = 12
+SCHOOL_FIELDS = ("slug", "name", "state", "control", "admit_rate", "admit_rate_source", "ed_admit_rate",
+                 "rd_admit_rate", "test_policy", "sat_composite_25", "sat_composite_75", "act_composite_25",
+                 "act_composite_75", "c7_weights", "c7_source", "early_plans", "major_competitiveness", "cds_year",
+                 "data_source")
 
 
 def upcoming_matriculation_year(today: date | None = None) -> int:
@@ -4042,24 +4900,31 @@ def upcoming_matriculation_year(today: date | None = None) -> int:
     return today.year + 1 if today.month >= 7 else today.year
 
 
-def _payload(school: dict, rubric, snippets: list[WebSnippet], state: AdComState) -> list[dict]:
+def _applicant_summary(state: AdComState, slug: str) -> dict:
     g, d = state["grade"], state["dossier"]
-    applicant = {
+    return {
         "intended_major": state["inputs"].intended_major,
         "major_category": g.major_category,
         "spike": g.spike.model_dump(),
         "ratings": {p: getattr(g.harvard, p).rating for p in ("academic", "extracurricular", "personal", "athletic")},
         "top_activities": [d.activities[ag.activity_index].name for ag in sorted(g.activity_grades, key=lambda a: a.tier)[:4]],
         "essay_themes": g.essay.themes if g.essay else [],
-        "early_round": state["inputs"].early_round.get(school["slug"]),
+        "early_round": state["inputs"].early_round.get(slug),
         "hooks": state["inputs"].hooks,
     }
+
+
+def _payload(school: dict, rubric, snippets: list[WebSnippet], findings: list[dict], state: AdComState) -> list[dict]:
+    applicant = _applicant_summary(state, school["slug"])
+    zq = "\n\n".join(f"[{f['id']}] purpose: {f['purpose']}\nSQL: {f['sql']}\nrows: {orjson.dumps(f['rows'][:10]).decode()}"
+                      for f in findings if not f.get("error")) or "(no Zetaris queries ran)"
     web = "\n\n".join(f"[{s.id}] {s.title}\nURL: {s.url}\nPublished: {s.published or 'unknown'}\n{s.content}"
                       for s in snippets) or "(no web results available)"
     return [{"type": "text", "text": (
         "<school_record>\n" + orjson.dumps({k: school.get(k) for k in SCHOOL_FIELDS}).decode() + "\n</school_record>\n\n"
         "<derived_rubric>\n" + rubric.model_dump_json() + "\n</derived_rubric>\n\n"
         f"<web_snippets>\n{web}\n</web_snippets>\n\n"
+        f"<zetaris_results>\n{zq}\n</zetaris_results>\n\n"
         "<applicant_summary>\n" + orjson.dumps(applicant).decode() + "\n</applicant_summary>\n\n"
         "Write the institutional brief."
     )}]
@@ -4082,34 +4947,53 @@ async def institutional_node(state: AdComState) -> dict:
     slug, inputs, grade = state["school_slug"], state["inputs"], state["grade"]
     emit("node_start", node=NODE, label="Institutional Rubric & Fact-Checker")
 
-    tool_call(NODE, "supabase.universities_cds", "started", slug=slug)
-    school = await db.get_school(slug)
-    tool_call(NODE, "supabase.universities_cds", "done", cds_year=school.get("cds_year"))
+    tool_call(NODE, "zetaris.profile", "started", slug=slug, table=settings.zetaris_gold_profile)
+    school = await zetaris_repo.school_profile(slug)          # Zetaris gold table; Supabase fallback inside
+    tool_call(NODE, "zetaris.profile", "done", source=school.get("data_source", "supabase"),
+              cds_year=school.get("cds_year"), c7_source=school.get("c7_source"))
 
     rubric = build_school_rubric(school, grade.major_category, inputs.context.residency_state)
     emit("school_rubric", stage="cds", rubric=rubric.model_dump())
 
     warnings: list[str] = []
     snippets: list[WebSnippet] = []
+    findings: list[dict] = []
     brief: InstitutionalBrief | None = None
+
+    async def zetaris_research() -> list[dict]:
+        if not settings.zetaris_enabled:
+            return []
+        try:                                                    # time-boxed so Zetaris never stalls the node
+            return await asyncio.wait_for(run_zetaris_research(
+                slug=slug, major_category=grade.major_category,
+                applicant_summary=orjson.dumps(_applicant_summary(state, slug)).decode()), ZETARIS_BUDGET_S)
+        except (asyncio.TimeoutError, llm.LLMRefusal, anthropic.APIError) as exc:
+            warnings.append(f"zetaris research degraded: {type(exc).__name__}")
+            return []
+
     try:
-        snippets = await research_school(school, grade.major_category.replace("_", " "), upcoming_matriculation_year())
+        # Web research and the Zetaris SQL tool loop run concurrently.
+        snippets, findings = await asyncio.gather(
+            research_school(school, grade.major_category.replace("_", " "), upcoming_matriculation_year()),
+            zetaris_research(),
+        )
         brief = await llm.parse(
             InstitutionalBrief, system=INSTITUTIONAL_SYSTEM,
-            messages=[{"role": "user", "content": _payload(school, rubric, snippets, state)}],
+            messages=[{"role": "user", "content": _payload(school, rubric, snippets, findings, state)}],
             effort="medium", max_tokens=12000,
         )
-        brief = _drop_unsourced(brief, {s.id for s in snippets})
+        brief = _drop_unsourced(brief, {s.id for s in snippets} | {f["id"] for f in findings})
     except (llm.LLMRefusal, llm.LLMTruncated, anthropic.APIError, asyncio.TimeoutError) as exc:
         warnings.append(f"institutional research degraded: {type(exc).__name__}")
         emit("error", node=NODE, message="Live fact-check unavailable — using Common Data Set only.", recoverable=True)
 
     rubric = apply_brief_adjustments(rubric, brief)
-    emit("fact_checks", brief=brief.model_dump() if brief else None, snippets=[s.model_dump() for s in snippets])
+    emit("fact_checks", brief=brief.model_dump() if brief else None, snippets=[s.model_dump() for s in snippets],
+         zetaris_queries=findings)
     emit("school_rubric", stage="fact_checked", rubric=rubric.model_dump())
     emit("node_end", node=NODE, elapsed_ms=int((time.perf_counter() - t0) * 1000))
     return {"school": school, "school_rubric": rubric, "institutional_brief": brief,
-            "web_snippets": snippets, "warnings": warnings}
+            "web_snippets": snippets, "zetaris_queries": findings, "warnings": warnings}
 ```
 
 #### 3.7.3 Node 3: `nodes/twins.py` (Applicant Twins Hybrid RAG)
@@ -4125,7 +5009,7 @@ from collections import Counter
 import anthropic
 import orjson
 
-from app import db, llm
+from app import db, llm, zetaris_repo
 from app.schemas.twins import EmpiricalBaseline, TwinAnalysis, TwinCard
 from app.scoring.probability import from_odds, odds
 
@@ -4218,8 +5102,8 @@ async def twins_node(state: AdComState) -> dict:
     pool = await db.match_twins(emb, [slug], k=CONTRAST_POOL, gpa=gpa, sat=sat)
     schools, widened, peers = [slug], False, []
     if len(pool) < 5:                                    # sparse school → widen to its peer group
-        school = await db.get_school(slug)
-        peers = await db.peer_schools(slug, school["peer_group"])
+        school = await zetaris_repo.school_profile(slug)
+        peers = await zetaris_repo.peer_schools(slug, school["peer_group"])
         schools, widened = [slug, *peers], True
         pool = await db.match_twins(emb, schools, k=CONTRAST_POOL, gpa=gpa, sat=sat)
     tool_call(NODE, "rpc.match_applicant_twins", "done", result_count=len(pool), widened=widened)
@@ -4230,7 +5114,7 @@ async def twins_node(state: AdComState) -> dict:
     tool_call(NODE, "rpc.twin_neighborhood_stats", "started", k=NEIGHBORHOOD_K)
     stats, inflation = await asyncio.gather(
         db.neighborhood_stats(emb, schools, k=NEIGHBORHOOD_K, gpa=gpa, sat=sat),
-        db.school_calibration(slug),
+        zetaris_repo.reddit_calibration(slug),      # Zetaris v_reddit_calibration
     )
     baseline = compute_baseline(stats, inflation, widened, peers)
     tool_call(NODE, "rpc.twin_neighborhood_stats", "done", n=baseline.n_neighbors)
@@ -4273,7 +5157,7 @@ from app.scoring.rubric import C7_WEIGHT
 
 from .state import AdComState
 
-CITATION_RE = re.compile(r"\[\[(dossier|cds|twin|web|model):([^\]\s]+)\]\]")
+CITATION_RE = re.compile(r"\[\[(dossier|cds|twin|web|model|sql):([^\]\s]+)\]\]")
 DOSSIER_ROOTS = {"activities", "awards", "metrics", "harvard", "spike", "essay", "essay_assessment",
                  "test_scores", "high_school", "courses", "reader_comments", "context", "hooks"}
 ESSAY_CHARS = 4000
@@ -4306,6 +5190,7 @@ def build_scoring_inputs(state: AdComState) -> ScoringInputs:
 def build_docket(state: AdComState, prob: ProbabilityBreakdown) -> tuple[str, dict[str, list[str]]]:
     school, r, g, d, m = state["school"], state["school_rubric"], state["grade"], state["dossier"], state["metrics"]
     brief, snippets = state.get("institutional_brief"), state.get("web_snippets", [])
+    zq = [f for f in state.get("zetaris_queries", []) if not f.get("error")]
     twins, b, ta = state["twins"], state["baseline"], state.get("twin_analysis")
 
     cds = {
@@ -4341,6 +5226,8 @@ def build_docket(state: AdComState, prob: ProbabilityBreakdown) -> tuple[str, di
         "fit_signals": brief.fit_signals if brief else [],
         "misalignment_signals": brief.misalignment_signals if brief else [],
         "web": [{"id": s.id, "title": s.title, "url": s.url} for s in snippets],
+        "zetaris_queries": [{"id": f["id"], "purpose": f["purpose"], "sql": f["sql"], "rows": f["rows"][:8]}
+                            for f in zq],
         "applicant": applicant,
         "twins": [t.model_dump(include={"index", "outcome", "gpa_uw", "sat_score", "ap_count", "major_category",
                                         "ec_tier_summary", "top_activities", "spike_summary", "cycle_year",
@@ -4360,6 +5247,7 @@ def build_docket(state: AdComState, prob: ProbabilityBreakdown) -> tuple[str, di
                 *(f"c7.{f}" for f in r.factor_levels), f"major.{r.major_category}"],
         "twin": [str(t.index) for t in twins],
         "web": [s.id for s in snippets],
+        "sql": [f["id"] for f in zq],
         "model": ["p_final", "p_low", "p_high", "p_model", "base", "disposition",
                   *(c.key for c in prob.components)],
         "dossier_roots": sorted(DOSSIER_ROOTS),
@@ -4818,6 +5706,9 @@ Adopt fitted values only if they are sane (`K_PILLAR` between 1 and 4, `K_TEST` 
 | Counterfactual reproducibility | Apply `cf.overrides` via `with_overrides` → `compute_probability` | Exactly equals `cf.p_new` (this is the `/api/what-if` contract) |
 | Grade guardrails | Fixture where the LLM returns academic = 1 with 3.6 GPA / 1350 SAT | Clamped to within ±1 of the anchor (rating 4), with a warning logged |
 | Citation validator | `"…[[twin:7]]…"` with 5 twins; `"[[cds:c7.essay]]"` | First invalid, second valid; spans correct |
+| Zetaris SQL guard | `pytest tests/test_zetaris_guard.py`: `DROP …`, `SELECT … FROM ADCOM_PG.universities`, two statements, missing LIMIT, `LIMIT 5000` | First three raise `SqlNotAllowed`; the missing LIMIT gets `LIMIT 50` appended; 5000 is clamped to 50 |
+| Zetaris fallback | Stop the Zetaris `driver` container mid-run | `school_profile` serves from Supabase (`data_source` ≠ `zetaris`); Node 2 emits a recoverable error; the run completes |
+| Zetaris least privilege | As `adcom_agent`: `SELECT * FROM ADCOM_PG.universities LIMIT 1` | Denied by Zetaris RBAC (the second wall behind the guard) |
 | Hybrid search | Run the RPC for the demo dossier at UIUC | 5 rows; ≥1 accepted and ≥1 rejected after `select_contrastive`; under 50 ms in Supabase logs |
 | Graph topology | `graph.get_graph().draw_mermaid()` | Matches §3.1; the debate runs exactly 4 turns, alternating speakers |
 | Cached-dossier path | Re-invoke with `dossier/grade/metrics/profile_embedding` pre-filled | `dossier_parser` never runs; first event within 1 s |
@@ -4952,11 +5843,12 @@ from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFi
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
-from . import db
+from . import db, zetaris_repo
 from .api_models import IntakeForm, WhatIfRequest, WhatIfResponse
 from .config import settings
 from .demo import register_demo_runs, replay_stream
 from .runs import RunManager, RateLimited, sse_frames
+from .zetaris import zetaris
 from .scoring.whatif import run_what_if
 
 MAX_PDF_BYTES = 10 * 1024 * 1024
@@ -4972,8 +5864,16 @@ async def lifespan(app: FastAPI):
         fake_llm.install()                 # offline dev: fixtures instead of Anthropic calls (§4.9)
     register_demo_runs(runs)               # recorded runs work even with DB/API offline (§4.8)
     await db.sb()                          # warm the Supabase client
+    for slug in settings.prewarm_schools:  # first Spark query is the slow one: pay it before the judges arrive
+        try:
+            await zetaris_repo.school_profile(slug)
+            await zetaris_repo.reddit_calibration(slug)
+            await zetaris_repo.admitted_medians(slug)
+        except Exception:
+            pass
     yield
     await runs.shutdown()
+    await zetaris.aclose()
 
 
 app = FastAPI(title="AdCom API", version="0.1.0", lifespan=lifespan)
@@ -5078,7 +5978,7 @@ async def search_schools(q: str = Query(min_length=2)):
 
 @app.get("/api/schools/{slug}")
 async def school_summary(slug: str):
-    s = await db.get_school(slug)
+    s = await zetaris_repo.school_profile(slug)
     keep = ("slug", "name", "city", "state", "control", "admit_rate", "ed_admit_rate", "rd_admit_rate", "test_policy",
             "sat_composite_25", "sat_composite_75", "act_composite_25", "act_composite_75", "c7_weights",
             "early_plans", "major_competitiveness", "cds_year", "source_urls")
@@ -5092,12 +5992,17 @@ async def demo_stream(name: str, request: Request, speed: float = Query(1.0, ge=
 
 @app.get("/api/health")
 async def health():
-    ok_db = True
+    ok_db = ok_zetaris = True
     try:
         await db.get_school("mit")
     except Exception:
         ok_db = False
-    return {"ok": ok_db, "db": ok_db, "anthropic_key": bool(settings.anthropic_api_key) or settings.fake_llm,
+    try:
+        await zetaris.query("SELECT 7 AS seven", page_limit=1)    # the same probe verify.sh runs
+    except Exception:
+        ok_zetaris = False
+    return {"ok": ok_db, "db": ok_db, "zetaris": ok_zetaris, "zetaris_enabled": settings.zetaris_enabled,
+            "anthropic_key": bool(settings.anthropic_api_key) or settings.fake_llm,
             "tavily": bool(settings.tavily_api_key), "demo_mode": settings.demo_mode,
             "fake_llm": settings.fake_llm, "ts": time.time()}
 ```
@@ -5112,6 +6017,7 @@ class Settings(BaseSettings):
     max_concurrent_runs: int = 6           # protects the API budget and rate limits during judging
     max_runs_per_day: int = 400
     run_idle_cancel_s: int = 180           # cancel a run if nobody has watched it for 3 minutes
+    prewarm_schools: list[str] = ["uiuc", "cmu", "umich", "georgia_tech", "uc_berkeley"]
 ```
 
 And these helpers to `db.py`:
@@ -5165,7 +6071,7 @@ from typing import Any
 import orjson
 from fastapi import Request
 
-from . import db
+from . import db, zetaris_repo
 from .agents.graph import graph
 from .config import settings
 from .schemas.delta import Counterfactual
@@ -5346,7 +6252,7 @@ class RunManager:
                 scoring_inputs=ScoringInputs.model_validate(cap["probability"]["scoring_inputs"]),
                 tiers=[ag["tier"] for ag in grade["activity_grades"]],
                 has_recommendations=run.has_recommendations,
-                school=run.school or await db.get_school(run.school_slug),
+                school=run.school or await zetaris_repo.school_profile(run.school_slug),
                 counterfactuals=[Counterfactual.model_validate(c)
                                  for c in cap.get("counterfactuals", {}).get("counterfactuals", [])],
                 embedding=f.get("profile_embedding"),
@@ -5362,7 +6268,7 @@ class RunManager:
             scoring_inputs=ScoringInputs.model_validate(row["scoring_inputs"]),
             tiers=[ag["tier"] for ag in row["grade"]["activity_grades"]],
             has_recommendations=bool((row.get("intake") or {}).get("has_recommendations")),
-            school=await db.get_school(row["school_slug"]),
+            school=await zetaris_repo.school_profile(row["school_slug"]),
             counterfactuals=[Counterfactual.model_validate(c) for c in row.get("counterfactuals") or []],
             embedding=json.loads(emb) if isinstance(emb, str) else emb,   # PostgREST returns vector as text
             gpa=(row.get("metrics") or {}).get("gpa_uw_4"),
@@ -5558,7 +6464,7 @@ def run_what_if(ctx, req: WhatIfRequest) -> WhatIfResponse:
 
 ### 4.7 Radar data: migration `0008_radar.sql` + `app/scoring/radar.py` + a 4-line addition to Node 3
 
-The 6-axis radar compares the applicant with the **median admitted Reddit twin at that school**. Twins have no essays, so the Personal axis compares against the applicant-pool reference rating (3.0). The UI draws that axis dashed and labels it "assumed".
+The 6-axis radar compares the applicant with the **median admitted Reddit twin at that school**. The primary source is the Zetaris view `ADCOM.v_admitted_medians` (§2.10.4). The Postgres RPC below is the fallback `db.admitted_medians` uses when Zetaris is unreachable. Twins have no essays, so the Personal axis compares against the applicant-pool reference rating (3.0). The UI draws that axis dashed and labels it "assumed".
 
 ```sql
 create or replace function public.admitted_profile_medians(target_school text)
@@ -5632,8 +6538,8 @@ async def twins_node(state: AdComState) -> dict:
     ...                                     # unchanged up to the neighborhood query
     stats, inflation, medians = await asyncio.gather(
         db.neighborhood_stats(emb, schools, k=NEIGHBORHOOD_K, gpa=gpa, sat=sat),
-        db.school_calibration(slug),
-        db.admitted_medians(slug),
+        zetaris_repo.reddit_calibration(slug),
+        zetaris_repo.admitted_medians(slug),          # Zetaris v_admitted_medians
     )
     ...
     emit("radar", radar=build_radar(state["metrics"], state["grade"], medians))
@@ -5762,7 +6668,7 @@ def install() -> None:
     dossier_parser.embed_one = embed_one                 # imported by name, so patch where it's used
 ```
 
-Fixtures are created at Hour 4 by running the real graph once on Maya's dossier and dumping each node's output (`model_dump_json`) to `data/fixtures/`. That decouples the UI from API keys, rate limits and cost for the rest of the hackathon.
+Frontend devs without 8 GB to spare for Docker also set `ZETARIS_ENABLED=false`: every Zetaris read falls back to Supabase and Node 2 skips the SQL tool (§2.10.10). Fixtures are created at Hour 4 by running the real graph once on Maya's dossier and dumping each node's output (`model_dump_json`) to `data/fixtures/`. That decouples the UI from API keys, rate limits and cost for the rest of the hackathon.
 
 ### 4.10 Deployment
 
@@ -5784,10 +6690,27 @@ CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "800
 
 The `parents[3]` paths in `demo.py`, `fake_llm.py` and `record_demo.py` resolve to `/srv`, so `/srv/data/...` matches the repo layout.
 
+**Co-locate the API with Zetaris.** Zetaris binds its API and query ports to `127.0.0.1` by design, and the README says they must not be exposed, so the AdCom API runs on the **same machine, on the Zetaris Compose network**, and reaches it at `http://ui:3000`. A `docker-compose.adcom.yml` override joins that network:
+
+```yaml
+# docker-compose.adcom.yml: run from zetaris-platform/ with
+#   docker compose -f docker-compose.yml -f ../docker-compose.adcom.yml up -d adcom-api
+services:
+  adcom-api:
+    build: { context: .., dockerfile: services/api/Dockerfile }
+    env_file: ../.env
+    environment:
+      ZETARIS_URL: http://ui:3000          # the UI's API proxy, the same route verify.sh uses
+    depends_on:
+      ui: { condition: service_healthy }
+    ports:
+      - "127.0.0.1:8000:8000"              # Caddy (tls profile) or a tunnel publishes it, never the raw port
+```
+
 | Concern | Setting |
 |---|---|
-| Host | Railway or Fly.io (persistent container; no serverless request timeout on SSE). Health check: `GET /api/health`. |
-| Region | Same region as the Supabase project (e.g., `us-east-1`); the RPC round trip dominates twin latency |
+| Host | **One VM** (16 GB RAM, 4 vCPU; e.g., an Azure D4s or AWS m6i.xlarge) running the Zetaris stack (`.env.server.example` sizing) + `adcom-api`, with Caddy terminating TLS (Zetaris's `tls` profile; add a route for `api.<ip>.sslip.io → adcom-api:8000`). For judging, the dev laptop + `cloudflared tunnel --url http://localhost:8000` works too. Health check: `GET /api/health`, which also probes Zetaris. |
+| Region | Same region as the Supabase project; both the JDBC federation and the pgvector RPCs cross that link |
 | Env | All of §0.3 plus `CORS_ORIGINS='["https://<app>.vercel.app","http://localhost:3000"]'` |
 | Frontend env | `NEXT_PUBLIC_API_URL=https://<api-host>` |
 | Proxies | `X-Accel-Buffering: no` is already set. Cloudflare in front: disable "Rocket Loader" and set a cache bypass for `/api/*`. |
@@ -5802,7 +6725,7 @@ The `parents[3]` paths in `demo.py`, `fake_llm.py` and `record_demo.py` resolve 
 | ~12 | `dossier_parsed` | Course table and activity list fill in; GPA, rigor and trend counters animate |
 | ~13 | `progress` "Grading N activities…" | Activity rows show pulsing "grading" pills |
 | ~25 | `scorecard` | Harvard 1–6 badges flip in one by one; Tier tags snap onto activities |
-| ~26 | `node_start` ×2, `tool_call` (Supabase, Tavily ×3, RPC) | Tool-call ticker scrolls chips: "⚙ tavily.search · test policy", "⚙ rpc.match_applicant_twins" |
+| ~26 | `node_start` ×2, `tool_call` (Zetaris profile, Zetaris SQL ×≤3, Tavily ×3, pgvector RPC) | Tool-call ticker scrolls chips: "⚙ zetaris.profile · uiuc", "⚙ zetaris.sql · Z1 v_peer_benchmarks", "⚙ tavily.search · test policy", "⚙ rpc.match_applicant_twins" |
 | ~28 | `twins`, `baseline`, `radar` | Five twin cards deal in; radar polygon morphs in |
 | ~33 | `school_rubric`, `fact_checks` | C7 grid fills; fact-check badges (✓ confirmed / ↻ updated) appear |
 | ~35 | `twin_analysis`, `probability` | **Gauge sweeps to the probability**; waterfall builds bar by bar; sliders unlock |
@@ -6030,7 +6953,8 @@ export interface ProbabilityBreakdown {
   p_final: number; p_low: number; p_high: number; p_model: number; base_admit_rate: number;
   components: ProbabilityComponent[]; disposition: Disposition;
 }
-export interface Citation { kind: "dossier" | "cds" | "twin" | "web" | "model"; ref: string; valid: boolean; span: [number, number] }
+export interface Citation { kind: "dossier" | "cds" | "twin" | "web" | "model" | "sql"; ref: string; valid: boolean; span: [number, number] }
+export interface ZetarisQuery { id: string; purpose: string; sql: string; rows: Record<string, string | null>[]; error: string | null }
 export interface DebateTurn {
   turn: number; speaker: Speaker; content: string; citations: Citation[];
   recommendation: Disposition | null; degraded: boolean; streaming: boolean;
@@ -6068,7 +6992,7 @@ import { create } from "zustand";
 import type {
   Baseline, Counterfactual, DebateTurn, DeltaReport, Dossier, DossierGrade, Envelope, InstitutionalBrief,
   Metrics, NodeName, ProbabilityBreakdown, RadarData, SchoolRubric, ToolCall, TwinAnalysis, TwinCard,
-  WebSnippet, WhatIfResponse,
+  WebSnippet, WhatIfResponse, ZetarisQuery,
 } from "@/lib/types";
 
 export type NodeStatus = "pending" | "running" | "done" | "degraded";
@@ -6092,6 +7016,7 @@ export interface RunView {
   rubric?: SchoolRubric;
   brief?: InstitutionalBrief | null;
   snippets: WebSnippet[];
+  sqlQueries: ZetarisQuery[];                       // Zetaris evidence Z1…Zn
   twins: TwinCard[];
   baseline?: Baseline;
   radar?: RadarData;
@@ -6107,7 +7032,7 @@ export interface RunView {
 export const emptyRun = (runId: string): RunView => ({
   runId, status: "connecting", lastSeq: -1,
   nodes: Object.fromEntries(NODES.map((n) => [n, "pending"])) as Record<NodeName, NodeStatus>,
-  progress: {}, tools: [], snippets: [], twins: [], debate: [], citationWarnings: [], counterfactuals: [], errors: [],
+  progress: {}, tools: [], snippets: [], sqlQueries: [], twins: [], debate: [], citationWarnings: [], counterfactuals: [], errors: [],
 });
 
 const upsertTurn = (turns: DebateTurn[], t: DebateTurn) =>
@@ -6133,7 +7058,7 @@ export function reduce(r: RunView, ev: Envelope): RunView {
     case "dossier_parsed": n.dossier = ev.dossier; n.metrics = ev.metrics; break;
     case "scorecard": n.grade = ev.grade; n.metrics = ev.metrics; break;
     case "school_rubric": n.rubric = ev.rubric; break;
-    case "fact_checks": n.brief = ev.brief; n.snippets = ev.snippets; break;
+    case "fact_checks": n.brief = ev.brief; n.snippets = ev.snippets; n.sqlQueries = ev.zetaris_queries ?? []; break;
     case "twins": n.twins = ev.twins; break;
     case "baseline": n.baseline = ev.baseline; break;
     case "radar": n.radar = ev.radar; break;
@@ -6171,7 +7096,7 @@ export function reduce(r: RunView, ev: Envelope): RunView {
   return n;
 }
 
-type Highlight = { kind: "dossier" | "cds" | "twin" | "web" | "model"; ref: string } | null;
+type Highlight = { kind: "dossier" | "cds" | "twin" | "web" | "model" | "sql"; ref: string } | null;
 
 interface RunStore {
   runs: Record<string, RunView>;
@@ -6329,7 +7254,7 @@ export type Seg =
   | { type: "text"; text: string }
   | { type: "cite"; kind: Citation["kind"]; ref: string; valid: boolean | undefined };
 
-const RE = /\[\[(dossier|cds|twin|web|model):([^\]\s]+)\]\]/g;
+const RE = /\[\[(dossier|cds|twin|web|model|sql):([^\]\s]+)\]\]/g;
 const REC_LINE = /\n?RECOMMENDATION:.*$/m;
 
 export function tokenize(content: string, streaming: boolean, citations: Citation[] = []): Seg[] {
@@ -6380,6 +7305,8 @@ export function chipLabel(kind: Citation["kind"], ref: string, run: RunView): st
     }
     case "model":
       return ref === "p_final" ? "Model P(admit)" : `Model · ${ref}`;
+    case "sql":
+      return `Zetaris ${ref}`;
   }
 }
 ```
@@ -6400,6 +7327,7 @@ const KIND_STYLE: Record<Citation["kind"], string> = {
   twin: "bg-tier1/15 text-tier1 ring-1 ring-tier1/40",
   web: "bg-muted/15 text-ink ring-1 ring-line",
   model: "bg-admit/15 text-admit ring-1 ring-admit/40",
+  sql: "bg-chair/10 text-ink ring-1 ring-chair/40 font-semibold",   // Zetaris evidence
 };
 
 export function CitationChip({ kind, refId, valid, run }: {
@@ -6441,6 +7369,16 @@ function EvidencePreview({ kind, refId, run }: { kind: Citation["kind"]; refId: 
   if (kind === "twin") {
     const t = run.twins.find((x) => String(x.index) === refId);
     return t ? <p>{t.headline}<br />{t.spike_summary}</p> : null;
+  }
+  if (kind === "sql") {
+    const q = run.sqlQueries.find((x) => x.id === refId);
+    return q ? (
+      <div className="space-y-1">
+        <p><b>Zetaris Lightning · {q.id}</b>: {q.purpose}</p>
+        <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded bg-room p-2 font-mono text-[10px]">{q.sql}</pre>
+        <p className="text-muted">{q.rows.length} row{q.rows.length === 1 ? "" : "s"} · federated over CDS, Scorecard, IPEDS and Reddit outcomes</p>
+      </div>
+    ) : null;
   }
   if (kind === "cds" && refId.startsWith("c7.")) {
     const level = run.rubric?.factor_levels[refId.slice(3)];
@@ -6593,7 +7531,7 @@ function PreMeeting({ run }: { run: RunView }) {
 }
 ```
 
-`ToolTicker` renders the last 6 `run.tools` as mono chips (`⚙ tavily.search · cache_hit`). Statuses are colored (started = pulsing, done = emerald, failed = amber) and the chips slide in from the right. `FactCheckStrip` shows one badge per `brief.fact_checks` (✓ confirmed / ↻ updated / ⚠ conflict / ? unverified); hovering a badge shows `note` and its sources.
+`ToolTicker` renders the last 6 `run.tools` as mono chips (`⚙ zetaris.sql · Z2 · v_peer_benchmarks`, `⚙ tavily.search · cache_hit`). Zetaris chips carry the Zetaris mark and open a popover with the query's purpose, exact SQL and row count, the same evidence a `[[sql:Z#]]` citation shows. Statuses are colored (started = pulsing, done = emerald, failed = amber) and the chips slide in from the right. `FactCheckStrip` shows one badge per `brief.fact_checks` (✓ confirmed / ↻ updated / ⚠ conflict / ? unverified); hovering a badge shows `note` and its sources.
 
 ### 5.6 Right panel: Analytics & Arbitrage Simulator
 
@@ -7178,6 +8116,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 | **Recommendation stamp** | After turn 4, the stamp drops in at 2.4× scale with a spring, rotated −8°. Optionally play a 120 ms thunk sound, muted by default. |
 | **Twin deal** | Cards slide in from the right with a 120 ms stagger and a slight rotation, like cards being dealt onto a table. |
 | **Major arbitrage reveal** | Click "Try it" on the hero pivot: the major select flips, the gauge sweeps up, and the delta chip flashes emerald. This is the demo's money shot (§7). |
+| **Zetaris evidence chips** | `[Zetaris Z2]` chips in the debate open the exact federated SQL and its rows. The "Data fabric" drawer in the top bar lists every Zetaris query the run made (id, purpose, ms, rows). It's the visible proof that the agents reason over governed data, not memory. |
 | **Fallbacks are visible, not hidden** | Degraded nodes get an amber ring and a "fallback" chip, and unverified citations are struck through. Being honest about failure builds judge trust. |
 
 ### 5.10 Accessibility & performance checklist
@@ -7197,7 +8136,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 
 | Role | Track | Owns | Section refs |
 |---|---|---|---|
-| **Dev A: Data & RAG** | Track A | Supabase, migrations, PullPush scrape, Reddit extraction, resolver, Scorecard/CDS loads, RPCs, stats views, backtest & bias audit | §2, §4.7 SQL |
+| **Dev A: Data & RAG + Zetaris** | Track A | Supabase, migrations, PullPush scrape, Reddit extraction, resolver, Scorecard/CDS loads, RPCs, stats views, **Zetaris bring-up, datasources, views, gold table, RBAC**, backtest & bias audit | §2 (incl. §2.10), §4.7 SQL |
 | **Dev B: Agents & API** | Track B | `llm.py`, Nodes 1–5, prompts, scoring, graph, FastAPI, RunManager/SSE, what-if, deploy API | §3, §4 |
 | **Dev C: War Room UI** | Track C | Next.js shell, store/stream, committee room, dossier panel, intake, school tabs | §5.1–5.5, §5.7–5.8 |
 | **Dev D: Viz, Demo & Integration** (floater) | Track C+ | Gauge, waterfall, radar, twin cards, what-if UI, pivots, demo dossiers, fixtures, recordings, deploy web, pitch | §5.6, §4.8–4.9, §7 |
@@ -7217,10 +8156,10 @@ export function WarRoom({ source }: { source: RunSource }) {
 
 | Hour | Track A: Data & RAG | Track B: Agents & API | Track C: UI | Dev D: Viz & Demo |
 |---|---|---|---|---|
-| 0–1 | Create the Supabase project, apply migrations 0001–0008, add school seed CSV + aliases | Repo scaffold, `uv` env, `config.py`, `.env` template, `llm.py`, smoke-test the Claude call | `create-next-app`, Tailwind v4 tokens (§5.1), shadcn init, fonts | Choose the demo story: **Maya, CS → UIUC Grainger**, backups CMU and Michigan |
-| 1–2 | **Start the PullPush scrape in the background** (`etl.run_etl scrape`, ~25 min); Scorecard key + `load_scorecard` | Write Pydantic schemas (§3.3) | Write `lib/types.ts` (§5.4.1) | Write Maya's fictional transcript (PDF), activities, essay; 2 backup personas |
+| 0–1 | Create the Supabase project, apply migrations 0001–0009, add school seed CSV + aliases. **Start the Zetaris bring-up in parallel** (`preflight.sh` → `compose pull` → `up -d`; ~20 min of waiting, §2.10.2) | Repo scaffold, `uv` env, `config.py`, `.env` template, `llm.py`, smoke-test the Claude call | `create-next-app`, Tailwind v4 tokens (§5.1), shadcn init, fonts | Choose the demo story: **Maya, CS → UIUC Grainger**, backups CMU and Michigan |
+| 1–2 | **Start the PullPush scrape in the background** (`etl.run_etl scrape`, ~25 min); Scorecard key + `load_scorecard`; `./verify.sh` green, change the Zetaris admin password, set `shuffle.partitions 4` | Write Pydantic schemas (§3.3) | Write `lib/types.ts` (§5.4.1) | Write Maya's fictional transcript (PDF), activities, essay; 2 backup personas |
 | **2** | **CONTRACT FREEZE**: event taxonomy, schemas, TS types reviewed together (20 min) | ← | ← | ← |
-| 2–4 | Extraction smoke test on 200 posts; **Opus vs Haiku comparison on 50 posts** (§2.9.11), decision at H4 | FastAPI skeleton + `RunManager` + **scripted fake SSE** that replays a hand-written event list | Store + reducer + `useRunStream` against the fake SSE; 3-column shell | Gauge + waterfall against static JSON |
+| 2–4 | Extraction smoke test on 200 posts; **Opus vs Haiku comparison on 50 posts** (§2.9.11), decision at H4; download the Scorecard bulk CSV + IPEDS ADM file and `docker compose cp` them into Zetaris | FastAPI skeleton + `RunManager` + **scripted fake SSE** that replays a hand-written event list; `app/zetaris.py` client, smoke-tested with `SELECT 7` and `SELECT * FROM NY_TAXI.customers LIMIT 3` | Store + reducer + `useRunStream` against the fake SSE; 3-column shell | Gauge + waterfall against static JSON |
 | 4–6 | Launch the **full extraction** (background, ~2 h); collect CDS PDF URLs for the 5 demo schools | Node 1 (extract + metrics + grade + guardrails) on Maya's transcript via CLI | Committee room bubbles + citation tokenizer on a hand-written debate | Twin cards + radar on static JSON |
 
 **Hour 6 gate:** the fake SSE drives the whole War Room end to end. At least 5K raw posts are scraped. Node 1 produces a sensible `DossierGrade` for Maya. The ETL model decision is made.
@@ -7230,20 +8169,20 @@ export function WarRoom({ source }: { source: RunSource }) {
 | Hour | Track A | Track B | Track C | Dev D |
 |---|---|---|---|---|
 | 6–8 | Resolver triage loop: read `unresolved_schools.csv` → extend aliases → re-run the resolve step | Scoring module (§3.6) + `pytest` monotonicity tests | Dossier panel: metrics strip, Harvard scorecard, activity list, reader note | **Generate `FAKE_LLM` fixtures** from B's real Node 1 output plus hand-written Node 2–5 outputs |
-| 8–10 | `load_cds` for the 5 demo schools; first `load_twins` (≥ 3K) + `refresh_stats` | Node 2 (rubric + Tavily + brief); Node 3 (RPC + contrast selection + baseline) | Intake wizard (4 steps) + `PdfDropzone` + `SchoolPicker` | What-if panel UI with mocked responses |
-| 10–12 | RPC benchmarks (under 50 ms); data-quality SQL (§2.9.10); **human C7 spot-check** | Docket node + graph compiles (`START → N1 → N2‖N3 → docket`) | Pipeline stepper + tool ticker + pre-meeting "whispers" | Pivot list + essay edits + major arbitrage hero card |
+| 8–10 | `load_cds` for the 5 demo schools; first `load_twins` (≥ 3K) + `refresh_stats`; **`run_etl zetaris-setup`**: datasource `ADCOM_PG`, filestore tables, `ADCOM` views, gold table, agent role (§2.10.4) | Node 2 (Zetaris profile + SQL tool loop + Tavily + brief); Node 3 (RPC + contrast selection + baseline + Zetaris calibration/medians) | Intake wizard (4 steps) + `PdfDropzone` + `SchoolPicker` | What-if panel UI with mocked responses |
+| 10–12 | RPC benchmarks (under 50 ms); data-quality SQL (§2.9.10); **human C7 spot-check**; time every `ADCOM` view (target under 2 s; materialize to gold if slower); confirm `adcom_agent` can't read `ADCOM_PG` directly | Docket node + graph compiles (`START → N1 → N2‖N3 → docket`) | Pipeline stepper + tool ticker + pre-meeting "whispers" | Pivot list + essay edits + major arbitrage hero card |
 
-**Hour 12 gate:** `run_graph_cli` prints a real probability and waterfall for Maya at UIUC. At least 5K twins are loaded with embeddings. Every UI panel renders from `FAKE_LLM` fixtures through the real SSE path.
+**Hour 12 gate:** `run_graph_cli` prints a real probability and waterfall for Maya at UIUC, with the school profile served from **Zetaris** (`tool_call zetaris.profile … source=zetaris`) and at least one `zetaris.sql` query in the brief. At least 5K twins are loaded with embeddings. Every UI panel renders from `FAKE_LLM` fixtures through the real SSE path.
 
 #### Hours 12–18: Debate & integration
 
 | Hour | Track A | Track B | Track C | Dev D |
 |---|---|---|---|---|
 | 12–14 | Finish extraction → **10K+ twins**; verify `major_overrides.yaml` for the demo schools against official pages | Debate nodes (streaming, docket cache, citation validator, fallback turn) | Citation chips + cross-panel highlight; recommendation stamp | `/api/what-if` integration (B exposes the endpoint at H14) |
-| 14–16 | `admitted_profile_medians` + calibration view sanity (`odds_inflation` 1.5–5) | Node 5 + counterfactuals + persist; `/api/what-if`, `/api/twins` | **Switch from fixtures to the real backend** (H15) | **First deploy:** API on Railway/Fly, web on Vercel, CORS, env |
+| 14–16 | `v_admitted_medians` + `v_reddit_calibration` sanity in Zetaris (`odds_inflation` 1.5–5); `run_etl zetaris-refresh` | Node 5 + counterfactuals + persist; `/api/what-if`, `/api/twins` | **Switch from fixtures to the real backend** (H15) | **First deploy:** API co-located with Zetaris (VM or laptop + tunnel, §4.10), web on Vercel, CORS, env |
 | 16–18 | Start the **backtest** script: hold out the latest cycle and compute Brier score + AUC vs a base-rate-only baseline | Prompt iteration on debate quality across Maya at 3 schools; check `cache_read_input_tokens` > 0 | School tabs + child runs; error/degraded states | Record the first `event_log` → `record_demo.py` → replay route works |
 
-**Hour 18 gate: INTEGRATION.** A live run in the browser on the deployed stack shows a debate with valid citations, an animated gauge and working sliders.
+**Hour 18 gate: INTEGRATION.** A live run in the browser on the deployed stack shows a debate with valid citations, **including at least one `[Zetaris Z#]` chip that opens its SQL**, an animated gauge and working sliders.
 
 #### Hours 18–24: Hardening + staggered sleep
 
@@ -7271,7 +8210,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 |---|---|
 | 30–32 | **Bug bash:** each dev runs 3 personas × 5 schools on production and logs issues in one sheet (P0 = demo path broken; P1 = visible glitch; P2 = later). Fix P0 only. |
 | 32 | **Re-record the final demo replays** (Maya at UIUC primary, Maya at CMU backup) on production; tag `v1.0`; final deploy |
-| **33** | **CODE FREEZE.** Venue check: projector mode, contrast, font size from the back row, venue Wi-Fi vs phone hotspot, both laptops logged in with tabs pre-opened |
+| **33** | **CODE FREEZE.** Venue check: `/api/health` shows `zetaris: true`; Zetaris pre-warmed (first Spark query is slow); projector mode, contrast, font size from the back row, venue Wi-Fi vs phone hotspot, both laptops logged in with tabs pre-opened |
 | 33–35 | Rehearsals #2–#5, hard-stopped at 3:00 with a timer. Rotate a "hostile judge" asking the §7.3 questions. |
 | 35–36 | Buffer. Submit Devpost (video, repo link, README with architecture diagram). Charge laptops. Eat. |
 
@@ -7284,6 +8223,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 | Web research | Postgres cache, then DB-only brief (`institutional_brief = None`) | H10 | unset `TAVILY_API_KEY` |
 | Sparse school | Peer-group widening in Node 3 | H10 | automatic |
 | Debate turn failure | Template turn, marked `degraded` | H14 | automatic |
+| Zetaris reads | `zetaris_repo` → Supabase fallback; Node 2 skips the SQL tool | H10 | `ZETARIS_ENABLED=false` or automatic on `ZetarisError` |
 | Whole live run | Recorded replay (`/room/demo/<name>`) | H18 | `Shift+R` in the War Room |
 | Whole venue network | Backup screen recording (MP4) on two laptops + a USB stick | H22 / H32 | play the file |
 
@@ -7291,6 +8231,9 @@ export function WarRoom({ source }: { source: RunSource }) {
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 |---|---|---|---|---|
+| Zetaris driver won't start (memory) or first queries are slow | Med | High | Docker ≥ 8 GB, `ZSPARK_DRIVER_MEM=4g` on 16 GB laptops; `shuffle.partitions 4`; pre-warm at API startup; gold Iceberg table on the hot path; TTL cache | A |
+| A Zetaris DDL detail differs from the docs (filestore local path, GRANT principal form, DDL over REST) | Med | Med | Every such line is marked "(verify at Hour 1)"; fall back to the UI SQL editor / Files upload; the views only depend on the confirmed statements | A |
+| Zetaris unreachable during judging | Low | High | Supabase fallback for every read (§2.10.10); the demo replay carries the Zetaris evidence chips anyway | B |
 | PullPush is slow, rate-limited or down | Med | High | Start the scrape at H1; checkpoint/resume; keep partial data. If it's down for more than 2 h, switch to another public Reddit archive (e.g., Arctic Shift dumps) with the same JSONL shape. | A |
 | Extraction cost or time overrun | Med | Med | H4 model decision gate; extract demo-school posts first (filter by school mentions); `--limit` | A |
 | CDS PDFs are scanned or messy | Med | Med | Send the whole PDF (Claude reads scanned pages); hand-enter C7 for the 5 demo schools (15 min) | A |
@@ -7310,10 +8253,10 @@ export function WarRoom({ source }: { source: RunSource }) {
 4. Transfer-applicant path (r/TransferToTop25 stays in the corpus for stats only)
 5. School tabs beyond the first school (show one school, pre-recorded others)
 6. Essay edits panel (keep pivots)
-7. Live Tavily fact-check (DB-only brief; keep the CDS citations)
+7. Live Tavily fact-check (DB-only brief; keep the CDS and Zetaris citations)
 8. Radar (keep gauge, waterfall and twins)
 
-**Never cut:** the live debate with citations, the twin cards, the gauge + waterfall, the major arbitrage pivot, and the replay fallback.
+**Never cut:** the live debate with citations, the twin cards, the gauge + waterfall, the major arbitrage pivot, the replay fallback, and **the Zetaris data plane**: at minimum the school profile + calibration reads and one visible `[Zetaris Z#]` query. It's the partner integration judges will look for. If time is short, cut the agent's free-form SQL loop down to a fixed peer-benchmark query rather than removing Zetaris.
 
 ---
 
@@ -7330,13 +8273,13 @@ Two people present. **Presenter (P)** talks and owns the story. **Driver (D)** r
 | Time | Who | Script (spoken) | Screen action (Driver) |
 |---|---|---|---|
 | **0:00–0:12** | P | "When Harvard was sued in *SFFA v. Harvard*, the trial record showed how admissions readers actually score applicants: **one to six**, across academic, extracurricular, personal and athletic. Not a GPA calculator. A rubric, and then a committee that argues." | Landing page; hero headline animates in; dataset counter ticking: *{N_TWINS} real applicants · {N_SCHOOLS} schools* |
-| 0:12–0:27 | P | "Every student gets judged that way, but almost none of them ever see it. So we built the committee. **AdCom** puts your whole application in front of five AI agents, grounded in each school's Common Data Set, federal College Scorecard data, and **{N_TWINS} real applicants' outcomes** from Reddit." | Scroll to intake; Maya's file is already attached (transcript PDF, activities, essay). Target: **UIUC**, Computer Science. |
+| 0:12–0:27 | P | "Every student gets judged that way, but almost none of them ever see it. So we built the committee. **AdCom** puts your whole application in front of five AI agents, grounded in each school's Common Data Set, federal College Scorecard and IPEDS data, and **{N_TWINS} real applicants' outcomes** from Reddit, all federated and governed through **Zetaris Lightning**." | Scroll to intake; Maya's file is already attached (transcript PDF, activities, essay). Target: **UIUC**, Computer Science. |
 | 0:27–0:32 | P | "Meet Maya. Her file is fictional; the data she's judged against is not." | **Click "Convene the committee."** War Room opens; skeletons shimmer; stepper lights ① |
 | 0:32–0:50 | P | "Agent one reads her transcript like an admissions reader. GPA and rigor are **computed** from the courses, not guessed by a model. Then it grades every activity, Tier 1 to 4, and gives her a Harvard-scale scorecard: academic **2-minus**, extracurricular **3-plus**." | Dossier panel fills; metric counters count up; Harvard badges flip in; Tier medallions snap onto activities. **Hover the Academic badge** to show the rationale tooltip. |
-| 0:50–1:08 | P | "In parallel, two agents go to work. One pulls UIUC's Common Data Set weights and fact-checks them live on the web. The other runs a hybrid SQL plus vector search over our corpus and finds the **five real applicants most like Maya who applied to UIUC**." | Tool ticker scrolls (`tavily.search`, `rpc.match_applicant_twins`); **twin cards deal in**. **Click twin #2** to expand it: activities, outcome, link to the original post. |
+| 0:50–1:08 | P | "In parallel, two agents go to work. One is an institutional researcher with **read-only SQL access to our Zetaris data fabric**: it pulls UIUC's Common Data Set weights, compares UIUC with its peers, and checks how CS applicants actually fare there, then fact-checks it all live on the web. The other runs a hybrid SQL plus vector search over our corpus and finds the **five real applicants most like Maya who applied to UIUC**." | Tool ticker scrolls (`zetaris.profile`, `zetaris.sql · Z1 v_peer_benchmarks`, `tavily.search`, `rpc.match_applicant_twins`); **twin cards deal in**. **Click twin #2** to expand it: activities, outcome, link to the original post. |
 | 1:08–1:15 | P | "Two got in. Three didn't. Watch what the committee does with that." | Radar morphs in; gauge sweeps to **{P_UIUC}**, WAITLIST amber |
 | 1:15–1:50 | P | *(let the debate stream for ~5 s first)* "Now the committee meets, live. The regional officer argues for her spike. The chair pushes back with hard data: CS at Grainger is one of the most capacity-constrained majors in the country. **Every claim carries a citation.** Hover one…" | Debate streams token by token. **Hover a `[Twin 3 ✕]` chip** and twin card 3 pulses gold. **Hover `[Major ×0.38]`** and the waterfall bar outlines. |
-| 1:50–2:05 | P | "…and the evidence lights up. The **number** never comes from a language model. It's math you can audit: the school's base rate, the major's bottleneck, her rubric weighted by what UIUC says it values, then a Bayesian update from her twins, corrected for Reddit's self-selection bias." | Chair's final turn lands; **RECOMMENDATION stamp drops**. Point to the waterfall bars from top to bottom. |
+| 1:50–2:05 | P | "…and the evidence lights up. The **number** never comes from a language model. It's math you can audit: the school's base rate, the major's bottleneck, her rubric weighted by what UIUC says it values, then a Bayesian update from her twins, corrected for Reddit's self-selection bias. And every institutional number traces back to a Zetaris query you can open." | Chair's final turn lands; **RECOMMENDATION stamp drops**. **Hover a `[Zetaris Z2]` chip** to show its SQL popover, then point to the waterfall bars from top to bottom. |
 | 2:05–2:30 | P | "So what should Maya *do*? Agent five reruns the model on every lever she controls. Biggest one: **major arbitrage**. Same student, applying to Math in Liberal Arts & Sciences instead of direct-entry CS: **{DELTA_MAJOR} points**, backed by {N_MAJOR} similar applicants. And it tells her the tradeoff: internal transfer into CS is hard." | Final report appears. **Click "Try it" on the Major Arbitrage hero card** → major select flips → **gauge sweeps up** to {P_ARB}, delta chip flashes emerald. |
 | 2:30–2:42 | P | "Every slider is live. SAT to their 75th percentile? Plus {DELTA_SAT}. A stronger essay? The agents even point to the exact sentence to rewrite." | **Drag the SAT slider** → gauge moves in real time; scroll to one essay edit card (excerpt → rewrite). |
 | 2:42–3:00 | P | "Private admissions counseling is out of reach for most families. AdCom gives every student the committee's view of their file: grounded in real data, honest about uncertainty, and gone from our servers in 24 hours. **We're AdCom.** Thank you." | Zoom out to the full War Room; last frame shows gauge + stamp + twins. |
@@ -7349,13 +8292,16 @@ Two people present. **Presenter (P)** talks and owns the story. **Driver (D)** r
 > "Yes, the raw data is biased, so we measure the bias and correct for it instead of hiding it. Three things. First, for every school we compare the Reddit admit rate with the official CDS rate. Reddit typically overstates admits by about {ODDS_INFLATION_TYPICAL}× in odds, and we divide that inflation out before twins touch the probability. Second, the twins can only *update* a model built on official data: they're capped at 20 effective applicants against a 12-applicant prior, so they can't override the CDS. Third, we backtested on a held-out admissions cycle: Brier score {BRIER} versus {BRIER_BASE} for the base-rate baseline, and the calibration curve is in our 'About the data' panel. We show the 80% range on every number, because certainty would be a lie."
 
 **Q2. "Students are uploading transcripts. What about FERPA and privacy?"**
-> "FERPA governs how schools disclose education records. A student choosing to share their own transcript with a tool isn't a FERPA disclosure, but we hold ourselves to that standard anyway. The PDF is never written to disk or database; it lives in memory for the run. Names, IDs, emails and phone numbers are extracted specifically so we can redact them, and are then discarded. What we keep is a redacted evaluation that **auto-deletes after 24 hours** via a Postgres cron job. There are no accounts and no training on user data, and Anthropic's commercial API terms don't use API inputs for training by default. For the Reddit corpus we store no usernames, only the public post link."
+> "FERPA governs how schools disclose education records. A student choosing to share their own transcript with a tool isn't a FERPA disclosure, but we hold ourselves to that standard anyway. The PDF is never written to disk or database; it lives in memory for the run. Names, IDs, emails and phone numbers are extracted specifically so we can redact them, and are then discarded. What we keep is a redacted evaluation that **auto-deletes after 24 hours** via a Postgres cron job. There are no accounts and no training on user data, and Anthropic's commercial API terms don't use API inputs for training by default. For the Reddit corpus we store no usernames, only the public post link. On the data side, the agents reach institutional data only through Zetaris as a **least-privilege service user** that can read six curated views and nothing else, and **every query they run is in Zetaris's audit log**. So we can show exactly what data the AI touched for any evaluation."
 
 **Q3. "LLMs hallucinate. Why should anyone trust a percentage from this?"**
 > "Because no language model produces the percentage. LLMs extract, grade and argue; deterministic code computes the probability, and you can see each term in the waterfall. Grades are clamped to statistical anchors computed from the transcript, so a model can't call a 3.6 student an academic 1. Every debate claim carries a citation that a validator checks against the evidence docket; unmatched citations are struck through on screen, not hidden. Web facts must cite a retrieved snippet or they're dropped. And Node 5 can only rank counterfactuals the model already computed, so it literally cannot invent a '+24%'."
 
 **Q4. "Race-conscious admissions ended in 2023. Does your model use race?"**
 > "No. Race is never asked of users, never embedded, never shown to the agents, and never in the model. We keep the self-reported field from Reddit posts only to *audit* our calibration across groups. The committee prompts explicitly bar speculating about protected characteristics, and the Personal rating, which was the controversial part of the Harvard case, must cite specific essay content."
+
+**Q5b. "What does Zetaris actually do here? Couldn't you just use Postgres?"**
+> "Three things Postgres alone doesn't give us. First, **federation**: the College Scorecard and IPEDS files are queried in place next to our Supabase tables, so three public datasets plus the Reddit corpus join in one SQL statement with no copy pipeline. Second, **a governed semantic layer**: the agents see six curated views through a role that can't touch raw tables, and every query is audit-logged. Third, **a lakehouse**: the hot-path school profile is materialized to an Iceberg table. We keep pgvector for nearest-neighbor search because that's the right tool for sub-50 ms KNN. Zetaris is the data plane, and pgvector is one index inside it."
 
 **Q5. "Why multiple agents instead of one big prompt?"**
 > "Separation of duties, the same reason real committees have them. The parser can't see the target school, so it can't grade toward an answer. The fact-checker and the twin search run in parallel on different evidence. The advocate and the chair are prompted to disagree, which surfaces the concerns one voice would smooth over, and the debate runs as a real loop in LangGraph, not one model role-playing both sides. It also means each step is streamable and individually testable."
@@ -7392,6 +8338,7 @@ def dossier_key(inputs: RawApplicantInputs) -> str:
 
   The Node 1 scorecard animation still plays: `_drive` re-emits `dossier_parsed` and `scorecard` from the prefill at the start of any cached run (§4.4), so the dossier panel fills just as it would live.
 - [ ] Prompt and Tavily caches are warm for UIUC and CMU (run each once).
+- [ ] Zetaris is healthy (`./verify.sh` all PASS, `/api/health` → `zetaris: true`), the gold table is refreshed, and the API's startup pre-warm has run (the first Spark query after a restart is the slow one).
 - [ ] `/api/health` is green on the venue network. The phone hotspot is tested as a fallback.
 - [ ] Laptop 1: intake page with Maya's files attached, projector mode on, zoom at 110%, notifications off. Laptop 2: `/room/demo/maya-uiuc` loaded and paused on the landing page.
 - [ ] The backup MP4 of the full 3-minute demo is on both laptops and a USB stick.
@@ -7403,6 +8350,7 @@ def dossier_key(inputs: RawApplicantInputs) -> str:
 |---|---|
 | `{N_TWINS}` | `select count(*) from applicant_twins` |
 | `{N_SCHOOLS}` / CDS coverage | `select count(*) from universities_cds` / `where c7_weights <> '{}'` |
+| Zetaris federation coverage | `SELECT c7_source, COUNT(*) FROM ADCOM.v_school_profile GROUP BY c7_source` (CDS vs. IPEDS fallback) and `SELECT COUNT(*) FROM ADCOM_PUBLIC.scorecard_institutions` |
 | `{P_UIUC}`, `{P_ARB}`, `{DELTA_MAJOR}`, `{N_MAJOR}`, `{DELTA_SAT}` | The final recorded Maya at UIUC run (`probability`, `counterfactuals` events) |
 | `{ODDS_INFLATION_TYPICAL}` | Median `odds_inflation` in `school_reddit_calibration` |
 | `{BRIER}`, `{BRIER_BASE}` | Backtest output (Hour 22–24) |
@@ -7412,7 +8360,7 @@ If the backtest result is weak, say so plainly: "Our calibration is still rough,
 ### 7.6 One-liners for the Devpost and the hallway
 
 - **Tagline:** *Your application, read by the committee — before the committee reads it.*
-- **One sentence:** AdCom runs your full application through a live, multi-agent admissions committee grounded in Common Data Set rubrics and {N_TWINS} real applicant outcomes, then shows you exactly which moves change your odds and by how much.
+- **One sentence:** AdCom runs your full application through a live, multi-agent admissions committee grounded in Common Data Set rubrics, federal data and {N_TWINS} real applicant outcomes, federated and governed through Zetaris Lightning, then shows you exactly which moves change your odds and by how much.
 - **30-second hallway version:** "Admissions isn't a GPA calculator. It's a rubric and a committee that argues. We rebuilt that: one agent reads your file on Harvard's 1-to-6 scale, one pulls the school's own weighting, one finds the five real applicants most like you, and then an advocate and a skeptic debate your file live, with every claim cited. The probability is auditable math, not model vibes. And it tells you the highest-leverage change, like applying to a sister major that admits applicants like you at roughly twice the rate."
 
 ---

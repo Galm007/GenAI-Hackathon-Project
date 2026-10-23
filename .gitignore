@@ -1,0 +1,12 @@
+zetaris-platform/
+zetaris-platform.zip
+.env
+.env.*
+!.env.example
+data/raw/
+data/processed/
+data/public/
+__pycache__/
+.venv/
+node_modules/
+.next/
