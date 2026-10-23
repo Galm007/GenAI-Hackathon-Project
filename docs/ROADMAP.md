@@ -45,7 +45,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* the 5 demo schools have `c7_weights` populated; a human has spot-checked C7 against the PDFs (note it in the commit body); `data/cds_sources.yaml` has real URLs only.
 - [ ] **A11 — Stats refresh, major overrides, `run_etl` CLI** · §2.9.10 · Deps: A02, A08
   *Done when:* `python -m etl.run_etl refresh-stats` updates `major_competitiveness`; the data-quality SQL from §2.9.10 runs.
-- [ ] **A12 — Zetaris bring-up + Lightning SQL files** · §2.10.2, §2.10.4 · Deps: A04
+- [ ] **A12 — Zetaris bring-up + Lightning SQL files** · §2.10.2, §2.10.4 · Deps: A04 — files committed, DDL not applied yet (see commit)
   Commits `zetaris/sql/01_sources.sql` through `04_security.sql` and `docs/zetaris-setup.md` (steps only, no secrets). Resolve every "(verify at Hour 1)" marker against the running stack and correct the plan text.
   *Done when:* `./verify.sh` passes; `SELECT * FROM ADCOM.v_school_profile WHERE slug='uiuc'` returns a row in the Zetaris SQL editor; `adcom_agent` is denied on `ADCOM_PG.*`.
 - [ ] **A13 — Zetaris client + repository** · §2.10.5 (incl. config additions) · Deps: B01, B07
