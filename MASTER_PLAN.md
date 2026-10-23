@@ -111,7 +111,7 @@ adcom/
 │       │       └── nodes/
 │       │           ├── dossier_parser.py  institutional.py  twins.py  debate.py  delta_engine.py
 │       ├── etl/
-│       │   ├── common.py  pullpush.py  reddit_schema.py  prompts.py  school_resolver.py
+│       │   ├── common.py  reddit_archive.py  reddit_schema.py  prompts.py  school_resolver.py
 │       │   ├── extract_reddit.py  load_twins.py  load_scorecard.py  load_cds.py
 │       │   ├── refresh_stats.py  fit_coefficients.py  zetaris_setup.py  run_etl.py
 │       └── scripts/
@@ -135,7 +135,7 @@ adcom/
     ├── school_aliases.yaml           # Reddit abbreviations ("CMU", "UMich", "Cal")
     ├── cds_sources.yaml              # slug → CDS PDF URL (collected by hand)
     ├── major_overrides.yaml          # verified capped/direct-admit majors
-    ├── raw/                          # PullPush JSONL (gitignored)
+    ├── raw/                          # Arctic Shift JSONL (gitignored)
     ├── processed/                    # extracted twins JSONL (gitignored)
     ├── public/                       # Scorecard + IPEDS bulk CSVs copied into Zetaris (gitignored)
     └── demo_dossiers/                # 3 golden demo applicants
@@ -181,7 +181,7 @@ dependencies = [
 flowchart TB
   subgraph OFFLINE["OFFLINE DATA PLANE (Hours 0-14, re-runnable)"]
     direction TB
-    PP["PullPush API<br/>api.pullpush.io<br/>r/collegeresults<br/>r/TransferToTop25"] -->|"paginate by created_utc<br/>4s/request, checkpointed"| RAW[("data/raw/*.jsonl")]
+    PP["Arctic Shift API<br/>arctic-shift.photon-reddit.com<br/>r/collegeresults<br/>r/TransferToTop25"] -->|"paginate by created_utc<br/>4s/request, checkpointed"| RAW[("data/raw/*.jsonl")]
     RAW --> EXT["Claude structured extraction<br/>RedditApplicantRecord (Pydantic)<br/>+ Tier 1-4 EC grading"]
     EXT --> RES["School resolver<br/>alias table + rapidfuzz<br/>'UMich' → umich"]
     RES --> QG{"Quality gates<br/>is_results_post, ranges,<br/>>=1 resolved decision"}
@@ -385,7 +385,7 @@ sequenceDiagram
 
 | Source | What we take | Access | Target volume | Lands in |
 |---|---|---|---|---|
-| **PullPush** `api.pullpush.io/reddit/search/submission/` | r/collegeresults (first-year) and r/TransferToTop25 (transfer) results posts, about 2019 to now | Public JSON, `size≤100`, paginate with `before=<epoch>` | 12–18K raw posts → **10K+ clean twins** | `applicant_twins` |
+| **Arctic Shift** `arctic-shift.photon-reddit.com/api/posts/search` | r/collegeresults (first-year) and r/TransferToTop25 (transfer) results posts, about 2019 to now | Free, no key. Public JSON, `limit≤100`, paginate with `before=<epoch>`; dynamic rate limit, 429 carries `X-RateLimit-Reset` | 12–18K raw posts → **10K+ clean twins** | `applicant_twins` |
 | **US College Scorecard API** `api.data.gov/ed/collegescorecard/v1/schools` | `id` (IPEDS unitid), name, city/state, ownership: seeds the curated school list | Free API key | ~250 schools with admit rate ≤ 40% | `universities_cds` (seed) |
 | **US College Scorecard bulk CSV** ("Most Recent Institution-Level Data" from collegescorecard.ed.gov/data) | `UNITID, INSTNM, CITY, STABBR, CONTROL, ADM_RATE, SATVR25/75, SATMT25/75, ACTCM25/75, UGDS, ADMCON7` for every institution | Download once → copied into Zetaris | ~6,500 institutions | **Zetaris** filestore table `ADCOM_PUBLIC.scorecard_institutions` (read in place) |
 | **Common Data Set PDFs** | C1 (apps/admits/enrolled), **C7 factor weights**, C9 test percentiles, C11–C12 GPA, C21 ED/EA, **Section D transfers** | PDF links collected by hand from each school's Institutional Research page → Claude PDF extraction | 40–60 schools (all demo schools + top targets) | `universities_cds.c7_weights`, etc. |
@@ -1114,28 +1114,29 @@ async def fetch_all(sb: AsyncClient, table: str, columns: str = "*", page: int =
         start += page
 ```
 
-#### 2.9.2 `etl/pullpush.py`: scrape both subreddits
+#### 2.9.2 `etl/reddit_archive.py`: scrape both subreddits
 
 ```python
-"""Scrape r/collegeresults and r/TransferToTop25 submissions from PullPush into raw JSONL.
+"""Scrape r/collegeresults and r/TransferToTop25 submissions from Arctic Shift into raw JSONL.
 
-PullPush mirrors Reddit submissions; `size` is capped at 100 and we paginate backwards in time with
-`before=<min created_utc of previous page>`. Be a good citizen: one request every 4 s, exponential backoff
-on 429/5xx, and a checkpoint file so a crash never re-fetches pages.
+Arctic Shift (https://github.com/ArthurHeitmann/arctic_shift) is a free, keyless archive of Reddit submissions.
+`limit` is capped at 100 and we paginate backwards in time with `before=<min created_utc of previous page>`.
+Be a good citizen, it is a volunteer-run service: one request every 4 s, backoff on 429/5xx (honoring its
+`X-RateLimit-Reset` header), and a checkpoint file so a crash never re-fetches pages.
 """
 from __future__ import annotations
 
 import asyncio
 import json
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
 
 from .common import RAW_DIR, log
 
-PULLPUSH_URL = "https://api.pullpush.io/reddit/search/submission/"
+ARCHIVE_URL = "https://arctic-shift.photon-reddit.com/api/posts/search"
 PAGE_SIZE = 100
 MIN_INTERVAL_S = 4.0
 MIN_SELFTEXT_CHARS = 400
@@ -1156,16 +1157,19 @@ def keep(post: dict) -> bool:
 async def get_page(http: httpx.AsyncClient, params: dict) -> list[dict]:
     for attempt in range(7):
         try:
-            resp = await http.get(PULLPUSH_URL, params=params)
+            resp = await http.get(ARCHIVE_URL, params=params)
             if resp.status_code == 429 or resp.status_code >= 500:
                 raise httpx.HTTPStatusError(f"retryable {resp.status_code}", request=resp.request, response=resp)
             resp.raise_for_status()
-            return resp.json().get("data", [])
+            return resp.json().get("data") or []
         except (httpx.HTTPStatusError, httpx.TransportError, json.JSONDecodeError) as exc:
             wait = min(180, 5 * 2**attempt)
-            log.warning("pullpush %s (attempt %d) → sleeping %ss", exc, attempt + 1, wait)
+            response = getattr(exc, "response", None)
+            if response is not None and response.headers.get("x-ratelimit-reset", "").isdigit():
+                wait = max(wait, int(response.headers["x-ratelimit-reset"]) + 1)    # the service says when to return
+            log.warning("archive %s (attempt %d) → sleeping %ss", exc, attempt + 1, wait)
             await asyncio.sleep(wait)
-    raise RuntimeError(f"PullPush failed repeatedly for params={params}")
+    raise RuntimeError(f"Arctic Shift failed repeatedly for params={params}")
 
 
 async def scrape(subreddit: str, since: datetime) -> Path:
@@ -1184,11 +1188,10 @@ async def scrape(subreddit: str, since: datetime) -> Path:
             while before > since_epoch:
                 params = {
                     "subreddit": subreddit,
-                    "size": PAGE_SIZE,
+                    "limit": PAGE_SIZE,
                     "before": before,
                     "after": since_epoch,
                     "sort": "desc",
-                    "sort_type": "created_utc",
                 }
                 posts = await get_page(http, params)
                 if not posts:
@@ -1206,13 +1209,13 @@ async def scrape(subreddit: str, since: datetime) -> Path:
                 ckpt.write_text(json.dumps({"before": before}))
                 log.info("%s: page kept %d/%d, cursor=%s, total=%d",
                          subreddit, kept, len(posts),
-                         datetime.fromtimestamp(before, tz=timezone.utc).date(), len(seen))
+                         datetime.fromtimestamp(before, tz=UTC).date(), len(seen))
                 await asyncio.sleep(MIN_INTERVAL_S)
     return out
 
 
 async def scrape_all(since: datetime) -> None:
-    # Sequential on purpose: one polite request stream to PullPush.
+    # Sequential on purpose: one polite request stream to the archive.
     for sub in SUBREDDITS:
         await scrape(sub, since)
 ```
@@ -2148,7 +2151,7 @@ from .extract_reddit import run_extraction
 from .load_cds import load_cds
 from .load_scorecard import load_scorecard
 from .load_twins import load_twins
-from .pullpush import scrape_all
+from .reddit_archive import scrape_all
 from .refresh_stats import refresh_stats
 from .zetaris_setup import refresh_gold, setup as zetaris_setup
 
@@ -2208,7 +2211,7 @@ select count(*) filter (where c7_weights <> '{}') as with_c7, count(*) as total 
 
 | Stage | Volume | Wall clock | Cost |
 |---|---|---|---|
-| Scrape (PullPush) | ~150–250 pages @ 4 s | 15–25 min | free |
+| Scrape (Arctic Shift) | ~150–250 pages @ 4 s | 15–25 min | free |
 | Extract (12 concurrent) | ~12K posts × ~2.5K in / ~1.2K out tokens (incl. thinking at `effort=low`) | ~2–2.5 h | **Opus 5.5: ~$120 in + ~$290 out ≈ $400.** The same job on Claude Haiku 5.5 ($0.10/$0.50) costs about **$10**, and the Message Batches API halves either price but disables server-side fallbacks. This is your call. Our recommendation is to smoke-test 200 posts on Opus, compare 50 of them against Haiku, and switch `ETL_MODEL` only if tier and decision agreement is ≥ 95%. |
 | Embeddings | 10K × ~350 tokens | 2 min | ~$0.07 |
 | CDS extraction | 50 PDFs × ~25K tokens | 10 min | ~$6 |
@@ -8136,7 +8139,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 
 | Role | Track | Owns | Section refs |
 |---|---|---|---|
-| **Dev A: Data & RAG + Zetaris** | Track A | Supabase, migrations, PullPush scrape, Reddit extraction, resolver, Scorecard/CDS loads, RPCs, stats views, **Zetaris bring-up, datasources, views, gold table, RBAC**, backtest & bias audit | §2 (incl. §2.10), §4.7 SQL |
+| **Dev A: Data & RAG + Zetaris** | Track A | Supabase, migrations, Arctic Shift scrape, Reddit extraction, resolver, Scorecard/CDS loads, RPCs, stats views, **Zetaris bring-up, datasources, views, gold table, RBAC**, backtest & bias audit | §2 (incl. §2.10), §4.7 SQL |
 | **Dev B: Agents & API** | Track B | `llm.py`, Nodes 1–5, prompts, scoring, graph, FastAPI, RunManager/SSE, what-if, deploy API | §3, §4 |
 | **Dev C: War Room UI** | Track C | Next.js shell, store/stream, committee room, dossier panel, intake, school tabs | §5.1–5.5, §5.7–5.8 |
 | **Dev D: Viz, Demo & Integration** (floater) | Track C+ | Gauge, waterfall, radar, twin cards, what-if UI, pivots, demo dossiers, fixtures, recordings, deploy web, pitch | §5.6, §4.8–4.9, §7 |
@@ -8157,7 +8160,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 | Hour | Track A: Data & RAG | Track B: Agents & API | Track C: UI | Dev D: Viz & Demo |
 |---|---|---|---|---|
 | 0–1 | Create the Supabase project, apply migrations 0001–0009, add school seed CSV + aliases. **Start the Zetaris bring-up in parallel** (`preflight.sh` → `compose pull` → `up -d`; ~20 min of waiting, §2.10.2) | Repo scaffold, `uv` env, `config.py`, `.env` template, `llm.py`, smoke-test the Claude call | `create-next-app`, Tailwind v4 tokens (§5.1), shadcn init, fonts | Choose the demo story: **Maya, CS → UIUC Grainger**, backups CMU and Michigan |
-| 1–2 | **Start the PullPush scrape in the background** (`etl.run_etl scrape`, ~25 min); Scorecard key + `load_scorecard`; `./verify.sh` green, change the Zetaris admin password, set `shuffle.partitions 4` | Write Pydantic schemas (§3.3) | Write `lib/types.ts` (§5.4.1) | Write Maya's fictional transcript (PDF), activities, essay; 2 backup personas |
+| 1–2 | **Start the Arctic Shift scrape in the background** (`etl.run_etl scrape`, ~25 min); Scorecard key + `load_scorecard`; `./verify.sh` green, change the Zetaris admin password, set `shuffle.partitions 4` | Write Pydantic schemas (§3.3) | Write `lib/types.ts` (§5.4.1) | Write Maya's fictional transcript (PDF), activities, essay; 2 backup personas |
 | **2** | **CONTRACT FREEZE**: event taxonomy, schemas, TS types reviewed together (20 min) | ← | ← | ← |
 | 2–4 | Extraction smoke test on 200 posts; **Opus vs Haiku comparison on 50 posts** (§2.9.11), decision at H4; download the Scorecard bulk CSV + IPEDS ADM file and `docker compose cp` them into Zetaris | FastAPI skeleton + `RunManager` + **scripted fake SSE** that replays a hand-written event list; `app/zetaris.py` client, smoke-tested with `SELECT 7` and `SELECT * FROM NY_TAXI.customers LIMIT 3` | Store + reducer + `useRunStream` against the fake SSE; 3-column shell | Gauge + waterfall against static JSON |
 | 4–6 | Launch the **full extraction** (background, ~2 h); collect CDS PDF URLs for the 5 demo schools | Node 1 (extract + metrics + grade + guardrails) on Maya's transcript via CLI | Committee room bubbles + citation tokenizer on a hand-written debate | Twin cards + radar on static JSON |
@@ -8234,7 +8237,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 | Zetaris driver won't start (memory) or first queries are slow | Med | High | Docker ≥ 8 GB, `ZSPARK_DRIVER_MEM=4g` on 16 GB laptops; `shuffle.partitions 4`; pre-warm at API startup; gold Iceberg table on the hot path; TTL cache | A |
 | A Zetaris DDL detail differs from the docs (filestore local path, GRANT principal form, DDL over REST) | Med | Med | Every such line is marked "(verify at Hour 1)"; fall back to the UI SQL editor / Files upload; the views only depend on the confirmed statements | A |
 | Zetaris unreachable during judging | Low | High | Supabase fallback for every read (§2.10.10); the demo replay carries the Zetaris evidence chips anyway | B |
-| PullPush is slow, rate-limited or down | Med | High | Start the scrape at H1; checkpoint/resume; keep partial data. If it's down for more than 2 h, switch to another public Reddit archive (e.g., Arctic Shift dumps) with the same JSONL shape. | A |
+| Arctic Shift is slow, rate-limited or down | Med | High | Start the scrape at H1; checkpoint/resume; keep partial data. If it's down for more than 2 h, download Watchful1's per-subreddit `.zst` dumps for the two subreddits from Academic Torrents and convert them to the same JSONL shape. (PullPush was the original source but now refuses automated clients: DECISIONS D-003.) | A |
 | Extraction cost or time overrun | Med | Med | H4 model decision gate; extract demo-school posts first (filter by school mentions); `--limit` | A |
 | CDS PDFs are scanned or messy | Med | Med | Send the whole PDF (Claude reads scanned pages); hand-enter C7 for the 5 demo schools (15 min) | A |
 | Debate is too long or too slow | Med | High | `effort=low`, 110–170 words per turn; reduce to 2 turns via `TURN_BRIEFS` if needed; demo uses a cached dossier | B |
@@ -8307,7 +8310,7 @@ Two people present. **Presenter (P)** talks and owns the story. **Driver (D)** r
 > "Separation of duties, the same reason real committees have them. The parser can't see the target school, so it can't grade toward an answer. The fact-checker and the twin search run in parallel on different evidence. The advocate and the chair are prompted to disagree, which surfaces the concerns one voice would smooth over, and the debate runs as a real loop in LangGraph, not one model role-playing both sides. It also means each step is streamable and individually testable."
 
 **Q6. "Is scraping Reddit allowed?"**
-> "We used PullPush, a public archive of Reddit posts, for non-commercial research during the hackathon. We store no usernames, link back to every source post, and keep only structured fields. A production version would license data through Reddit's Data API or partner with counselors for consented outcomes, and the pipeline is source-agnostic, so that's a loader change."
+> "We used Arctic Shift, a public archive of Reddit posts, for non-commercial research during the hackathon. We store no usernames, link back to every source post, and keep only structured fields. A production version would license data through Reddit's Data API or partner with counselors for consented outcomes, and the pipeline is source-agnostic, so that's a loader change."
 
 **Q7. "Couldn't a student use this to game admissions?"**
 > "The advice is the same advice a good counselor gives: which school values what, where you're under-indexed, how to tell your story better. We explicitly refuse to recommend misrepresenting interests. The major-arbitrage advice requires real evidence of interest in the alternative major and always states the tradeoff."

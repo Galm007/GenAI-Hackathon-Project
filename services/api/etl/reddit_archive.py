@@ -1,8 +1,9 @@
-"""Scrape r/collegeresults and r/TransferToTop25 submissions from PullPush into raw JSONL.
+"""Scrape r/collegeresults and r/TransferToTop25 submissions from Arctic Shift into raw JSONL.
 
-PullPush mirrors Reddit submissions; `size` is capped at 100 and we paginate backwards in time with
-`before=<min created_utc of previous page>`. Be a good citizen: one request every 4 s, exponential backoff
-on 429/5xx, and a checkpoint file so a crash never re-fetches pages.
+Arctic Shift (https://github.com/ArthurHeitmann/arctic_shift) is a free, keyless archive of Reddit submissions.
+`limit` is capped at 100 and we paginate backwards in time with `before=<min created_utc of previous page>`.
+Be a good citizen, it is a volunteer-run service: one request every 4 s, backoff on 429/5xx (honoring its
+`X-RateLimit-Reset` header), and a checkpoint file so a crash never re-fetches pages.
 """
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ import httpx
 
 from .common import RAW_DIR, log
 
-PULLPUSH_URL = "https://api.pullpush.io/reddit/search/submission/"
+ARCHIVE_URL = "https://arctic-shift.photon-reddit.com/api/posts/search"
 PAGE_SIZE = 100
 MIN_INTERVAL_S = 4.0
 MIN_SELFTEXT_CHARS = 400
@@ -37,16 +38,19 @@ def keep(post: dict) -> bool:
 async def get_page(http: httpx.AsyncClient, params: dict) -> list[dict]:
     for attempt in range(7):
         try:
-            resp = await http.get(PULLPUSH_URL, params=params)
+            resp = await http.get(ARCHIVE_URL, params=params)
             if resp.status_code == 429 or resp.status_code >= 500:
                 raise httpx.HTTPStatusError(f"retryable {resp.status_code}", request=resp.request, response=resp)
             resp.raise_for_status()
-            return resp.json().get("data", [])
+            return resp.json().get("data") or []
         except (httpx.HTTPStatusError, httpx.TransportError, json.JSONDecodeError) as exc:
             wait = min(180, 5 * 2**attempt)
-            log.warning("pullpush %s (attempt %d) → sleeping %ss", exc, attempt + 1, wait)
+            response = getattr(exc, "response", None)
+            if response is not None and response.headers.get("x-ratelimit-reset", "").isdigit():
+                wait = max(wait, int(response.headers["x-ratelimit-reset"]) + 1)    # the service says when to return
+            log.warning("archive %s (attempt %d) → sleeping %ss", exc, attempt + 1, wait)
             await asyncio.sleep(wait)
-    raise RuntimeError(f"PullPush failed repeatedly for params={params}")
+    raise RuntimeError(f"Arctic Shift failed repeatedly for params={params}")
 
 
 async def scrape(subreddit: str, since: datetime) -> Path:
@@ -65,11 +69,10 @@ async def scrape(subreddit: str, since: datetime) -> Path:
             while before > since_epoch:
                 params = {
                     "subreddit": subreddit,
-                    "size": PAGE_SIZE,
+                    "limit": PAGE_SIZE,
                     "before": before,
                     "after": since_epoch,
                     "sort": "desc",
-                    "sort_type": "created_utc",
                 }
                 posts = await get_page(http, params)
                 if not posts:
@@ -93,6 +96,6 @@ async def scrape(subreddit: str, since: datetime) -> Path:
 
 
 async def scrape_all(since: datetime) -> None:
-    # Sequential on purpose: one polite request stream to PullPush.
+    # Sequential on purpose: one polite request stream to the archive.
     for sub in SUBREDDITS:
         await scrape(sub, since)
