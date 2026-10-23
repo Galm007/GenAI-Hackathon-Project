@@ -36,7 +36,7 @@
 | All reasoning nodes (parse, grade, fact-check, twin analysis, debate, delta) | Anthropic `claude-opus-5-5` | Effort is set per node (see §1.5). Thinking is always on for this model and is controlled only by `output_config.effort`. |
 | Structured outputs | `client.beta.messages.parse(..., output_format=PydanticModel)` | The result is validated into the Pydantic model and read from `.parsed_output`. |
 | Refusal safety net | `fallbacks="default"` + beta `server-side-fallback-2026-07-01` | If a safety classifier declines a request, it is re-run server-side on Anthropic's recommended fallback model. It's enabled in the shared `llm.py` wrapper and is a one-line removal if you don't want it. |
-| Offline Reddit extraction | Local **Gemma 4 E4B** (`ETL_MODEL=gemma4:e4b`) served by Ollama on this machine | Free and offline. Structured output goes through Ollama's `format` JSON-schema constraint (`app/local_llm.py::chat_structured`). Quality tradeoff in §2.9.11. CDS PDF extraction (A10) is a separate decision. |
+| Offline Reddit extraction | Local **Gemma 4 E2B** (`ETL_MODEL=gemma4:e2b`) served by Ollama on this machine | Free and offline. Structured output goes through Ollama's `format` JSON-schema constraint (`app/local_llm.py::chat_structured`). Quality tradeoff in §2.9.11. CDS PDF extraction (A10) is a separate decision. |
 | Embeddings (768-d) | Local **EmbeddingGemma 300M** (`EMBEDDING_MODEL=embeddinggemma`) via Ollama `/api/embed` | Free and offline; no embeddings API key. 768-d, so the schema uses `vector(768)`. Twins and live applicants are both embedded with the "sentence similarity" task prefix so they share one space. |
 | Live web research | Tavily (`AsyncTavilyClient`) | Results are cached in Postgres. If Tavily is down, Node 2 degrades to DB-only. |
 | **Data fabric (hackathon partner)** | **Zetaris Lightning 2.4.3** (local Docker bundle in `zetaris-platform/`) | The federated query engine, semantic views, Iceberg gold table, RBAC and audit log. Agents query it over its REST API (§2.10). pgvector stays in Supabase for sub-50 ms KNN. |
@@ -68,7 +68,7 @@ ZETARIS_ENABLED=true                             # false → pure-Supabase fallb
 
 # Tunables
 REASONING_MODEL=claude-opus-5-5
-ETL_MODEL=gemma4:e4b             # local extraction model (Ollama)
+ETL_MODEL=gemma4:e2b             # local extraction model (Ollama)
 EMBEDDING_MODEL=embeddinggemma   # local embedding model (Ollama), 768-d
 OLLAMA_URL=http://localhost:11434
 DEMO_MODE=false                  # true → replay recorded event logs (Part II, §4)
@@ -1232,20 +1232,14 @@ from app.schemas.common import ECTier, Hook, MajorCategory
 
 
 class ExtractedActivity(BaseModel):
-    description: str = Field(description="The poster's own wording, trimmed to at most 300 characters.")
+    description: str = Field(description="The poster's own wording, at most 120 characters.")
     role: str | None = Field(description="Leadership title if stated, e.g. 'President', 'Founder', 'Captain'.")
-    tier_rationale: str = Field(description="One sentence citing scale, distinction, or leadership evidence.")
     tier: ECTier
 
 
 class ExtractedAward(BaseModel):
     name: str
     level: Literal["school", "regional", "state", "national", "international", "unknown"]
-
-
-class APScore(BaseModel):
-    subject: str
-    score: Literal[1, 2, 3, 4, 5]
 
 
 class Demographics(BaseModel):
@@ -1263,7 +1257,6 @@ class SchoolDecision(BaseModel):
     school_as_written: str = Field(description="Exactly as the poster wrote it, e.g. 'UMich', 'CMU SCS'.")
     outcome: Literal["accepted", "waitlisted", "rejected"]
     round: Literal["ED", "ED2", "EA", "REA", "RD", "rolling", "unknown"]
-    major_if_different: str | None
 
 
 class RedditApplicantRecord(BaseModel):
@@ -1274,9 +1267,7 @@ class RedditApplicantRecord(BaseModel):
     gpa_uw: float | None = Field(description="Unweighted GPA on a 4.0 scale only.")
     gpa_w: float | None
     gpa_w_scale: float | None
-    gpa_raw_text: str | None = Field(description="Raw GPA text when not on a 4.0 UW scale.")
     college_gpa: float | None = Field(description="Transfer applicants' college GPA.")
-    class_rank_text: str | None
     class_rank_pct: float | None = Field(description="0.05 = top 5%. Only if computable from what is stated.")
 
     sat_total: int | None
@@ -1288,7 +1279,6 @@ class RedditApplicantRecord(BaseModel):
     honors_count: int | None
     dual_enrollment_count: int | None
     ib_diploma: bool | None
-    ap_scores: list[APScore]
     rigor_label: Literal["most_demanding", "very_demanding", "demanding", "average", "below_average", "unknown"]
 
     intended_major_raw: str | None
@@ -1296,17 +1286,17 @@ class RedditApplicantRecord(BaseModel):
 
     demographics: Demographics
     hooks: list[Hook]
-    activities: list[ExtractedActivity]
-    awards: list[ExtractedAward]
-    spike_summary: str | None = Field(description="One phrase naming the applicant's most distinctive theme.")
-    essay_notes: str | None
-    lor_notes: str | None
+    activities: list[ExtractedActivity] = Field(max_length=8)    # the 8 strongest; fewer output tokens
+    awards: list[ExtractedAward] = Field(max_length=4)
+    spike_summary: str | None = Field(description="At most 8 words naming the applicant's most distinctive theme.")
 
     decisions: list[SchoolDecision]
     extraction_confidence: Literal["high", "medium", "low"]
-    extraction_issues: list[str]
+    extraction_issues: list[str] = Field(max_length=2)   # short phrases
 ```
 
+> **Why this schema is short (D-008).** The local model generates ~35–70 tokens/s, so output length is the cost. Dropped from the first draft: `tier_rationale`, `gpa_raw_text`, `class_rank_text`, `ap_scores`, `essay_notes`, `lor_notes`, `major_if_different`. The matching `applicant_twins` columns stay (nullable or defaulted); the extractor just no longer fills them. Activities are capped at 8 and awards at 4.
+>
 > **Structured-output schema rules (apply to every LLM output model in this repo).** Make every field required. Express optional values as `X | None` with no default so the model must explicitly emit `null`. Use `Literal[...]` for bounded scales such as ratings, tiers and C7 levels instead of `ge`/`le` constraints. Never use `dict[str, X]` with free-form keys in an LLM output model: arbitrary-key maps don't fit a closed JSON schema, so use `list[{key, value}]` objects instead. Deterministic models (rubric, probability) can use dicts freely.
 
 #### 2.9.4 `etl/prompts.py`: Reddit extractor system prompt
@@ -1333,7 +1323,7 @@ Extraction rules
   or counts — a downstream statistical model treats every number you emit as observed data.
 - GPA: `gpa_uw` is only for an unweighted GPA on a 4.0 scale. A weighted GPA goes in `gpa_w`, with \
   `gpa_w_scale` if stated (e.g., 4.6 on a 5.0 scale). For 100-point, 6.0, IB-point, or foreign scales, copy the \
-  text into `gpa_raw_text` and leave `gpa_uw` null. Transfer posts: the college GPA goes in `college_gpa`.
+  text into `extraction_issues` (e.g. "GPA on 100-pt scale") and leave `gpa_uw` null. Transfer posts: the college GPA goes in `college_gpa`.
 - Tests: SAT total must be 400–1600 and ACT 1–36; otherwise null. If the poster applied test-optional, set \
   `applied_test_optional` true even if they mention a score they didn't send, and still record the score.
 - Course counts: count AP, honors, and dual-enrollment courses as stated. When APs are listed by name, count \
@@ -1347,13 +1337,15 @@ Extraction rules
   accepted. Omit withdrawn, pending, and unsubmitted applications. Record the round when stated.
 - Major: copy the intended major into `intended_major_raw` and map it to the closest `major_category`. \
   "CS + Math" → computer_science (first listed wins). Pre-med tracks → pre_health.
-- Activities: one entry per activity in the poster's words, trimmed to 300 characters, then grade it with the \
+- Activities: at most the 8 strongest, one entry each in the poster's words, trimmed to 120 characters, then grade each with the \
   tier rubric below. These tiers are compared directly with tiers that another reader assigns to live \
   applicants using the same rubric, so apply it the same way and resist inflation.
 - Demographics: copy self-reported values verbatim; never infer gender, race, income, or first-gen status \
   from names, schools, activities, or writing style. Unstated → null or "unknown".
 - Hooks: include only hooks the poster states (e.g., "Hooks: first-gen, low-income", "recruited for track"). \
   "Hooks: none" → empty list. Being URM is not a hook in this schema; it stays in the race field only.
+- Awards: at most 4, name only (under 60 characters). Keep every free-text field short: the whole record \
+  should stay under about 400 output tokens.
 - `extraction_confidence`: high if the template was followed and numbers are unambiguous, medium if partially \
   templated, low if you interpreted heavily. Log concrete problems (contradictions, unreadable scales) in \
   `extraction_issues`.
@@ -1459,6 +1451,7 @@ upenn: [upenn, penn, university of pennsylvania, wharton]
 from __future__ import annotations
 
 import asyncio
+import re
 from datetime import datetime, timezone
 
 import httpx
@@ -1471,10 +1464,13 @@ from app.scoring.metrics import ec_score, ec_rating_from_tiers
 from .common import PROCESSED_DIR, RAW_DIR, append_jsonl, log, read_jsonl, supabase
 from .prompts import REDDIT_EXTRACTOR_SYSTEM, render_post
 from .reddit_schema import RedditApplicantRecord
+from .resources import zetaris_paused
 from .school_resolver import SchoolResolver
 
 OUT = PROCESSED_DIR / "twins.jsonl"
 REJECTS = PROCESSED_DIR / "rejects.jsonl"
+CAPS = {"collegeresults": 2400, "TransferToTop25": 600}   # newest posts first; ~3,000 posts (see §2.9.11)
+DECISION_WORDS = re.compile(r"accept|admit|reject|denied|deny|waitlist|deferred", re.IGNORECASE)
 CONCURRENCY = 1          # one local GPU; Ollama serves requests one at a time at this model size
 OUTCOME_RANK = {"accepted": 3, "waitlisted": 2, "rejected": 1}
 
@@ -1482,7 +1478,7 @@ OUTCOME_RANK = {"accepted": 3, "waitlisted": 2, "rejected": 1}
 async def extract_post(post: dict, sem: asyncio.Semaphore) -> tuple[dict, RedditApplicantRecord | None, str | None]:
     async with sem:
         try:
-            rec = await chat_structured(RedditApplicantRecord, REDDIT_EXTRACTOR_SYSTEM, render_post(post))
+            rec = await chat_structured(RedditApplicantRecord, REDDIT_EXTRACTOR_SYSTEM, render_post(post), num_predict=900)
             return post, rec, None
         except (LocalLLMError, ValidationError) as exc:      # truncated or schema-invalid output
             return post, None, f"{type(exc).__name__}: {exc}"
@@ -1576,7 +1572,6 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
         "applied_test_optional": rec.applied_test_optional,
         "ap_count": rec.ap_count, "ib_diploma": rec.ib_diploma,
         "honors_count": rec.honors_count, "dual_enrollment_count": rec.dual_enrollment_count,
-        "ap_scores": [s.model_dump() for s in rec.ap_scores],
         "rigor_label": rec.rigor_label,
         "intended_major": rec.intended_major_raw,
         "major_category": rec.major_category,
@@ -1586,8 +1581,6 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
         "activities": activities,
         "awards": awards,
         "spike_summary": rec.spike_summary,
-        "essay_notes": rec.essay_notes,
-        "lor_notes": rec.lor_notes,
         "headline": headline,
         "accepted_schools":   sorted(s for s, v in best.items() if v[0] == "accepted"),
         "waitlisted_schools": sorted(s for s, v in best.items() if v[0] == "waitlisted"),
@@ -1601,28 +1594,37 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
     return row, None
 
 
+def select_posts(done: set[str], limit: int | None) -> list[dict]:
+    """Newest posts first, per subreddit, capped at CAPS. Posts that never mention a decision are skipped for free.
+    The cap counts posts already processed, so a resumed run does not creep past it."""
+    chosen: list[dict] = []
+    for sub, cap in CAPS.items():
+        posts = [p for p in read_jsonl(RAW_DIR / f"{sub}.jsonl") if DECISION_WORDS.search(p["selftext"])]
+        posts.sort(key=lambda p: p["created_utc"], reverse=True)
+        chosen += [p for p in posts[:cap] if p["id"] not in done]
+    return chosen[:limit] if limit else chosen
+
+
 async def run_extraction(limit: int | None = None) -> None:
     sb = await supabase()
     resolver = await SchoolResolver.load(sb)
     done = {r["reddit_id"] for r in read_jsonl(OUT)} | {r["reddit_id"] for r in read_jsonl(REJECTS)}
-
-    posts = [p for sub in ("collegeresults", "TransferToTop25")
-             for p in read_jsonl(RAW_DIR / f"{sub}.jsonl") if p["id"] not in done]
-    posts = posts[:limit] if limit else posts
+    posts = select_posts(done, limit)
     log.info("extracting %d posts (%d already processed)", len(posts), len(done))
 
-    sem = asyncio.Semaphore(CONCURRENCY)
-    tasks = [asyncio.create_task(extract_post(p, sem)) for p in posts]
     kept = rejected = 0
-    for i, fut in enumerate(asyncio.as_completed(tasks), 1):
-        post, rec, err = await fut
-        row, reason = (None, err) if rec is None else to_row(post, rec, resolver)
-        if row:
-            append_jsonl(OUT, [row]); kept += 1
-        else:
-            append_jsonl(REJECTS, [{"reddit_id": post["id"], "reason": reason}]); rejected += 1
-        if i % 100 == 0:
-            log.info("progress %d/%d kept=%d rejected=%d", i, len(posts), kept, rejected)
+    async with zetaris_paused():              # frees ~12 GB of RAM for the model; restarts Zetaris afterwards
+        sem = asyncio.Semaphore(CONCURRENCY)
+        tasks = [asyncio.create_task(extract_post(p, sem)) for p in posts]
+        for i, fut in enumerate(asyncio.as_completed(tasks), 1):
+            post, rec, err = await fut
+            row, reason = (None, err) if rec is None else to_row(post, rec, resolver)
+            if row:
+                append_jsonl(OUT, [row]); kept += 1
+            else:
+                append_jsonl(REJECTS, [{"reddit_id": post["id"], "reason": reason}]); rejected += 1
+            if i % 100 == 0:
+                log.info("progress %d/%d kept=%d rejected=%d", i, len(posts), kept, rejected)
     resolver.dump_unresolved(PROCESSED_DIR / "unresolved_schools.csv")
     log.info("done: kept=%d rejected=%d", kept, rejected)
 ```
@@ -2221,7 +2223,7 @@ select count(*) filter (where c7_weights <> '{}') as with_c7, count(*) as total 
 | Stage | Volume | Wall clock | Cost |
 |---|---|---|---|
 | Scrape (Arctic Shift) | ~150–250 pages @ 4 s | 15–25 min | free |
-| Extract (1 at a time, local) | ~12K posts × ~2.5K in / ~1.2K out tokens | **Measured on the RTX 4070 laptop (8 GB): about 71 tokens/s generation once warm.** At ~1.2K output tokens plus prompt processing that is roughly 20–40 s per post, i.e. **70–130 h for 12K posts**. Do not run the full set: cap at what fits the schedule (about 1,000 posts per 8 h) and prefer the 3–5K highest-signal posts. Cold start is slow (first load 15–50 s) and a memory-starved host (swap in use) drops to ~1 token/s | **$0** (electricity). Quality is the cost: Gemma 4 E4B is much smaller than the Claude model this section used to assume. Smoke-test 20 posts, read every record against its post, and look at the `rejects.jsonl` reasons before running the full set. Posts that fail validation are skipped, not guessed. |
+| Extract (1 at a time, local, capped at 3,000 posts) | 3,000 posts × ~1K in / ~400 out tokens (short schema, §2.9.3) | **Not yet measured for `gemma4:e2b`.** The larger E4B measured ~71 tokens/s warm; E2B should be faster, so a rough guess is 5–15 s per post, i.e. **4–12 h for 3,000 posts**. Measure on the first `--limit 20` run and adjust `CAPS` before the full run. Zetaris is paused automatically for the duration (`etl/resources.py`) | **$0** (electricity). Quality is the cost: E2B is smaller still than E4B, so read the 20 smoke rows against their posts and check `rejects.jsonl` reasons before the full run. Posts that fail validation are skipped, not guessed. |
 | Embeddings | 10K × ~350 tokens | a few minutes on the GPU | $0 (local EmbeddingGemma) |
 | CDS extraction | 50 PDFs × ~25K tokens | 10 min | ~$6 |
 
@@ -3893,7 +3895,7 @@ class Settings(BaseSettings):
 
     reasoning_model: str = "claude-opus-5-5"
     ollama_url: str = "http://localhost:11434"   # local Gemma models (app/local_llm.py also reads these)
-    etl_model: str = "gemma4:e4b"
+    etl_model: str = "gemma4:e2b"
     embedding_model: str = "embeddinggemma"
     embedding_dim: int = 768
     demo_mode: bool = False

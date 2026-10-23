@@ -17,7 +17,7 @@ class OllamaSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=(ROOT / ".env", API_DIR / ".env"), extra="ignore")
 
     ollama_url: str = "http://localhost:11434"
-    etl_model: str = "gemma4:e4b"                 # structured extraction of Reddit posts
+    etl_model: str = "gemma4:e2b"                 # structured extraction of Reddit posts
     embedding_model: str = "embeddinggemma"       # 768-d, must match vector(768) in the migrations
     embedding_dim: int = 768
 
