@@ -24,7 +24,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 
 - [x] **A01 — Migrations 0001–0003 (types, universities, twins)** · §2.2–2.4 · Deps: none — done by galm via Claude Code, 2026-10-23
   *Done when:* the files apply cleanly to a fresh database; `\d applicant_twins` shows the HNSW, GIN and generated `applied_schools` column.
-- [ ] **A02 — Migrations 0004–0005 (stats views, runtime tables)** · §2.5–2.6 · Deps: A01
+- [x] **A02 — Migrations 0004–0005 (stats views, runtime tables)** · §2.5–2.6 · Deps: A01 — done by Jmar L. Pineda via Claude Code, 2026-10-23
   *Done when:* they apply cleanly and `select refresh_twin_stats()` runs on an empty DB.
 - [ ] **A03 — Migrations 0006–0008 (hybrid-search RPCs, RLS/cron, radar RPC)** · §2.7, §2.8, §4.7 (SQL) · Deps: A02
   *Done when:* with 3 hand-inserted twins, `match_applicant_twins` returns ranked rows with an outcome; anon can't select `applicant_twins`.
