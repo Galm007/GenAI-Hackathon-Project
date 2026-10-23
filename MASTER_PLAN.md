@@ -36,7 +36,7 @@
 | All reasoning nodes (parse, grade, fact-check, twin analysis, debate, delta) | Anthropic `claude-opus-5-5` | Effort is set per node (see §1.5). Thinking is always on for this model and is controlled only by `output_config.effort`. |
 | Structured outputs | `client.beta.messages.parse(..., output_format=PydanticModel)` | The result is validated into the Pydantic model and read from `.parsed_output`. |
 | Refusal safety net | `fallbacks="default"` + beta `server-side-fallback-2026-07-01` | If a safety classifier declines a request, it is re-run server-side on Anthropic's recommended fallback model. It's enabled in the shared `llm.py` wrapper and is a one-line removal if you don't want it. |
-| Offline Reddit extraction | Local **Gemma 4 E2B** (`ETL_MODEL=gemma4:e2b`) served by Ollama on this machine | Free and offline. Structured output goes through Ollama's `format` JSON-schema constraint (`app/local_llm.py::chat_structured`). Quality tradeoff in §2.9.11. CDS PDF extraction (A10) is a separate decision: for now it keeps using Claude through `CDS_MODEL`. |
+| Offline Reddit extraction | Local **Gemma 4 E2B** (`ETL_MODEL=gemma4:e2b`) served by Ollama on this machine | Free and offline. Structured output goes through Ollama's `format` JSON-schema constraint (`app/local_llm.py::chat_structured`). Quality tradeoff in §2.9.11. CDS PDF extraction (A10) uses the same local runtime through `CDS_MODEL` (default `gemma4:e2b`). |
 | Embeddings (768-d) | Local **EmbeddingGemma 300M** (`EMBEDDING_MODEL=embeddinggemma`) via Ollama `/api/embed` | Free and offline; no embeddings API key. 768-d, so the schema uses `vector(768)`. Twins and live applicants are both embedded with the "sentence similarity" task prefix so they share one space. |
 | Live web research | Tavily (`AsyncTavilyClient`) | Results are cached in Postgres. If Tavily is down, Node 2 degrades to DB-only. |
 | **Data fabric (hackathon partner)** | **Zetaris Lightning 2.4.3** (local Docker bundle in `zetaris-platform/`) | The federated query engine, semantic views, Iceberg gold table, RBAC and audit log. Agents query it over its REST API (§2.10). pgvector stays in Supabase for sub-50 ms KNN. |
@@ -69,7 +69,7 @@ ZETARIS_ENABLED=true                             # false → pure-Supabase fallb
 # Tunables
 REASONING_MODEL=claude-opus-5-5
 ETL_MODEL=gemma4:e2b             # local Reddit extraction model (Ollama)
-CDS_MODEL=claude-opus-5-5        # CDS PDF extraction (A10) still uses the Anthropic API
+CDS_MODEL=gemma4:e2b             # local CDS PDF extraction (A10); try gemma4:e4b if C7 gets misread
 EMBEDDING_MODEL=embeddinggemma   # local embedding model (Ollama), 768-d
 OLLAMA_URL=http://localhost:11434
 DEMO_MODE=false                  # true → replay recorded event logs (Part II, §4)
@@ -1884,7 +1884,7 @@ async def load_scorecard() -> None:
 
 #### 2.9.9 `etl/load_cds.py`: Common Data Set PDFs → C7 weights and more
 
-`data/cds_sources.yaml`. Paste the real PDF links from each school's Institutional Research page; never guess URLs.
+Extraction runs on the local model (`CDS_MODEL`, default `gemma4:e2b`; D-010). Ollama has no PDF input, so the loader pulls each section's text out of the PDF with `pypdf` in layout mode (which keeps the C7 grid's columns apart), asks three narrow questions (counts, tests and GPA, C7), and runs deterministic sanity checks on the answers (admits ≤ applicants, ordered percentiles, percentages as fractions). A PDF with no text layer is skipped with a warning: hand-enter those schools. `data/cds_sources.yaml`: paste the real PDF links from each school's Institutional Research page; never guess URLs.
 
 ```yaml
 - slug: uiuc
@@ -1896,23 +1896,30 @@ async def load_scorecard() -> None:
 ```python
 from __future__ import annotations
 
-import base64
 import io
 import re
 from typing import Literal
 
 import httpx
 import yaml
-from pydantic import BaseModel
-from pypdf import PdfReader, PdfWriter
+from pydantic import BaseModel, ValidationError
+from pypdf import PdfReader
 
-from app import llm
-from app.config import settings
-from app.schemas.common import C7Level
+from app.local_llm import LocalLLMError, chat_structured, settings
 
 from .common import DATA_DIR, log, supabase
+from .resources import zetaris_paused
 
-MARKERS = ("C1", "C7", "C8", "C9", "C11", "C12", "C21", "C22", "D1", "D2", "D9")
+# Mirrors the `c7_level` enum in migration 0001 (swap for app.schemas.common.C7Level once B02 lands).
+C7Level = Literal["very_important", "important", "considered", "not_considered"]
+
+# A small local model does better on three narrow questions than on one 40-field form.
+SECTION_MARKERS = {
+    "counts": ("C1", "C21", "C22", "D1", "D2"),
+    "tests": ("C8", "C9", "C11", "C12"),
+    "c7": ("C7",),
+}
+MAX_SECTION_CHARS = 12_000          # ~3.5K tokens, inside the 8K context with room for the answer
 
 
 class C7Factors(BaseModel):
@@ -1956,13 +1963,18 @@ class TransferProfile(BaseModel):
     min_college_gpa: float | None
 
 
-class CDSExtract(BaseModel):
+class CDSCounts(BaseModel):
     cds_year: str | None
     applicants_total: int | None
     admits_total: int | None
     enrolled_total: int | None
     ed_applicants: int | None
     ed_admits: int | None
+    early_plans: EarlyPlans
+    transfer: TransferProfile
+
+
+class CDSTests(BaseModel):
     test_policy: Literal["required", "optional", "blind", "unknown"]
     sat_composite_25: int | None
     sat_composite_50: int | None
@@ -1978,56 +1990,118 @@ class CDSExtract(BaseModel):
     gpa_distribution: list[GPABucket]
     avg_hs_gpa: float | None
     pct_top10_class: float | None
+
+
+class CDSExtract(CDSCounts, CDSTests):
     c7: C7Factors
-    early_plans: EarlyPlans
-    transfer: TransferProfile
     extraction_notes: list[str]
 
 
-CDS_EXTRACTOR_SYSTEM = """\
-You extract fields from pages of a U.S. college's Common Data Set (CDS). The pages may include C1 (applications, \
-admissions, enrollment), C7 (relative importance of admission factors), C8 (testing policy), C9 (test score \
-percentiles), C11–C12 (high school GPA), C21–C22 (early decision / early action), and Section D (transfer admission).
-
+COMMON_RULES = """\
 Rules
-- Copy numbers exactly as printed. If a field is blank, "N/A", or not on these pages, return null. Percentages \
-  become fractions (63% → 0.63).
-- C7 is a grid: each factor row has a mark in one of four columns — Very Important, Important, Considered, \
-  Not Considered. Map each row to very_important, important, considered, or not_considered using these keys: \
-  Rigor of secondary school record → rigor; Class rank → class_rank; Academic GPA → academic_gpa; \
-  Standardized test scores → test_scores; Application Essay → essay; Recommendation(s) → recommendations; \
-  Interview → interview; Extracurricular activities → extracurriculars; Talent/ability → talent_ability; \
-  Character/personal qualities → character; First generation → first_generation; Alumni/ae relation → \
-  alumni_relation; Geographical residence → geographic_residence; State residency → state_residency; \
-  Religious affiliation/commitment → religious_affiliation; Volunteer work → volunteer_work; Work experience → \
-  work_experience; Level of applicant's interest → applicant_interest. Ignore racial/ethnic status rows on older forms.
-- C8 test policy: "required" if tests are required for some or all applicants by default; "optional" if \
-  considered when submitted; "blind" if not used in admission decisions; otherwise "unknown".
-- C9: newer forms list SAT composite percentiles; older forms list only sections — leave composite null then.
-- C11: one bucket per printed GPA band with its label as printed. C12: average high school GPA.
+- Copy numbers exactly as printed. If a field is blank, "N/A", or not in the text, return null. Never guess.
+- Percentages become fractions (63% → 0.63). Keep every answer short.
+"""
+
+COUNTS_SYSTEM = f"""\
+You read text from a U.S. college's Common Data Set (CDS): C1 (applications, admissions, enrollment), \
+C21–C22 (early decision / early action) and Section D (transfer admission). Fill the fields from that text.
+
+{COMMON_RULES}- C1: use the totals for first-time, first-year students (men + women + another gender, if split).
 - C21/C22: whether ED, ED2, EA, or restrictive EA is offered; ED applicants and admits if printed.
 - Section D: whether transfers are accepted; transfer applicants, admits, enrolled; minimum college GPA if printed.
-- Report the CDS year printed on the form, e.g. "2024-2025". Note anything unusual in `extraction_notes`.
+- Report the CDS year printed on the form, e.g. "2024-2025".
+"""
+
+TESTS_SYSTEM = f"""\
+You read text from a U.S. college's Common Data Set (CDS): C8 (testing policy), C9 (test score percentiles) and \
+C11–C12 (high school GPA, class rank). Fill the fields from that text.
+
+{COMMON_RULES}- C8 test policy: "required" if tests are required for some or all applicants by default; "optional" if \
+considered when submitted; "blind" if not used in admission decisions; otherwise "unknown".
+- C9: newer forms list SAT composite percentiles; older forms list only sections, so leave composite null then.
+- C11: one bucket per printed GPA band with its label as printed. C12: average high school GPA.
+"""
+
+C7_SYSTEM = """\
+You read text from section C7 of a U.S. college's Common Data Set: a grid in which each admission factor has a mark \
+(X) in one of four columns: Very Important, Important, Considered, Not Considered. The text keeps the page layout, \
+so the column of the mark tells you the level. Map each row to very_important, important, considered, or \
+not_considered using these keys: Rigor of secondary school record → rigor; Class rank → class_rank; Academic GPA → \
+academic_gpa; Standardized test scores → test_scores; Application Essay → essay; Recommendation(s) → \
+recommendations; Interview → interview; Extracurricular activities → extracurriculars; Talent/ability → \
+talent_ability; Character/personal qualities → character; First generation → first_generation; Alumni/ae relation \
+→ alumni_relation; Geographical residence → geographic_residence; State residency → state_residency; Religious \
+affiliation/commitment → religious_affiliation; Volunteer work → volunteer_work; Work experience → work_experience; \
+Level of applicant's interest → applicant_interest. Ignore racial/ethnic status rows on older forms. A row without \
+a clear mark is null.
 """
 
 
-def slice_cds_pdf(pdf: bytes) -> bytes:
-    """Keep only pages that mention the sections we need (+ the following page for spillover grids)."""
+def section_texts(pdf: bytes) -> dict[str, str]:
+    """Layout-preserving text of the pages that mention each section (+ the next page for grids that spill over)."""
     reader = PdfReader(io.BytesIO(pdf))
-    keep: set[int] = set()
-    for i, page in enumerate(reader.pages):
-        text = page.extract_text() or ""
-        if any(re.search(rf"\b{m}\b", text) for m in MARKERS):
-            keep.update({i, i + 1})
-    keep = {i for i in keep if i < len(reader.pages)}
-    if not keep or len(keep) > 40:          # scanned PDF (no text layer) or unhelpful markers → send it all
-        return pdf
-    writer = PdfWriter()
-    for i in sorted(keep):
-        writer.add_page(reader.pages[i])
-    buf = io.BytesIO()
-    writer.write(buf)
-    return buf.getvalue()
+    pages = [p.extract_text(extraction_mode="layout") or "" for p in reader.pages]
+    out: dict[str, str] = {}
+    for name, markers in SECTION_MARKERS.items():
+        idx: set[int] = set()
+        for i, text in enumerate(pages):
+            if any(re.search(rf"\b{m}\b", text) for m in markers):
+                idx.update({i, i + 1})
+        text = "\n\n".join(pages[i] for i in sorted(idx) if i < len(pages))
+        if name != "c7":                                   # C7 needs its padding: the mark's column is the answer
+            text = re.sub(r"[ \t]{3,}", "   ", text)
+        out[name] = text[:MAX_SECTION_CHARS]
+    return out
+
+
+def _frac(v: float | None) -> float | None:
+    if v is None:
+        return None
+    if 1 < v <= 100:                       # "63" instead of 0.63
+        v = v / 100
+    return v if 0 <= v <= 1 else None
+
+
+def _ordered(vals: list[int | None], lo: int, hi: int) -> bool:
+    given = [v for v in vals if v is not None]
+    return all(lo <= v <= hi for v in given) and given == sorted(given)
+
+
+def sanity_check(x: CDSExtract) -> CDSExtract:
+    """Deterministic guard for a small model's arithmetic and unit slips: drop what cannot be right, say so."""
+    notes = list(x.extraction_notes)
+
+    def drop(reason: str, **fields: object) -> None:
+        for k, v in fields.items():
+            setattr(x, k, v)
+        notes.append(f"dropped: {reason}")
+
+    if x.applicants_total is not None and x.admits_total is not None and x.admits_total > x.applicants_total:
+        drop("admits > applicants", applicants_total=None, admits_total=None)
+    if x.admits_total is not None and x.enrolled_total is not None and x.enrolled_total > x.admits_total:
+        drop("enrolled > admits", enrolled_total=None)
+    if x.ed_applicants is not None and x.ed_admits is not None and x.ed_admits > x.ed_applicants:
+        drop("ED admits > ED applicants", ed_applicants=None, ed_admits=None)
+    if not _ordered([x.sat_composite_25, x.sat_composite_50, x.sat_composite_75], 400, 1600):
+        drop("SAT composite out of range or unordered",
+             sat_composite_25=None, sat_composite_50=None, sat_composite_75=None)
+    if not _ordered([x.sat_ebrw_25, x.sat_ebrw_75], 200, 800):
+        drop("SAT EBRW out of range or unordered", sat_ebrw_25=None, sat_ebrw_75=None)
+    if not _ordered([x.sat_math_25, x.sat_math_75], 200, 800):
+        drop("SAT math out of range or unordered", sat_math_25=None, sat_math_75=None)
+    if not _ordered([x.act_composite_25, x.act_composite_75], 1, 36):
+        drop("ACT out of range or unordered", act_composite_25=None, act_composite_75=None)
+    for field in ("pct_submitting_sat", "pct_submitting_act", "pct_top10_class"):
+        setattr(x, field, _frac(getattr(x, field)))
+    buckets = [(b, _frac(b.pct)) for b in x.gpa_distribution]
+    if any(p is None for _, p in buckets):
+        notes.append("dropped: GPA buckets with an impossible percentage")
+    x.gpa_distribution = [GPABucket(bucket=b.bucket, pct=p) for b, p in buckets if p is not None]
+    if x.avg_hs_gpa is not None and not 0 < x.avg_hs_gpa <= 5:
+        drop("average GPA out of range", avg_hs_gpa=None)
+    x.extraction_notes = notes
+    return x
 
 
 def _rate(num: int | None, den: int | None) -> float | None:
@@ -2061,30 +2135,42 @@ def to_update(x: CDSExtract, url: str) -> dict:
     # Only overwrite Scorecard values with non-null CDS values.
     upd = {k: v for k, v in upd.items() if v not in (None, [], {})}
     upd["source_urls"] = {"cds": url}
-    upd["data_quality"] = {"base_source": "cds", "notes": x.extraction_notes}
+    upd["data_quality"] = {"base_source": "cds", "extractor": settings.cds_model, "notes": x.extraction_notes}
     return upd
+
+
+async def extract_cds(pdf: bytes, slug: str) -> CDSExtract | None:
+    """Three narrow calls to the local model. None when the PDF has no usable text layer (hand-enter those)."""
+    texts = section_texts(pdf)
+    if not all(texts.values()):
+        log.warning("%s: no text found for %s; scanned PDF? enter by hand",
+                    slug, ", ".join(k for k, v in texts.items() if not v))
+        return None
+    ask = f"Extract the CDS fields for school slug '{slug}' from this text:\n\n<cds>\n{{}}\n</cds>"
+    kw = {"model": settings.cds_model, "num_ctx": 8192, "num_predict": 1200}
+    try:
+        counts = await chat_structured(CDSCounts, COUNTS_SYSTEM, ask.format(texts["counts"]), **kw)
+        tests = await chat_structured(CDSTests, TESTS_SYSTEM, ask.format(texts["tests"]), **kw)
+        c7 = await chat_structured(C7Factors, C7_SYSTEM, ask.format(texts["c7"]), **kw)
+    except (LocalLLMError, ValidationError, httpx.HTTPError) as exc:
+        log.warning("%s: CDS extraction failed (%s: %s)", slug, type(exc).__name__, exc)
+        return None
+    return sanity_check(CDSExtract(**counts.model_dump(), **tests.model_dump(), c7=c7, extraction_notes=[]))
 
 
 async def load_cds() -> None:
     sources = yaml.safe_load((DATA_DIR / "cds_sources.yaml").read_text())
     sb = await supabase()
-    async with httpx.AsyncClient(timeout=60, follow_redirects=True) as http:
+    async with zetaris_paused(), httpx.AsyncClient(timeout=60, follow_redirects=True) as http:
         for src in sources:
             slug, url = src["slug"], src["cds_url"]
             pdf = (await http.get(url)).raise_for_status().content
-            b64 = base64.standard_b64encode(slice_cds_pdf(pdf)).decode()
-            extract = await llm.parse(
-                CDSExtract,
-                system=CDS_EXTRACTOR_SYSTEM,
-                messages=[{"role": "user", "content": [
-                    {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": b64}},
-                    {"type": "text", "text": f"Extract the CDS fields for school slug '{slug}'."},
-                ]}],
-                effort="medium",
-                model=settings.cds_model,
-            )
+            extract = await extract_cds(pdf, slug)
+            if extract is None:
+                continue
             upd = to_update(extract, url)
-            current = (await sb.table("universities_cds").select("source_urls").eq("slug", slug).single().execute()).data
+            row = await sb.table("universities_cds").select("source_urls").eq("slug", slug).single().execute()
+            current = row.data
             upd["source_urls"] = (current.get("source_urls") or {}) | upd["source_urls"]
             await sb.table("universities_cds").update(upd).eq("slug", slug).execute()
             log.info("%s: CDS %s, C7 factors=%d", slug, extract.cds_year, len(upd.get("c7_weights", {})))
@@ -2226,7 +2312,7 @@ select count(*) filter (where c7_weights <> '{}') as with_c7, count(*) as total 
 | Scrape (Arctic Shift) | ~150–250 pages @ 4 s | 15–25 min | free |
 | Extract (1 at a time, local, capped at 3,000 posts) | 3,000 posts × ~1K in / ~400 out tokens (short schema, §2.9.3) | **Not yet measured for `gemma4:e2b`.** The larger E4B measured ~71 tokens/s warm; E2B should be faster, so a rough guess is 5–15 s per post, i.e. **4–12 h for 3,000 posts**. Measure on the first `--limit 20` run and adjust `CAPS` before the full run. Zetaris is paused automatically for the duration (`etl/resources.py`) | **$0** (electricity). Quality is the cost: E2B is smaller still than E4B, so read the 20 smoke rows against their posts and check `rejects.jsonl` reasons before the full run. Posts that fail validation are skipped, not guessed. |
 | Embeddings | 10K × ~350 tokens | a few minutes on the GPU | $0 (local EmbeddingGemma) |
-| CDS extraction | 50 PDFs × ~25K tokens | 10 min | ~$6 |
+| CDS extraction (local, 3 calls per school) | 50 PDFs × ~3 × (3K in / 0.4K out) tokens | **Not yet measured**; guess 1–2 min per school, i.e. under 2 h for 50 | $0 |
 
 ### 2.10 Zetaris Lightning: the federated data fabric (hackathon partner platform)
 
@@ -3897,7 +3983,7 @@ class Settings(BaseSettings):
     reasoning_model: str = "claude-opus-5-5"
     ollama_url: str = "http://localhost:11434"   # local Gemma models (app/local_llm.py also reads these)
     etl_model: str = "gemma4:e2b"                # local Reddit extraction (Ollama)
-    cds_model: str = "claude-opus-5-5"           # CDS PDF extraction via the Anthropic API (A10)
+    cds_model: str = "gemma4:e2b"                # local CDS PDF extraction (A10)
     embedding_model: str = "embeddinggemma"
     embedding_dim: int = 768
     demo_mode: bool = False
@@ -8252,7 +8338,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 | Zetaris unreachable during judging | Low | High | Supabase fallback for every read (§2.10.10); the demo replay carries the Zetaris evidence chips anyway | B |
 | Arctic Shift is slow, rate-limited or down | Med | High | Start the scrape at H1; checkpoint/resume; keep partial data. If it's down for more than 2 h, download Watchful1's per-subreddit `.zst` dumps for the two subreddits from Academic Torrents and convert them to the same JSONL shape. (PullPush was the original source but now refuses automated clients: DECISIONS D-003.) | A |
 | Extraction cost or time overrun | Med | Med | H4 gate on the 20-post smoke test; the run is capped at 3,000 posts (`CAPS`); extract demo-school posts first (filter by school mentions); `--limit` | A |
-| CDS PDFs are scanned or messy | Med | Med | Send the whole PDF (Claude reads scanned pages); hand-enter C7 for the 5 demo schools (15 min) | A |
+| CDS PDFs are scanned or messy, or the small model misreads a grid | Med | Med | PDFs without a text layer are skipped; the loader's sanity checks null impossible values; hand-enter or hand-check C7 for the 5 demo schools (15 min, the Hour-12 spot-check); switch `CDS_MODEL` to `gemma4:e4b` | A |
 | Debate is too long or too slow | Med | High | `effort=low`, 110–170 words per turn; reduce to 2 turns via `TURN_BRIEFS` if needed; demo uses a cached dossier | B |
 | LLM grades are inflated | Med | Med | Anchors + clamps (§3.6.1); prompt calibration language; show warnings in UI | B |
 | SSE buffered by a proxy | Low | High | `X-Accel-Buffering: no`; test on the production host by H16 | B/D |

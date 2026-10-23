@@ -41,7 +41,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* the 20 smoke rows are upserted with 768-d vectors, and `match_applicant_twins` returns them for a school they applied to.
 - [ ] **A09 — College Scorecard API loader** · §2.9.8 · Deps: A01, A06
   *Done when:* ≥200 schools and their aliases are in Supabase; `resolve_school('michigan')` returns `umich`.
-- [ ] **A10 — CDS PDF loader (5 demo schools)** · §2.9.9 · Deps: A09, B01 · uses `CDS_MODEL` (Claude by default; D-009)
+- [ ] **A10 — CDS PDF loader (5 demo schools)** · §2.9.9 · Deps: A09 (B01 no longer needed: local Gemma, D-010; swap the local `C7Level` for `app.schemas.common.C7Level` once B02 lands). Code and tests exist; needs real `data/cds_sources.yaml` URLs and a model run (tell your human first).
   *Done when:* the 5 demo schools have `c7_weights` populated; a human has spot-checked C7 against the PDFs (note it in the commit body); `data/cds_sources.yaml` has real URLs only.
 - [ ] **A11 — Stats refresh, major overrides, `run_etl` CLI** · §2.9.10 · Deps: A02, A08
   *Done when:* `python -m etl.run_etl refresh-stats` updates `major_competitiveness`; the data-quality SQL from §2.9.10 runs.

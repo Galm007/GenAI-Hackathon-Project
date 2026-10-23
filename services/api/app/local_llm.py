@@ -18,6 +18,7 @@ class OllamaSettings(BaseSettings):
 
     ollama_url: str = "http://localhost:11434"
     etl_model: str = "gemma4:e2b"                 # structured extraction of Reddit posts
+    cds_model: str = "gemma4:e2b"                 # Common Data Set extraction (A10); bump to gemma4:e4b if C7 misreads
     embedding_model: str = "embeddinggemma"       # 768-d, must match vector(768) in the migrations
     embedding_dim: int = 768
 

@@ -17,7 +17,7 @@ Layout: `app/` (service), `etl/` (data pipeline), `scripts/` (CLIs), `tests/`.
 
 ## Local models (Reddit extraction and embeddings)
 
-Both run on this machine through [Ollama](https://ollama.com), with no API key: `gemma4:e2b` (extraction) and `embeddinggemma` (768-d embeddings). Settings and the client are in `app/local_llm.py`; `ETL_MODEL`, `EMBEDDING_MODEL` and `OLLAMA_URL` come from `.env`.
+Both run on this machine through [Ollama](https://ollama.com), with no API key: `gemma4:e2b` (Reddit and CDS extraction) and `embeddinggemma` (768-d embeddings). Settings and the client are in `app/local_llm.py`; `ETL_MODEL`, `EMBEDDING_MODEL` and `OLLAMA_URL` come from `.env`.
 
 ```bash
 # one-time: install Ollama (any method), then
@@ -25,4 +25,4 @@ ollama pull gemma4:e2b && ollama pull embeddinggemma
 ollama serve                         # leave running; models load on first use
 ```
 
-Loading a model uses the GPU and several GB of RAM, so close heavy apps first. Extraction pauses the Zetaris containers and restarts them afterwards (`etl/resources.py`); set `ADCOM_KEEP_ZETARIS=1` to disable that. The Claude API (`ANTHROPIC_API_KEY`) is only needed for CDS PDF extraction and the live agents.
+Loading a model uses the GPU and several GB of RAM, so close heavy apps first. Extraction pauses the Zetaris containers and restarts them afterwards (`etl/resources.py`); set `ADCOM_KEEP_ZETARIS=1` to disable that. The Claude API (`ANTHROPIC_API_KEY`) is only needed for the live agents (Track B).
