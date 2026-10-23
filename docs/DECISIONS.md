@@ -41,3 +41,9 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - We did: create the client and import `settings` on first call (`_get_client()`), same public API (`embed_texts`, `embed_one`). In `build_profile_text` the first-gen text moved into a local variable to satisfy ruff's line-length rule; the output string is byte-identical.
 - Why: `app/config.py` (B01) does not exist yet and requires API keys at import, so an eager import would break S02's tests and every module that imports `embeddings`.
 - Impact on other tracks: none; anything that patches `app.embeddings._client` should patch `_get_client` instead.
+
+## D-005 — `etl/load_scorecard.py` imports `app.config` lazily
+- Step: A09 · Date: 2026-10-23 · By: Jmar L. Pineda via Claude Code
+- Plan said: `from app.config import settings` at module top (§2.9.8).
+- We did: import inside `load_scorecard()`, as in D-002, so `_to_row`/`slugify` are importable and unit-testable before B01 lands.
+- Impact on other tracks: none.
