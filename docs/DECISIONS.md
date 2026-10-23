@@ -34,3 +34,10 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - We did: committed `etl/pullpush.py` as specified (its backoff worked as designed) and left A05 unchecked, because the "done when" live scrape could not run. We did not try to evade the block.
 - Options for the team: ask the PullPush administrator for access, use another source (the official Reddit API with the team's own credentials, or an academic dump), or run on pre-collected raw JSONL. This is a design choice for the humans.
 - Impact on other tracks: A07 (extraction) and everything after it need `data/raw/*.jsonl`.
+
+## D-004 — `app/embeddings.py` builds its OpenAI client lazily; one line in `profile_text.py` split
+- Step: S02 · Date: 2026-10-23 · By: Jmar L. Pineda via Claude Code
+- Plan said: module-level `_client = AsyncOpenAI(api_key=settings.openai_api_key)` with `from .config import settings` at the top (§2.9.7).
+- We did: create the client and import `settings` on first call (`_get_client()`), same public API (`embed_texts`, `embed_one`). In `build_profile_text` the first-gen text moved into a local variable to satisfy ruff's line-length rule; the output string is byte-identical.
+- Why: `app/config.py` (B01) does not exist yet and requires API keys at import, so an eager import would break S02's tests and every module that imports `embeddings`.
+- Impact on other tracks: none; anything that patches `app.embeddings._client` should patch `_get_client` instead.

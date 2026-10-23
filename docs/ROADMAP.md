@@ -16,7 +16,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Creates `services/api/` with `pyproject.toml` (§0.5), `uv.lock`, the `app/`, `etl/`, `scripts/` and `tests/` packages (empty `__init__.py`), ruff and pytest config, a root `.env.example` with every §0.3 key as a placeholder, and a README quickstart.
   *Done when:* `uv sync && uv run ruff check . && uv run pytest -q` all succeed (zero tests is fine).
 
-- [ ] **S02 — Shared modules used by several tracks** · Plan §2.9.7 (`profile_text.py`, `embeddings.py`), §3.4.1 (`prompts/rubrics.py`) · Deps: S01 · Owner: Track A
+- [x] **S02 — Shared modules used by several tracks** · Plan §2.9.7 (`profile_text.py`, `embeddings.py`), §3.4.1 (`prompts/rubrics.py`) · Deps: S01 · Owner: Track A — done by Jmar L. Pineda via Claude Code, 2026-10-23
   Creates `app/profile_text.py`, `app/embeddings.py` and `app/agents/prompts/rubrics.py` exactly as specified (the ETL and Node 1 must share them byte for byte).
   *Done when:* a unit test builds the profile text for a fixture and its output is deterministic; `embed_texts` is mocked in the test.
 
