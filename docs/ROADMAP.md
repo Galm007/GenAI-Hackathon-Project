@@ -12,7 +12,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 
 ## S: Shared foundations (do these first)
 
-- [ ] **S01 — Python service scaffold** · Plan §0.3–0.5, §0.4 · Deps: none · Owner: Track B
+- [x] **S01 — Python service scaffold** · Plan §0.3–0.5, §0.4 · Deps: none · Owner: Track B — done by Jmar L. Pineda via Claude Code, 2026-10-23
   Creates `services/api/` with `pyproject.toml` (§0.5), `uv.lock`, the `app/`, `etl/`, `scripts/` and `tests/` packages (empty `__init__.py`), ruff and pytest config, a root `.env.example` with every §0.3 key as a placeholder, and a README quickstart.
   *Done when:* `uv sync && uv run ruff check . && uv run pytest -q` all succeed (zero tests is fine).
 

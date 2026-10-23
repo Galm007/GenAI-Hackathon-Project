@@ -1,0 +1,47 @@
+[project]
+name = "adcom-api"
+version = "0.1.0"
+requires-python = ">=3.12"   # 3.11+ required for LangGraph's async get_stream_writer() context propagation
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "sse-starlette",
+  "python-multipart",
+  "langgraph>=1.0",
+  "anthropic",               # pin exact version at Hour 0 with `uv lock`
+  "openai",
+  "supabase",
+  "tavily-python",
+  "pydantic>=2.7",
+  "pydantic-settings",
+  "httpx",
+  "orjson",
+  "rapidfuzz",
+  "pypdf",
+  "pyyaml",
+  "numpy",
+  "scipy",
+  "statsmodels",             # offline coefficient fitting only
+]
+
+[dependency-groups]
+dev = [
+  "pytest",
+  "pytest-asyncio",
+  "ruff",
+]
+
+[tool.uv]
+package = false              # an application, not a distributable library
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
