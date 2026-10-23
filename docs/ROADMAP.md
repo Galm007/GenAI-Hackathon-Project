@@ -26,7 +26,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* the files apply cleanly to a fresh database; `\d applicant_twins` shows the HNSW, GIN and generated `applied_schools` column.
 - [x] **A02 — Migrations 0004–0005 (stats views, runtime tables)** · §2.5–2.6 · Deps: A01 — done by Jmar L. Pineda via Claude Code, 2026-10-23
   *Done when:* they apply cleanly and `select refresh_twin_stats()` runs on an empty DB.
-- [ ] **A03 — Migrations 0006–0008 (hybrid-search RPCs, RLS/cron, radar RPC)** · §2.7, §2.8, §4.7 (SQL) · Deps: A02
+- [x] **A03 — Migrations 0006–0008 (hybrid-search RPCs, RLS/cron, radar RPC)** · §2.7, §2.8, §4.7 (SQL) · Deps: A02 — done by Jmar L. Pineda via Claude Code, 2026-10-23
   *Done when:* with 3 hand-inserted twins, `match_applicant_twins` returns ranked rows with an outcome; anon can't select `applicant_twins`.
 - [ ] **A04 — Migration 0009 (Zetaris export schema)** · §2.10.3 · Deps: A03
   *Done when:* `refresh_twin_stats()` fills the three `zetaris_export` tables; the `zetaris_reader` role can read only that schema.
