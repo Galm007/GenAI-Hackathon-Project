@@ -3176,6 +3176,7 @@ def tool_call(node: str, tool: str, status: str, **data: Any) -> None:
 from __future__ import annotations
 
 import hashlib
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -4541,7 +4542,8 @@ async def _persist(state: AdComState, cfs: list[Counterfactual], report: DeltaRe
         "school_slug": state["school_slug"], "intended_major": state["inputs"].intended_major,
         "major_category": state["grade"].major_category,
         "intake": state["inputs"].model_dump(mode="json", exclude={"transcript_pdf_b64", "resume_pdf_b64",
-                                                                  "essay_text", "recommendation_text"}),
+                                                                  "essay_text", "recommendation_text"})
+                  | {"has_recommendations": bool(state["inputs"].recommendation_text)},
         **{k: dump(state.get(k)) for k in ("dossier", "grade", "metrics", "school_rubric", "institutional_brief",
                                            "baseline", "twin_analysis", "probability", "scoring_inputs")},
         "twins": [t.model_dump(mode="json") for t in state["twins"]],
@@ -4826,3 +4828,2593 @@ Adopt fitted values only if they are sane (`K_PILLAR` between 1 and 4, `K_TEST` 
 ---
 
 **End of Part I.** Part II follows.
+
+---
+
+# Part II
+
+## 4. FastAPI Backend & Streaming Specification
+
+### 4.1 Endpoint contract
+
+**The key decision: run creation is separate from streaming.** `POST /api/evaluate` accepts the multipart upload, starts the graph as a background task and returns `202 {run_id}` immediately. The browser then opens a plain `GET` SSE stream. Three things follow from this:
+
+- A dropped connection (venue Wi-Fi, laptop sleep) reconnects automatically. Native `EventSource` resends `Last-Event-ID`, and the server replays from the run's event buffer. **The application is never re-submitted and never billed twice.**
+- Many viewers can watch one run, e.g. the projector and a judge's phone via QR code.
+- Every run's full event log is persisted, so the demo can be replayed byte for byte if the API or the network fails (§4.8).
+
+| Method & path | Purpose | Request | Response |
+|---|---|---|---|
+| `POST /api/evaluate` | Create an evaluation run for the first target school | `multipart/form-data`: `transcript` (PDF ≤ 10 MB), `resume` (PDF, optional), `intake` (JSON string → `IntakeForm`) | `202 {run_id, stream_url, school_slug}` · `413` too large · `415` not a PDF · `429` rate limit |
+| `GET /api/evaluate/{run_id}/stream` | **SSE** live event stream (replays from `Last-Event-ID` or `?after=`) | headers: `Accept: text/event-stream`, optional `Last-Event-ID` | `text/event-stream` (§4.2) |
+| `POST /api/evaluate/{run_id}/schools/{slug}` | Evaluate another target school reusing the parsed dossier (Node 1 skipped) | — | `202 {run_id (new), stream_url}` |
+| `GET /api/evaluate/{run_id}` | Final snapshot (for refresh, share links, the demo fallback) | — | `RunSnapshot` JSON |
+| `GET /api/twins` | Twin explorer: page through more neighbors, filter by outcome or major | `?run_id=&outcome=any\|accepted\|rejected\|waitlisted&major=&k=10` | `TwinCard[]` |
+| `GET /api/twins/{twin_id}` | Full twin record for the expanded card | — | `TwinDetail` (no usernames; race withheld) |
+| `POST /api/what-if` | **Pure-math** counterfactual recompute for the sliders, under 50 ms, no LLM | `WhatIfRequest` | `WhatIfResponse` |
+| `GET /api/schools?q=` | Intake autocomplete (`resolve_school` RPC) | `q` ≥ 2 chars | `[{slug, name, score}]` |
+| `GET /api/schools/{slug}` | School card: C7 grid, admit rates, test band | — | `SchoolSummary` |
+| `GET /api/demo/{name}/stream` | Replay a recorded run with original timing | `?speed=1.0` | `text/event-stream` |
+| `GET /api/health` | Liveness + dependency check | — | `{ok, db, anthropic_key, tavily, demo_mode, fake_llm}` |
+
+### 4.2 SSE wire format
+
+Every frame has a monotonically increasing `id` (the event's sequence number within the run), a named `event`, and a JSON `data` envelope:
+
+```
+id: 42
+event: debate_token
+data: {"seq":42,"run_id":"7c1e…","ts":1793912345.12,"event":"debate_token","turn":1,"speaker":"advocate","delta":" spike in competitive"}
+
+: ping
+
+id: 43
+event: debate_token
+data: {"seq":43, …}
+```
+
+| Rule | Detail |
+|---|---|
+| Envelope | `seq`, `run_id`, `ts` (unix seconds) and `event` on every frame, plus the event-specific fields from §1.6 |
+| Ordering | `seq` starts at 0 (`run_started`) and is gap-free. The client ignores any `seq ≤ lastSeq`, which makes reconnect replay idempotent. |
+| Heartbeat | `: ping` comment every 15 s (`sse-starlette` `ping=15`) keeps proxies and load balancers from closing idle connections during long thinking pauses |
+| Terminal event | `done` with `{status: "complete" \| "failed", elapsed_ms}`. The server closes the stream after sending it, and the client calls `es.close()` on receipt. |
+| Proxy buffering | Response headers `Cache-Control: no-cache`, `X-Accel-Buffering: no`, `Connection: keep-alive` |
+| Payload size | Debate tokens are ~5–40 bytes each. Large objects (`dossier_parsed`, `final_report`) are sent once. A full run is about 3–4K frames / ~400 KB. |
+
+#### Representative payloads (abridged)
+
+```jsonc
+// node_start
+{"seq":1,"event":"node_start","node":"dossier_parser","label":"Dossier Parser & Rubric Grader"}
+
+// tool_call
+{"seq":31,"event":"tool_call","node":"institutional","tool":"tavily.search","status":"done",
+ "query":"University of Illinois Urbana-Champaign computer science major admission direct admit…","result_count":4}
+
+// scorecard
+{"seq":18,"event":"scorecard",
+ "grade":{"major_category":"computer_science","rigor_label":"most_demanding",
+          "harvard":{"academic":{"rating":2,"modifier":"-","rationale":"…","evidence":["metrics.gpa_uw_4","courses"]},
+                     "extracurricular":{"rating":3,"modifier":"+", "…":"…"},
+                     "personal":{"rating":3,"modifier":"", "…":"…"},"athletic":{"rating":4,"modifier":"", "…":"…"}},
+          "activity_grades":[{"activity_index":0,"tier":2,"spike_role":"core","rationale":"…"}],
+          "spike":{"label":"Competitive programming → applied ML","strength":"moderate","description":"…"}},
+ "metrics":{"gpa_uw_4":3.94,"gpa_w_5":4.52,"advanced_course_count":11,"rigor_index":0.62,
+            "grade_trend":"upward","sat_equivalent":1520,"proxy_academic_rating":2.6,"tier_derived_ec_rating":2.9},
+ "warnings":[]}
+
+// twins
+{"seq":44,"event":"twins","widened_to_peers":false,
+ "twins":[{"index":1,"outcome":"rejected","headline":"3.96 UW · 1530 SAT · 12 AP · computer science · T1:0 T2:1",
+           "semantic_similarity":0.91,"stat_proximity":0.88,"hybrid_score":0.90,"source_url":"https://www.reddit.com/r/collegeresults/…"}]}
+
+// probability
+{"seq":61,"event":"probability",
+ "probability":{"p_final":0.2140,"p_low":0.1290,"p_high":0.3150,"p_model":0.2390,"base_admit_rate":0.44,
+                "disposition":"WAITLIST",
+                "components":[{"key":"base","label":"School admit rate","delta_logit":0,"delta_pp":44.0},
+                              {"key":"major","label":"Major competitiveness","delta_logit":-1.05,"delta_pp":-22.4}]},
+ "scoring_inputs":{"…":"…"}}
+
+// debate_turn_end
+{"seq":402,"event":"debate_turn_end","turn":2,"speaker":"chair",
+ "content":"Let me slow us down. Grainger CS runs at a ×0.38 multiplier [[cds:major.computer_science]]…",
+ "citations":[{"kind":"cds","ref":"major.computer_science","valid":true,"span":[64,93]}],
+ "recommendation":null,"degraded":false}
+
+// counterfactuals
+{"seq":1630,"event":"counterfactuals","counterfactuals":[
+  {"id":"cf_major_math_stats","kind":"major_switch","label":"Apply as math stats (College of Liberal Arts & Sciences)",
+   "p_new":0.4310,"delta_pp":21.7,"confidence":"data_backed",
+   "evidence":"41 academically similar applicants to UIUC in math_stats; 58% admitted (Reddit, before calibration)",
+   "overrides":{"major_multiplier":1.12,"twin_sum_w_admit":3.81}}]}
+
+// done
+{"seq":1688,"event":"done","status":"complete","elapsed_ms":71234}
+```
+
+> The numbers above show shape only. Real values come from your loaded data.
+
+### 4.3 `app/main.py`: application and routes
+
+```python
+from __future__ import annotations
+
+import base64
+import json
+import time
+import uuid
+from contextlib import asynccontextmanager
+from typing import Annotated
+
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from sse_starlette.sse import EventSourceResponse
+
+from . import db
+from .api_models import IntakeForm, WhatIfRequest, WhatIfResponse
+from .config import settings
+from .demo import register_demo_runs, replay_stream
+from .runs import RunManager, RateLimited, sse_frames
+from .scoring.whatif import run_what_if
+
+MAX_PDF_BYTES = 10 * 1024 * 1024
+SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"}
+
+runs = RunManager()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if settings.fake_llm:
+        from . import fake_llm
+        fake_llm.install()                 # offline dev: fixtures instead of Anthropic calls (§4.9)
+    register_demo_runs(runs)               # recorded runs work even with DB/API offline (§4.8)
+    await db.sb()                          # warm the Supabase client
+    yield
+    await runs.shutdown()
+
+
+app = FastAPI(title="AdCom API", version="0.1.0", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,           # ["http://localhost:3000", "https://adcom.vercel.app"]
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+    expose_headers=["Last-Event-ID"],
+)
+
+
+async def _read_pdf(f: UploadFile | None) -> str | None:
+    if f is None:
+        return None
+    data = await f.read(MAX_PDF_BYTES + 1)
+    if len(data) > MAX_PDF_BYTES:
+        raise HTTPException(413, f"{f.filename} exceeds 10 MB")
+    if not data.startswith(b"%PDF-"):
+        raise HTTPException(415, f"{f.filename} is not a PDF")
+    return base64.standard_b64encode(data).decode()       # held in memory only; never written to disk or DB
+
+
+@app.post("/api/evaluate", status_code=202)
+async def create_evaluation(
+    request: Request,
+    intake: Annotated[str, Form()],
+    transcript: Annotated[UploadFile | None, File()] = None,
+    resume: Annotated[UploadFile | None, File()] = None,
+):
+    form = IntakeForm.model_validate_json(intake)
+    inputs = form.to_inputs(transcript_pdf_b64=await _read_pdf(transcript), resume_pdf_b64=await _read_pdf(resume))
+    if not (inputs.transcript_pdf_b64 or inputs.activities_text or inputs.resume_text):
+        raise HTTPException(422, "Upload a transcript or paste an activities list.")
+    try:
+        run = await runs.start(session_id=form.session_id, inputs=inputs, school_slug=form.target_schools[0])
+    except RateLimited as exc:
+        raise HTTPException(429, str(exc)) from exc
+    return {"run_id": run.run_id, "school_slug": run.school_slug,
+            "stream_url": f"/api/evaluate/{run.run_id}/stream"}
+
+
+@app.get("/api/evaluate/{run_id}/stream")
+async def stream_evaluation(run_id: str, request: Request, after: int = Query(-1)):
+    run = runs.get(run_id)
+    if run is None:
+        raise HTTPException(404, "unknown or expired run")
+    last_id = request.headers.get("last-event-id")
+    start_after = int(last_id) if last_id and last_id.isdigit() else after
+    return EventSourceResponse(sse_frames(run, start_after, request), ping=15, headers=SSE_HEADERS)
+
+
+@app.post("/api/evaluate/{run_id}/schools/{slug}", status_code=202)
+async def evaluate_another_school(run_id: str, slug: str):
+    parent = runs.get(run_id)
+    if parent is None or parent.final is None:
+        raise HTTPException(409, "parent run must be complete before evaluating another school")
+    try:
+        child = await runs.start_child(parent, slug)
+    except RateLimited as exc:
+        raise HTTPException(429, str(exc)) from exc
+    return {"run_id": child.run_id, "school_slug": slug, "stream_url": f"/api/evaluate/{child.run_id}/stream"}
+
+
+@app.get("/api/evaluate/{run_id}")
+async def get_snapshot(run_id: str):
+    snap = await runs.snapshot(run_id)
+    if snap is None:
+        raise HTTPException(404, "unknown or expired run")
+    return snap
+
+
+@app.post("/api/what-if", response_model=WhatIfResponse)
+async def what_if(req: WhatIfRequest):
+    ctx = await runs.scoring_context(req.run_id)
+    if ctx is None:
+        raise HTTPException(404, "run not found or not yet scored")
+    return run_what_if(ctx, req)
+
+
+@app.get("/api/twins")
+async def list_twins(run_id: str, outcome: str = "any", major: str | None = None, k: int = Query(10, le=50)):
+    ctx = await runs.scoring_context(run_id)
+    if ctx is None:
+        raise HTTPException(404, "run not found")
+    rows = await db.match_twins(ctx.embedding, [ctx.school_slug], k=k, gpa=ctx.gpa, sat=ctx.sat, outcome=outcome)
+    if major:
+        rows = [r for r in rows if r["major_category"] == major]
+    from .agents.nodes.twins import _to_card
+    return [_to_card(i + 1, r).model_dump() for i, r in enumerate(rows)]
+
+
+@app.get("/api/twins/{twin_id}")
+async def twin_detail(twin_id: uuid.UUID):
+    return await db.twin_detail(str(twin_id))
+
+
+@app.get("/api/schools")
+async def search_schools(q: str = Query(min_length=2)):
+    return await db.resolve_school(q)
+
+
+@app.get("/api/schools/{slug}")
+async def school_summary(slug: str):
+    s = await db.get_school(slug)
+    keep = ("slug", "name", "city", "state", "control", "admit_rate", "ed_admit_rate", "rd_admit_rate", "test_policy",
+            "sat_composite_25", "sat_composite_75", "act_composite_25", "act_composite_75", "c7_weights",
+            "early_plans", "major_competitiveness", "cds_year", "source_urls")
+    return {k: s.get(k) for k in keep}
+
+
+@app.get("/api/demo/{name}/stream")
+async def demo_stream(name: str, request: Request, speed: float = Query(1.0, ge=0.25, le=8.0)):
+    return EventSourceResponse(replay_stream(name, speed, request), ping=15, headers=SSE_HEADERS)
+
+
+@app.get("/api/health")
+async def health():
+    ok_db = True
+    try:
+        await db.get_school("mit")
+    except Exception:
+        ok_db = False
+    return {"ok": ok_db, "db": ok_db, "anthropic_key": bool(settings.anthropic_api_key) or settings.fake_llm,
+            "tavily": bool(settings.tavily_api_key), "demo_mode": settings.demo_mode,
+            "fake_llm": settings.fake_llm, "ts": time.time()}
+```
+
+Add these to `config.py`:
+
+```python
+class Settings(BaseSettings):
+    ...                                    # existing fields from §3.5.1
+    cors_origins: list[str] = ["http://localhost:3000"]
+    fake_llm: bool = False
+    max_concurrent_runs: int = 6           # protects the API budget and rate limits during judging
+    max_runs_per_day: int = 400
+    run_idle_cancel_s: int = 180           # cancel a run if nobody has watched it for 3 minutes
+```
+
+And these helpers to `db.py`:
+
+```python
+async def resolve_school(q: str) -> list[dict]:
+    res = await (await sb()).rpc("resolve_school", {"q": q, "max_results": 8}).execute()
+    return res.data or []
+
+
+async def twin_detail(twin_id: str) -> dict:
+    cols = ("id,source_url,cycle_year,applicant_type,gpa_uw,gpa_w,sat_score,act_score,ap_count,ib_diploma,"
+            "intended_major,major_category,hooks,ec_tier_summary,activities,awards,spike_summary,headline,"
+            "decisions_detail,rigor_label")          # demographics deliberately excluded
+    res = await (await sb()).table("applicant_twins").select(cols).eq("id", twin_id).single().execute()
+    return res.data
+
+
+async def admitted_medians(slug: str) -> dict:
+    res = await (await sb()).rpc("admitted_profile_medians", {"target_school": slug}).execute()
+    return (res.data or [{}])[0]
+
+
+async def append_event_log(run_id: str, events: list[dict], status: str) -> None:
+    await (await sb()).table("evaluation_runs").update({"event_log": events, "status": status}) \
+        .eq("id", run_id).execute()
+
+
+async def load_run(run_id: str) -> dict | None:
+    res = await (await sb()).table("evaluation_runs").select("*").eq("id", run_id).maybe_single().execute()
+    return res.data if res is not None else None
+```
+
+### 4.4 `app/runs.py`: run manager (decouples the graph from HTTP connections)
+
+The graph runs as an `asyncio.Task` that appends envelopes to a per-run buffer and notifies waiters through an `asyncio.Condition`. Each SSE connection is just a reader on that buffer starting at its `Last-Event-ID`. Three payloads (`scorecard`, `probability`, `counterfactuals`) are also **captured**, so `/api/what-if` works the moment the probability arrives, about 25 s into a run and long before the debate ends.
+
+```python
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import time
+import uuid
+from collections.abc import AsyncIterator
+from dataclasses import dataclass, field
+from datetime import date
+from typing import Any
+
+import orjson
+from fastapi import Request
+
+from . import db
+from .agents.graph import graph
+from .config import settings
+from .schemas.delta import Counterfactual
+from .schemas.inputs import RawApplicantInputs
+from .scoring.probability import ScoringInputs
+
+log = logging.getLogger("runs")
+CAPTURED = {"scorecard", "probability", "counterfactuals", "final_report"}
+PREFILL_KEYS = ("dossier", "grade", "metrics", "profile_text", "profile_embedding")
+
+
+class RateLimited(RuntimeError):
+    pass
+
+
+@dataclass
+class Run:
+    run_id: str
+    session_id: str
+    school_slug: str
+    has_recommendations: bool = False
+    events: list[dict] = field(default_factory=list)
+    captured: dict[str, dict] = field(default_factory=dict)
+    cond: asyncio.Condition = field(default_factory=asyncio.Condition)
+    done: bool = False
+    status: str = "running"
+    final: dict | None = None
+    task: asyncio.Task | None = None
+    subscribers: int = 0
+    last_seen: float = field(default_factory=time.monotonic)
+    started: float = field(default_factory=time.monotonic)
+    school: dict | None = None                     # set for demo replays (works with the DB offline)
+
+
+@dataclass(frozen=True)
+class ScoringContext:
+    run_id: str
+    school_slug: str
+    major_category: str
+    scoring_inputs: ScoringInputs
+    tiers: list[int]
+    has_recommendations: bool
+    school: dict
+    counterfactuals: list[Counterfactual]
+    embedding: list[float] | None
+    gpa: float | None
+    sat: int | None
+
+
+class RunManager:
+    def __init__(self) -> None:
+        self._runs: dict[str, Run] = {}
+        self._sem = asyncio.Semaphore(settings.max_concurrent_runs)
+        self._day: tuple[date, int] = (date.today(), 0)
+        self._active_sessions: set[str] = set()
+
+    # ---------- lifecycle ----------
+    def get(self, run_id: str) -> Run | None:
+        return self._runs.get(run_id)
+
+    def _admit(self, session_id: str) -> None:
+        today = date.today()
+        if self._day[0] != today:
+            self._day = (today, 0)
+        if self._day[1] >= settings.max_runs_per_day:
+            raise RateLimited("Today's evaluation budget is used up. Try the recorded demo.")
+        if session_id in self._active_sessions:
+            raise RateLimited("You already have an evaluation in progress.")
+        if self._sem.locked():
+            raise RateLimited("All committee rooms are busy. Retry in a minute.")
+        self._day = (today, self._day[1] + 1)
+
+    async def start(self, *, session_id: str, inputs: RawApplicantInputs, school_slug: str,
+                    prefill: dict[str, Any] | None = None) -> Run:
+        self._admit(session_id)
+        run = Run(run_id=str(uuid.uuid4()), session_id=session_id, school_slug=school_slug,
+                  has_recommendations=bool(inputs.recommendation_text))
+        self._runs[run.run_id] = run
+        state = {"run_id": run.run_id, "session_id": session_id, "inputs": inputs,
+                 "school_slug": school_slug, **(prefill or {})}
+        run.task = asyncio.create_task(self._drive(run, state))
+        return run
+
+    async def start_child(self, parent: Run, slug: str) -> Run:
+        f = parent.final
+        return await self.start(session_id=parent.session_id, inputs=f["inputs"], school_slug=slug,
+                                prefill={k: f[k] for k in PREFILL_KEYS})
+
+    async def shutdown(self) -> None:
+        for run in self._runs.values():
+            if run.task and not run.task.done():
+                run.task.cancel()
+
+    # ---------- the driver ----------
+    async def publish(self, run: Run, event: str, **data: Any) -> None:
+        async with run.cond:
+            env = {"seq": len(run.events), "run_id": run.run_id, "ts": round(time.time(), 3), "event": event, **data}
+            run.events.append(env)
+            if event in CAPTURED:
+                run.captured[event] = env
+            run.cond.notify_all()
+
+    async def _drive(self, run: Run, state: dict) -> None:
+        self._active_sessions.add(run.session_id)
+        config = {"configurable": {"thread_id": run.run_id}, "recursion_limit": 40}
+        watchdog = asyncio.create_task(self._watchdog(run))
+        try:
+            async with self._sem:
+                await self.publish(run, "run_started", school_slug=run.school_slug,
+                                   cached_dossier="dossier" in state)
+                if "dossier" in state:      # child run / cached upload: replay Node 1's outputs so the panel fills
+                    await self.publish(run, "dossier_parsed", metrics=state["metrics"].model_dump(),
+                                       dossier=state["dossier"].model_dump(exclude={"essay_text"}))
+                    await self.publish(run, "scorecard", grade=state["grade"].model_dump(),
+                                       metrics=state["metrics"].model_dump(), warnings=[])
+                async for mode, chunk in graph.astream(state, config, stream_mode=["updates", "custom"]):
+                    if mode == "custom":
+                        payload = dict(chunk)
+                        event = payload.pop("event")
+                        payload.pop("ts", None)
+                        await self.publish(run, event, **payload)
+                    else:
+                        for node in chunk:              # {node_name: partial_state}; never send state itself
+                            await self.publish(run, "node_complete", node=node)
+                run.final = (await graph.aget_state(config)).values
+                run.status = "complete"
+        except asyncio.CancelledError:
+            run.status = "failed"
+            await self.publish(run, "error", node=None, message="Run cancelled: no viewers.", recoverable=False)
+        except Exception as exc:                        # the stream must always end cleanly
+            run.status = "failed"
+            log.exception("run %s failed", run.run_id)
+            await self.publish(run, "error", node=None, message=f"Evaluation failed ({type(exc).__name__}).",
+                               recoverable=False)
+        finally:
+            watchdog.cancel()
+            await self.publish(run, "done", status=run.status,
+                               elapsed_ms=int((time.monotonic() - run.started) * 1000))
+            async with run.cond:
+                run.done = True
+                run.cond.notify_all()
+            self._active_sessions.discard(run.session_id)
+            try:
+                await db.append_event_log(run.run_id, run.events, run.status)
+            except Exception:
+                log.warning("could not persist event log for %s", run.run_id)
+
+    async def _watchdog(self, run: Run) -> None:
+        """Don't burn tokens on a run nobody is watching (closed tab, abandoned demo)."""
+        while True:
+            await asyncio.sleep(15)
+            if run.subscribers == 0 and time.monotonic() - run.last_seen > settings.run_idle_cancel_s:
+                if run.task:
+                    run.task.cancel()
+                return
+
+    # ---------- read side ----------
+    async def snapshot(self, run_id: str) -> dict | None:
+        run = self._runs.get(run_id)
+        if run:
+            return {"run_id": run_id, "status": run.status, "school_slug": run.school_slug,
+                    "last_seq": len(run.events) - 1,
+                    "captured": {k: v for k, v in run.captured.items()}}
+        row = await db.load_run(run_id)
+        if not row:
+            return None
+        return {"run_id": run_id, "status": row["status"], "school_slug": row["school_slug"],
+                **{k: row.get(k) for k in ("grade", "metrics", "school_rubric", "twins", "baseline", "probability",
+                                           "debate", "counterfactuals", "delta_report")}}
+
+    async def scoring_context(self, run_id: str) -> ScoringContext | None:
+        run = self._runs.get(run_id)
+        if run and "probability" in run.captured and "scorecard" in run.captured:
+            cap, f = run.captured, run.final or {}
+            grade = cap["scorecard"]["grade"]
+            return ScoringContext(
+                run_id=run_id, school_slug=run.school_slug, major_category=grade["major_category"],
+                scoring_inputs=ScoringInputs.model_validate(cap["probability"]["scoring_inputs"]),
+                tiers=[ag["tier"] for ag in grade["activity_grades"]],
+                has_recommendations=run.has_recommendations,
+                school=run.school or await db.get_school(run.school_slug),
+                counterfactuals=[Counterfactual.model_validate(c)
+                                 for c in cap.get("counterfactuals", {}).get("counterfactuals", [])],
+                embedding=f.get("profile_embedding"),
+                gpa=f["metrics"].gpa_uw_4 if f.get("metrics") else None,
+                sat=cap["scorecard"]["metrics"]["sat_equivalent"],
+            )
+        row = await db.load_run(run_id)                 # after a restart: rebuild from Postgres
+        if not row or not row.get("scoring_inputs"):
+            return None
+        emb = row.get("profile_embedding")
+        return ScoringContext(
+            run_id=run_id, school_slug=row["school_slug"], major_category=row["major_category"],
+            scoring_inputs=ScoringInputs.model_validate(row["scoring_inputs"]),
+            tiers=[ag["tier"] for ag in row["grade"]["activity_grades"]],
+            has_recommendations=bool((row.get("intake") or {}).get("has_recommendations")),
+            school=await db.get_school(row["school_slug"]),
+            counterfactuals=[Counterfactual.model_validate(c) for c in row.get("counterfactuals") or []],
+            embedding=json.loads(emb) if isinstance(emb, str) else emb,   # PostgREST returns vector as text
+            gpa=(row.get("metrics") or {}).get("gpa_uw_4"),
+            sat=(row.get("metrics") or {}).get("sat_equivalent"),
+        )
+
+
+async def sse_frames(run: Run, after: int, request: Request) -> AsyncIterator[dict]:
+    """One reader per connection. Replays everything after `after`, then follows live."""
+    i = after + 1
+    run.subscribers += 1
+    try:
+        while True:
+            async with run.cond:
+                await run.cond.wait_for(lambda: len(run.events) > i or run.done)
+                batch = run.events[i:]
+            for ev in batch:
+                yield {"id": str(ev["seq"]), "event": ev["event"], "data": orjson.dumps(ev).decode()}
+            i += len(batch)
+            run.last_seen = time.monotonic()
+            if run.done and i >= len(run.events):
+                return
+            if await request.is_disconnected():
+                return
+    finally:
+        run.subscribers -= 1
+        run.last_seen = time.monotonic()
+```
+
+> **One worker only.** `RunManager` keeps runs in process memory, so deploy with `uvicorn --workers 1`. A single async worker handles dozens of concurrent SSE streams easily, because the work is I/O-bound on Anthropic. Scaling past one box would need Redis Streams in place of the in-memory buffer. That is out of scope for the hackathon and worth one sentence if a judge asks.
+
+`/api/what-if` calls `db.get_school` on every slider move, so give it a 10-minute in-process cache:
+
+```python
+# app/db.py
+_school_cache: dict[str, tuple[float, dict]] = {}
+SCHOOL_TTL_S = 600
+
+
+async def get_school(slug: str) -> dict[str, Any]:
+    hit = _school_cache.get(slug)
+    if hit and time.monotonic() - hit[0] < SCHOOL_TTL_S:
+        return hit[1]
+    res = await (await sb()).table("universities_cds").select("*").eq("slug", slug).maybe_single().execute()
+    if res is None or not res.data:
+        raise ValueError(f"unknown school slug: {slug}")
+    _school_cache[slug] = (time.monotonic(), res.data)
+    return res.data
+```
+
+### 4.5 `app/api_models.py`: request/response models
+
+```python
+from __future__ import annotations
+
+from datetime import date
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+from .schemas.common import EarlyRound, Hook, MajorCategory
+from .schemas.delta import ProbabilityBreakdown
+from .schemas.inputs import RawApplicantInputs, SelfReportedContext
+
+
+class IntakeForm(BaseModel):
+    session_id: str = Field(min_length=8, max_length=64)          # random id from localStorage; no accounts
+    intended_major: str = Field(min_length=2, max_length=120)
+    target_schools: list[str] = Field(min_length=1, max_length=8)
+    early_round: dict[str, EarlyRound] = Field(default_factory=dict)
+    resume_text: str | None = Field(None, max_length=20_000)
+    activities_text: str | None = Field(None, max_length=20_000)
+    essay_text: str | None = Field(None, max_length=15_000)
+    recommendation_text: str | None = Field(None, max_length=15_000)
+    hooks: list[Hook] = Field(default_factory=list)
+    context: SelfReportedContext = Field(default_factory=SelfReportedContext)
+    application_deadline: date | None = None
+    consent: Literal[True]                                          # "These are my own materials; delete in 24h"
+
+    def to_inputs(self, *, transcript_pdf_b64: str | None, resume_pdf_b64: str | None) -> RawApplicantInputs:
+        data = self.model_dump(exclude={"session_id", "consent", "application_deadline"})
+        return RawApplicantInputs(
+            **data, transcript_pdf_b64=transcript_pdf_b64, resume_pdf_b64=resume_pdf_b64,
+            application_deadline=self.application_deadline.isoformat() if self.application_deadline else None,
+        )
+
+
+class WhatIfRequest(BaseModel):
+    run_id: str
+    sat: int | None = Field(None, ge=400, le=1600)
+    withhold_sat: bool = False
+    major_category: MajorCategory | None = None
+    add_activities: list[Literal[1, 2, 3]] = Field(default_factory=list, max_length=3)   # hypothetical new ECs by tier
+    early_round: EarlyRound | None = None
+    demonstrated_interest: bool | None = None
+    essay_steps: Literal[0, 1, 2] = 0                                # Personal rating improves by N steps
+
+
+class WhatIfResponse(BaseModel):
+    baseline: ProbabilityBreakdown
+    simulated: ProbabilityBreakdown
+    delta_pp: float
+    applied: list[str]
+    warnings: list[str]
+    confidence: Literal["data_backed", "model_estimate"]
+```
+
+### 4.6 `app/scoring/whatif.py`: slider math (shares one code path with Node 5)
+
+```python
+from __future__ import annotations
+
+from app.api_models import WhatIfRequest, WhatIfResponse
+
+from .metrics import ec_rating_from_tiers
+from .probability import compute_probability
+
+ROUND_FLAGS = {"ED": "ed", "ED2": "ed2", "EA": "ea", "REA": "rea"}
+
+
+def run_what_if(ctx, req: WhatIfRequest) -> WhatIfResponse:
+    x = ctx.scoring_inputs
+    over: dict = {}
+    applied: list[str] = []
+    warnings: list[str] = []
+    confidence = "data_backed"
+    ratings = dict(x.ratings)
+
+    # Testing
+    if req.withhold_sat:
+        if x.test_policy == "required":
+            warnings.append("This school requires test scores, so withholding isn't an option.")
+        else:
+            over["sat"] = None
+            applied.append("Withhold test score")
+    elif req.sat is not None and req.sat != x.sat:
+        over["sat"] = req.sat
+        applied.append(f"SAT {req.sat}")
+
+    # Major: reuse Node 5's data-backed counterfactual when one exists
+    if req.major_category and req.major_category != ctx.major_category:
+        cf = next((c for c in ctx.counterfactuals if c.id == f"cf_major_{req.major_category}"), None)
+        if cf:
+            over.update(cf.overrides)
+            applied.append(cf.label)
+        else:
+            mc = (ctx.school.get("major_competitiveness") or {}).get(req.major_category) or {}
+            over["major_multiplier"] = min(max(float(mc.get("multiplier") or 1.0), 0.25), 2.0)
+            applied.append(f"Apply as {req.major_category.replace('_', ' ')}")
+            confidence = "model_estimate"
+            if not mc:
+                warnings.append("No major-specific data for this school; using the school-wide rate.")
+
+    # Hypothetical new activities shift the EC rating by the change in its tier anchor
+    if req.add_activities:
+        shift = ec_rating_from_tiers(ctx.tiers + list(req.add_activities)) - ec_rating_from_tiers(ctx.tiers)
+        ratings["extracurricular"] = max(1.0, ratings["extracurricular"] + shift)
+        applied.append("Add " + ", ".join(f"Tier {t}" for t in req.add_activities) + " activity")
+        confidence = "model_estimate"
+
+    # Essay improvement
+    if req.essay_steps:
+        floor = 1.0 if ctx.has_recommendations else 2.0
+        ratings["personal"] = max(floor, ratings["personal"] - req.essay_steps)
+        applied.append(f"Essay +{req.essay_steps} step{'s' if req.essay_steps > 1 else ''}")
+        confidence = "model_estimate"
+
+    if ratings != x.ratings:
+        over["ratings"] = ratings
+
+    # Round
+    if req.early_round and req.early_round != (x.early_round or "RD"):
+        plans = ctx.school.get("early_plans") or {}
+        if req.early_round == "RD" or plans.get(ROUND_FLAGS[req.early_round]):
+            over["early_round"] = req.early_round
+            applied.append(f"Apply {req.early_round}")
+        else:
+            warnings.append(f"{ctx.school['name']} doesn't offer {req.early_round}.")
+
+    # Demonstrated interest
+    if req.demonstrated_interest is not None and req.demonstrated_interest != x.demonstrated_interest:
+        over["demonstrated_interest"] = req.demonstrated_interest
+        if req.demonstrated_interest and x.applicant_interest_weight == 0:
+            warnings.append("This school doesn't consider demonstrated interest (CDS C7), so it has no effect.")
+        else:
+            applied.append("Demonstrate interest")
+
+    base = compute_probability(x)
+    sim = compute_probability(x.with_overrides(**over)) if over else base
+    return WhatIfResponse(baseline=base, simulated=sim, delta_pp=round((sim.p_final - base.p_final) * 100, 2),
+                          applied=applied, warnings=warnings, confidence=confidence)
+```
+
+### 4.7 Radar data: migration `0008_radar.sql` + `app/scoring/radar.py` + a 4-line addition to Node 3
+
+The 6-axis radar compares the applicant with the **median admitted Reddit twin at that school**. Twins have no essays, so the Personal axis compares against the applicant-pool reference rating (3.0). The UI draws that axis dashed and labels it "assumed".
+
+```sql
+create or replace function public.admitted_profile_medians(target_school text)
+returns table (n int, gpa_uw double precision, sat double precision, advanced double precision,
+               ec_rating double precision, spike_points double precision)
+language sql
+stable
+set search_path = public, extensions
+as $$
+  select count(*)::int,
+         percentile_cont(0.5) within group (order by t.gpa_uw),
+         percentile_cont(0.5) within group (order by t.sat_score),
+         percentile_cont(0.5) within group (order by coalesce(t.ap_count, 0) + coalesce(t.dual_enrollment_count, 0)),
+         percentile_cont(0.5) within group (order by (t.ec_tier_summary ->> 'tier_derived_ec_rating')::double precision),
+         percentile_cont(0.5) within group (order by 2 * coalesce((t.ec_tier_summary ->> 'tier1')::int, 0)
+                                                     + coalesce((t.ec_tier_summary ->> 'tier2')::int, 0))
+  from public.applicant_twins t
+  where t.accepted_schools @> array[target_school]
+    and t.applicant_type = 'first_year'
+$$;
+
+revoke execute on function public.admitted_profile_medians(text) from anon, authenticated, public;
+```
+
+```python
+# app/scoring/radar.py
+from __future__ import annotations
+
+from app.schemas.dossier import ComputedMetrics, DossierGrade
+
+# key, label, value at 0, value at 100 (reversed ranges for "lower is better" ratings)
+AXES = (
+    ("gpa", "GPA", 3.5, 4.0),
+    ("test", "Testing", 1300, 1600),
+    ("rigor", "Rigor", 0, 14),
+    ("activities", "Activities", 5.5, 1.0),
+    ("spike", "Spike (T1/T2)", 0, 4),
+    ("personal", "Essay & Personal", 6.0, 1.0),
+)
+POOL_PERSONAL = 3.0
+
+
+def _norm(v: float | None, lo: float, hi: float) -> float | None:
+    if v is None:
+        return None
+    return round(100 * min(max((v - lo) / (hi - lo), 0.0), 1.0), 1)
+
+
+def build_radar(m: ComputedMetrics, g: DossierGrade, medians: dict) -> dict:
+    tiers = [ag.tier for ag in g.activity_grades]
+    you = {"gpa": m.gpa_uw_4, "test": m.sat_equivalent, "rigor": m.advanced_course_count,
+           "activities": m.tier_derived_ec_rating, "spike": 2 * tiers.count(1) + tiers.count(2),
+           "personal": g.harvard.personal.numeric}
+    adm = {"gpa": medians.get("gpa_uw"), "test": medians.get("sat"), "rigor": medians.get("advanced"),
+           "activities": medians.get("ec_rating"), "spike": medians.get("spike_points"), "personal": POOL_PERSONAL}
+    return {
+        "n_admitted": medians.get("n", 0),
+        "axes": [{"key": k, "label": label, "you": _norm(you[k], lo, hi), "admitted_median": _norm(adm[k], lo, hi),
+                  "you_raw": you[k], "admitted_raw": adm[k], "assumed": k == "personal"}
+                 for k, label, lo, hi in AXES],
+    }
+```
+
+In `twins_node` (§3.7.3), fetch the medians in the same `asyncio.gather` as the neighborhood stats and emit right after `baseline`:
+
+```python
+from app.scoring.radar import build_radar   # top of nodes/twins.py
+
+
+async def twins_node(state: AdComState) -> dict:
+    ...                                     # unchanged up to the neighborhood query
+    stats, inflation, medians = await asyncio.gather(
+        db.neighborhood_stats(emb, schools, k=NEIGHBORHOOD_K, gpa=gpa, sat=sat),
+        db.school_calibration(slug),
+        db.admitted_medians(slug),
+    )
+    ...
+    emit("radar", radar=build_radar(state["metrics"], state["grade"], medians))
+```
+
+### 4.8 Demo mode: record once, replay anywhere
+
+Two recorded runs are the insurance policy for the live demo.
+
+```python
+# scripts/record_demo.py: snapshot a finished run (event log + what-if context) into data/demo_runs/<name>.json
+from __future__ import annotations
+
+import argparse
+import asyncio
+from pathlib import Path
+
+import orjson
+
+from app import db
+
+OUT = Path(__file__).resolve().parents[3] / "data" / "demo_runs"
+
+
+async def main() -> None:
+    p = argparse.ArgumentParser()
+    p.add_argument("run_id")
+    p.add_argument("name")
+    a = p.parse_args()
+    row = await db.load_run(a.run_id)
+    school = await db.get_school(row["school_slug"])
+    OUT.mkdir(parents=True, exist_ok=True)
+    (OUT / f"{a.name}.json").write_bytes(orjson.dumps({
+        "name": a.name, "school": school, "events": row["event_log"],
+    }, option=orjson.OPT_INDENT_2))
+    print(f"saved {len(row['event_log'])} events → {a.name}.json")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+```python
+# app/demo.py
+from __future__ import annotations
+
+import asyncio
+from collections.abc import AsyncIterator
+from pathlib import Path
+
+import orjson
+from fastapi import Request
+
+DEMO_DIR = Path(__file__).resolve().parents[3] / "data" / "demo_runs"
+MAX_GAP_S = 1.2          # compress long thinking pauses; keep token cadence natural
+
+
+def load_demo(name: str) -> dict:
+    return orjson.loads((DEMO_DIR / f"{name}.json").read_bytes())
+
+
+async def replay_stream(name: str, speed: float, request: Request) -> AsyncIterator[dict]:
+    events = load_demo(name)["events"]
+    prev = events[0]["ts"]
+    for ev in events:
+        gap = min(MAX_GAP_S, max(0.0, ev["ts"] - prev)) / speed
+        prev = ev["ts"]
+        if gap:
+            await asyncio.sleep(gap)
+        if await request.is_disconnected():
+            return
+        yield {"id": str(ev["seq"]), "event": ev["event"], "data": orjson.dumps(ev).decode()}
+
+
+def register_demo_runs(runs) -> None:
+    """Register each recording as a finished Run with id 'demo-<name>' so /api/what-if and snapshots work
+    even if Supabase and Anthropic are both unreachable."""
+    from .runs import CAPTURED, Run
+    for path in DEMO_DIR.glob("*.json"):
+        d = orjson.loads(path.read_bytes())
+        run = Run(run_id=f"demo-{d['name']}", session_id="demo", school_slug=d["school"]["slug"],
+                  events=d["events"], done=True, status="complete", school=d["school"])
+        run.captured = {e["event"]: e for e in d["events"] if e["event"] in CAPTURED}
+        runs._runs[run.run_id] = run
+```
+
+Call `register_demo_runs(runs)` in `lifespan` (always, not only in `DEMO_MODE`). The frontend route `/room/demo/[name]` streams from `/api/demo/{name}/stream` and sends sliders to `/api/what-if` with `run_id = "demo-<name>"`. With `DEMO_MODE=true`, the intake form's **"Load Maya's file"** button skips the upload and routes straight to the replay. It looks identical to a live run.
+
+### 4.9 `FAKE_LLM=1`: offline development for the frontend and Track C
+
+```python
+# app/fake_llm.py: deterministic fixtures in place of Anthropic/OpenAI calls (frontend devs need no keys)
+from __future__ import annotations
+
+import asyncio
+import re
+from pathlib import Path
+
+import orjson
+
+from . import llm
+
+FIXTURES = Path(__file__).resolve().parents[3] / "data" / "fixtures"     # one JSON per schema name + debate.json
+
+
+def install() -> None:
+    async def parse(schema, *, system, messages, **_):
+        await asyncio.sleep(0.6)                                       # feel like a real call
+        return schema.model_validate_json((FIXTURES / f"{schema.__name__}.json").read_text())
+
+    async def stream_text(*, system, messages, on_text, on_reset=None, **_):
+        transcript = messages[-1]["content"][-1]["text"]
+        turn = transcript.count("[Turn ") + 1
+        text = orjson.loads((FIXTURES / "debate.json").read_bytes())[str(turn)]
+        for piece in re.findall(r"\S+\s*", text):
+            on_text(piece)
+            await asyncio.sleep(0.03)
+        return text
+
+    async def embed_one(_text: str) -> list[float]:
+        return orjson.loads((FIXTURES / "profile_embedding.json").read_bytes())
+
+    llm.parse = parse                                    # nodes call llm.parse(...) via module attribute
+    llm.stream_text = stream_text
+    from .agents.nodes import dossier_parser
+    dossier_parser.embed_one = embed_one                 # imported by name, so patch where it's used
+```
+
+Fixtures are created at Hour 4 by running the real graph once on Maya's dossier and dumping each node's output (`model_dump_json`) to `data/fixtures/`. That decouples the UI from API keys, rate limits and cost for the rest of the hackathon.
+
+### 4.10 Deployment
+
+```dockerfile
+# services/api/Dockerfile (build context = repo root)
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1
+RUN pip install --no-cache-dir uv
+WORKDIR /srv/services/api
+COPY services/api/pyproject.toml services/api/uv.lock ./
+RUN uv sync --frozen --no-dev
+COPY services/api/ ./
+COPY data/demo_runs/ /srv/data/demo_runs/
+COPY data/fixtures/ /srv/data/fixtures/
+EXPOSE 8000
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", \
+     "--workers", "1", "--timeout-keep-alive", "75", "--proxy-headers"]
+```
+
+The `parents[3]` paths in `demo.py`, `fake_llm.py` and `record_demo.py` resolve to `/srv`, so `/srv/data/...` matches the repo layout.
+
+| Concern | Setting |
+|---|---|
+| Host | Railway or Fly.io (persistent container; no serverless request timeout on SSE). Health check: `GET /api/health`. |
+| Region | Same region as the Supabase project (e.g., `us-east-1`); the RPC round trip dominates twin latency |
+| Env | All of §0.3 plus `CORS_ORIGINS='["https://<app>.vercel.app","http://localhost:3000"]'` |
+| Frontend env | `NEXT_PUBLIC_API_URL=https://<api-host>` |
+| Proxies | `X-Accel-Buffering: no` is already set. Cloudflare in front: disable "Rocket Loader" and set a cache bypass for `/api/*`. |
+| Budget guard | Set a monthly spend limit in the Anthropic Console; `MAX_RUNS_PER_DAY` caps app-level usage |
+
+### 4.11 "Never a blank spinner": guaranteed event cadence
+
+| t (s) | Event(s) | What the user sees |
+|---|---|---|
+| 0.0 | `run_started`, `node_start(dossier_parser)` | War Room opens; skeleton cards shimmer; pipeline stepper lights Node 1 |
+| 0.5 | `progress` "Reading transcript, resume and essay…" | Reader avatar with a typing indicator in the committee room: "Our reader is opening your file…" |
+| ~12 | `dossier_parsed` | Course table and activity list fill in; GPA, rigor and trend counters animate |
+| ~13 | `progress` "Grading N activities…" | Activity rows show pulsing "grading" pills |
+| ~25 | `scorecard` | Harvard 1–6 badges flip in one by one; Tier tags snap onto activities |
+| ~26 | `node_start` ×2, `tool_call` (Supabase, Tavily ×3, RPC) | Tool-call ticker scrolls chips: "⚙ tavily.search · test policy", "⚙ rpc.match_applicant_twins" |
+| ~28 | `twins`, `baseline`, `radar` | Five twin cards deal in; radar polygon morphs in |
+| ~33 | `school_rubric`, `fact_checks` | C7 grid fills; fact-check badges (✓ confirmed / ↻ updated) appear |
+| ~35 | `twin_analysis`, `probability` | **Gauge sweeps to the probability**; waterfall builds bar by bar; sliders unlock |
+| ~36–70 | `debate_turn_start`, `debate_token` × ~1,200, `debate_turn_end` ×4 | The live debate; citation chips light up the panels they reference |
+| ~72 | `counterfactuals` | Pivot cards appear with exact deltas |
+| ~82 | `final_report`, `done` | Recommendation stamp lands; essay edits panel opens |
+
+The longest silent gap is the first token of each debate turn (~2–4 s at `effort=low`). The UI covers it with a typing indicator started by `debate_turn_start`.
+
+---
+
+## 5. Frontend UI/UX & Component Architecture
+
+### 5.1 Design direction: "the committee room after hours"
+
+The War Room should look like a real selection meeting: a dim, focused room where **paper dossiers** sit on a dark table and two voices argue the file. Judges remember a point of view far longer than a generic SaaS dashboard.
+
+| Element | Choice | Why |
+|---|---|---|
+| Canvas | Ink-navy room (`--room`) with a faint vignette; panels are slightly lifted slate cards | Debate bubbles and the gauge glow against it |
+| Dossier cards | Warm paper (`--paper`) with an ink-colored serif header and a manila tab for the section label | The applicant's file is literally a folder on the table |
+| Display type | **Fraunces** (variable serif) for the probability numeral, school names and section titles | Institutional, admissions-office gravitas |
+| UI type | **Inter** for body; **JetBrains Mono** for numbers, citations and tool calls | Data reads as data |
+| Reader comment | **Caveat** handwriting on the paper card | The "reader's margin note" moment gets a laugh in demos |
+| Voices | Advocate = cobalt (`--advocate`), Chair = vermilion (`--chair`) | Two-color debate is instantly legible from the back of a room |
+| Outcomes | Admit emerald, Waitlist amber, Deny coral, always shown with an icon (✓ / ◐ / ✕) | Never color-only (colorblind-safe) |
+| Tiers | T1 gold, T2 silver, T3 bronze, T4 slate, shown as medallion tags | Tier means rank, so medals map naturally |
+| Motion | Purposeful only: the gauge sweep, bubble entry, card deal and stamp landing. Everything respects `prefers-reduced-motion`. | Motion marks *state changes*, not decoration |
+| Projector mode | `?projector=1` raises contrast, bumps base size to 18 px and thickens chart strokes | Venue projectors wash out dark UIs. Test at the venue during Hour 33. |
+
+```css
+/* apps/web/app/globals.css (tokens; Tailwind v4 reads these via @theme) */
+@import "tailwindcss";
+
+@theme {
+  --color-room: #0b1020;
+  --color-panel: #121a2e;
+  --color-panel-2: #18223a;
+  --color-line: #26324d;
+  --color-ink: #e8ecf5;
+  --color-muted: #8a94ad;
+  --color-paper: #f4efe6;
+  --color-paper-ink: #1d2433;
+  --color-advocate: #4c7dff;
+  --color-chair: #ff5a4e;
+  --color-admit: #34d399;
+  --color-waitlist: #fbbf24;
+  --color-deny: #f87171;
+  --color-tier1: #e8c268;
+  --color-tier2: #c9d1e0;
+  --color-tier3: #c98e5a;
+  --color-tier4: #64748b;
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+  --font-hand: var(--font-caveat);
+}
+
+body { background: var(--color-room); color: var(--color-ink); }
+.projector body, body.projector { font-size: 18px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+```
+
+### 5.2 Layout
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ADCOM ▸ War Room   [ UIUC ● live ] [ CMU ] [ Michigan ] [ + ]   ①Dossier ②Institution ③Twins ④Committee ⑤Delta  ⏱ 0:41 │
+├────────────────────────┬────────────────────────────────────────────────┬────────────────────────────┤
+│ APPLICANT DOSSIER      │ COMMITTEE ROOM · UIUC · Grainger CS             │ P(ADMIT)                   │
+│ ┌ paper card ────────┐ │ ⚙ tavily ✓  ⚙ match_twins ✓  ⚙ CDS 2024-25 ✓    │      ╭───────╮             │
+│ │ GPA 3.94  W 4.52   │ │                                                 │      │  21%  │  13–32%     │
+│ │ SAT 1520  11 AP  ↗ │ │ (R) Regional AO · Advocate                      │      ╰───────╯  WAITLIST   │
+│ └────────────────────┘ │  "Maya's spike is competitive programming that  │ WATERFALL  ▇ ▆ ▃ ▂ ▅ ▁    │
+│ HARVARD SCORECARD      │   turned into applied ML [dossier·activities.0] │ RADAR  you ◆ vs admitted ◇ │
+│ ┌──┐┌──┐┌──┐┌──┐       │   … Grainger weighs rigor as Very Important     │                            │
+│ │2-││3+││3 ││4 │       │   [CDS · C7 rigor] [Twin 2 ✓]"                  │ THE 5 HISTORICAL TWINS     │
+│ └──┘└──┘└──┘└──┘       │                                                 │ ① ✕ 3.96·1530·T2:1   91%  │
+│ Acad  EC  Pers  Ath    │ (C) Committee Chair · Skeptic                   │ ② ✓ 3.97·1550·T2:2   89%  │
+│ ACTIVITIES             │  "Let me slow us down. CS here runs at ×0.38    │ ③ ✕ …                      │
+│ 🥈 USACO Platinum  core │   [CDS · major CS] …"                ▍          │ WHAT-IF                    │
+│ 🥉 Robotics captain     │                                                 │ SAT      ─────●── 1550     │
+│ 🥉 Math tutor (paid)    │                            ┌─────────────┐      │ Major    [ Math ▾ ]  +21.7 │
+│ READER'S NOTE ✎         │                            │  WAITLIST   │      │ + Tier 2 activity  [  ]    │
+│ "Strong STEM kid…"     │                            └─────────────┘      │ Round    [ EA ▾ ]          │
+│                        │                                                 │ PIVOTS · ESSAY EDITS       │
+└────────────────────────┴────────────────────────────────────────────────┴────────────────────────────┘
+```
+
+| Breakpoint | Layout |
+|---|---|
+| ≥ 1440 px | 3 columns: `grid-cols-[340px_minmax(0,1fr)_420px]`; each column scrolls independently (`ScrollArea`), height `calc(100dvh - 56px)` |
+| 1024–1439 px | 2 columns (Dossier + Committee); Analytics opens as a right `Sheet` from a floating gauge pill that always shows the live probability |
+| < 1024 px | Tabs: **Committee** (default) · Dossier · Analytics. A sticky mini-gauge stays in the header. |
+
+### 5.3 Routes & file tree (`apps/web`)
+
+| Route | Kind | Purpose |
+|---|---|---|
+| `/` | Server shell + client wizard | Landing hero + 4-step intake (Upload → Writing → Targets → Context & consent) |
+| `/room/[runId]` | Client | Live War Room (EventSource on `/api/evaluate/{runId}/stream`) |
+| `/room/demo/[name]` | Client | Same War Room fed by `/api/demo/{name}/stream`; what-if uses `run_id = demo-<name>` |
+| `/r/[runId]` | Server | Read-only shareable snapshot from `GET /api/evaluate/{runId}` (stretch goal) |
+
+```
+apps/web/
+├── app/
+│   ├── layout.tsx                 # fonts (next/font/google), <Toaster/>, projector class
+│   ├── globals.css
+│   ├── page.tsx                   # landing + <IntakeWizard/>
+│   └── room/
+│       ├── [runId]/page.tsx       # <WarRoom source={{kind:"live", runId}}/>
+│       └── demo/[name]/page.tsx   # <WarRoom source={{kind:"demo", name}}/>
+├── components/
+│   ├── intake/  IntakeWizard.tsx  PdfDropzone.tsx  SchoolPicker.tsx  ContextStep.tsx
+│   ├── room/    WarRoom.tsx  TopBar.tsx  SchoolTabs.tsx  PipelineStepper.tsx  ToolTicker.tsx
+│   ├── dossier/ DossierPanel.tsx  MetricsStrip.tsx  HarvardScorecard.tsx  ActivityList.tsx  TierTag.tsx  ReaderNote.tsx
+│   ├── committee/ CommitteeRoom.tsx  DebateBubble.tsx  CitationText.tsx  CitationChip.tsx  TypingIndicator.tsx
+│   │             RecommendationStamp.tsx  FactCheckStrip.tsx
+│   ├── analytics/ AnalyticsPanel.tsx  ProbabilityGauge.tsx  Waterfall.tsx  RadarCompare.tsx  TwinCards.tsx
+│   │             TwinCard.tsx  WhatIfPanel.tsx  PivotList.tsx  EssayEdits.tsx
+│   └── ui/        # shadcn: badge button card dialog scroll-area select sheet slider switch tabs tooltip skeleton
+├── lib/
+│   ├── types.ts                   # mirrors backend Pydantic models
+│   ├── api.ts                     # createEvaluation, whatIf, schools, twins
+│   ├── stream.ts                  # useRunStream: EventSource → store
+│   ├── citations.ts               # tokenizer for [[kind:ref]] incl. partial tokens while streaming
+│   └── format.ts                  # pct(), pp(), schoolName()
+└── store/
+    └── run-store.ts               # Zustand: runs by id, reducer, highlight, what-if
+```
+
+Packages: `next react react-dom zustand recharts framer-motion react-dropzone lucide-react clsx tailwind-merge` plus shadcn components (`npx shadcn@latest add badge button card dialog scroll-area select sheet slider switch tabs tooltip skeleton sonner`).
+
+### 5.4 State management
+
+**Data flow.** `EventSource` → `useRunStream` buffers frames and flushes once per animation frame → `applyMany(runId, events)` → a pure `reduce(run, event)` → components subscribe to narrow slices with Zustand selectors. About 50 tokens/s become at most 60 renders/s across the whole tree, and only the active bubble re-renders.
+
+**Invariants**
+- The reducer is **pure and idempotent**: it ignores `seq ≤ lastSeq`. Reconnect replays, retried nodes and demo replays are all safe.
+- **Runs are keyed by `runId`.** Each target-school tab is its own run, and switching tabs is instant because nothing is refetched.
+- **Cross-panel highlight** (`highlight: {kind, ref}`) is global. Hovering a citation chip in the debate pulses the twin card, C7 row, activity or waterfall bar it refers to.
+
+#### 5.4.1 `lib/types.ts` (mirrors the Pydantic models; regenerate with `pydantic2ts` if time allows)
+
+```ts
+export type Outcome = "accepted" | "waitlisted" | "rejected";
+export type Speaker = "advocate" | "chair";
+export type Disposition = "ADMIT" | "LIKELY ADMIT" | "WAITLIST" | "LIKELY DENY" | "DENY";
+export type Pillar = "academic" | "extracurricular" | "personal" | "athletic";
+export type NodeName =
+  | "dossier_parser" | "institutional" | "twins" | "committee_docket" | "advocate" | "chair" | "delta_engine";
+export type Tier = 1 | 2 | 3 | 4;
+
+export interface PillarRating {
+  rationale: string; evidence: string[]; rating: 1 | 2 | 3 | 4 | 5 | 6; modifier: "+" | "" | "-";
+}
+export interface ActivityGrade {
+  activity_index: number; rationale: string; tier: Tier; spike_role: "core" | "supporting" | "peripheral";
+}
+export interface DossierGrade {
+  major_category: string; rigor_label: string; activity_grades: ActivityGrade[];
+  spike: { label: string; description: string; strength: "strong" | "moderate" | "emerging" | "none" };
+  essay: { themes: string[]; voice: string; strengths: string[]; weaknesses: string[]; red_flags: string[];
+           strongest_line: string | null } | null;
+  harvard: Record<Pillar, PillarRating>; reader_comments: string; grader_warnings: string[];
+}
+export interface Metrics {
+  gpa_uw_4: number | null; gpa_w_5: number | null; core_course_count: number; advanced_course_count: number;
+  rigor_index: number | null; grade_trend: "upward" | "flat" | "downward" | "insufficient_data";
+  sat_equivalent: number | null; proxy_academic_rating: number; tier_derived_ec_rating: number; ec_score: number;
+}
+export interface Activity {
+  name: string; role: string | null; organization: string | null; description: string; category: string;
+  grades: number[]; hours_per_week: number | null; weeks_per_year: number | null;
+}
+export interface Dossier {
+  high_school: { name: string | null; state: string | null; school_type: string };
+  activities: Activity[]; awards: { name: string; level: string; grade: number | null }[];
+  courses: { title: string; level: string; grade_level: number | null; grade_as_shown: string | null }[];
+  test_scores: { sat_total: number | null; act_composite: number | null };
+}
+export interface SchoolRubric {
+  slug: string; name: string; base_admit_rate: number; pillar_weights: Record<Pillar, number>;
+  factor_levels: Record<string, "very_important" | "important" | "considered" | "not_considered">;
+  test_policy: string; sat_25: number | null; sat_75: number | null; major_category: string;
+  major_multiplier: number; major_multiplier_source: string; major_college: string | null;
+  direct_admit: boolean | null; notes: string[];
+}
+export interface WebSnippet { id: string; url: string; title: string; content: string; published: string | null }
+export interface FactCheck {
+  field: string; db_value: string | null; web_value: string | null;
+  verdict: "confirmed" | "updated" | "conflict" | "unverified"; source_ids: string[]; note: string;
+}
+export interface InstitutionalBrief {
+  fact_checks: FactCheck[]; strategic_priorities: { claim: string; source_ids: string[]; relevance_to_applicant: string }[];
+  current_test_policy: string; major_admission_model: string; major_notes: string;
+  fit_signals: string[]; misalignment_signals: string[]; analyst_summary: string;
+}
+export interface TwinCard {
+  index: number; id: string; source_url: string; cycle_year: number | null; matched_school: string; outcome: Outcome;
+  gpa_uw: number | null; sat_score: number | null; act_score: number | null; ap_count: number | null;
+  intended_major: string | null; major_category: string; hooks: string[];
+  ec_tier_summary: { tier1?: number; tier2?: number; tier3?: number; tier4?: number };
+  top_activities: { description: string; role: string | null; tier: Tier }[]; awards: { name: string; level: string }[];
+  spike_summary: string | null; headline: string | null;
+  semantic_similarity: number; stat_proximity: number; hybrid_score: number;
+}
+export interface Baseline {
+  n_neighbors: number; n_accepted: number; n_waitlisted: number; n_rejected: number; n_effective: number;
+  weighted_admit_rate: number | null; wilson_low: number | null; wilson_high: number | null;
+  odds_inflation: number; deflated_admit_rate: number | null; widened_to_peers: boolean; peer_schools: string[];
+}
+export interface TwinAnalysis {
+  comparisons: { twin_index: number; key_similarity: string; key_difference: string; plausible_deciding_factor: string }[];
+  pattern_summary: string; pattern_strength: "strong" | "moderate" | "weak"; applicant_gaps: string[]; applicant_edges: string[];
+}
+export interface RadarAxis {
+  key: string; label: string; you: number | null; admitted_median: number | null;
+  you_raw: number | null; admitted_raw: number | null; assumed: boolean;
+}
+export interface RadarData { n_admitted: number; axes: RadarAxis[] }
+export interface ProbabilityComponent { key: string; label: string; delta_logit: number; delta_pp: number; detail: string }
+export interface ProbabilityBreakdown {
+  p_final: number; p_low: number; p_high: number; p_model: number; base_admit_rate: number;
+  components: ProbabilityComponent[]; disposition: Disposition;
+}
+export interface Citation { kind: "dossier" | "cds" | "twin" | "web" | "model"; ref: string; valid: boolean; span: [number, number] }
+export interface DebateTurn {
+  turn: number; speaker: Speaker; content: string; citations: Citation[];
+  recommendation: Disposition | null; degraded: boolean; streaming: boolean;
+}
+export interface Counterfactual {
+  id: string; kind: "major_switch" | "test_score" | "add_activity" | "early_round" | "demonstrated_interest" | "essay";
+  label: string; p_new: number; delta_pp: number; confidence: "data_backed" | "model_estimate";
+  evidence: string; overrides: Record<string, unknown>;
+}
+export interface DeltaReport {
+  headline_verdict: string; committee_disposition: Disposition;
+  ranked_pivots: { counterfactual_id: string | null; title: string; why_it_works: string; concrete_steps: string[];
+                   effort: "hours" | "days" | "weeks" | "months"; tradeoffs: string }[];
+  major_arbitrage_note: string | null;
+  essay_adjustments: { issue: string; current_excerpt: string; direction: string; example_rewrite: string }[];
+  risks_to_watch: string[]; disclaimer: string;
+}
+export interface ToolCall { seq: number; node: NodeName; tool: string; status: string; [k: string]: unknown }
+export interface WhatIfRequest {
+  run_id: string; sat?: number | null; withhold_sat?: boolean; major_category?: string | null;
+  add_activities?: (1 | 2 | 3)[]; early_round?: "ED" | "ED2" | "EA" | "REA" | "RD" | null;
+  demonstrated_interest?: boolean | null; essay_steps?: 0 | 1 | 2;
+}
+export interface WhatIfResponse {
+  baseline: ProbabilityBreakdown; simulated: ProbabilityBreakdown; delta_pp: number;
+  applied: string[]; warnings: string[]; confidence: "data_backed" | "model_estimate";
+}
+export interface Envelope { seq: number; run_id: string; ts: number; event: string; [k: string]: any }
+```
+
+#### 5.4.2 `store/run-store.ts`
+
+```ts
+import { create } from "zustand";
+import type {
+  Baseline, Counterfactual, DebateTurn, DeltaReport, Dossier, DossierGrade, Envelope, InstitutionalBrief,
+  Metrics, NodeName, ProbabilityBreakdown, RadarData, SchoolRubric, ToolCall, TwinAnalysis, TwinCard,
+  WebSnippet, WhatIfResponse,
+} from "@/lib/types";
+
+export type NodeStatus = "pending" | "running" | "done" | "degraded";
+export const NODES: NodeName[] = [
+  "dossier_parser", "institutional", "twins", "committee_docket", "advocate", "chair", "delta_engine",
+];
+
+export interface RunView {
+  runId: string;
+  schoolSlug?: string;
+  status: "connecting" | "running" | "complete" | "failed";
+  lastSeq: number;
+  startedAt?: number;
+  finishedAt?: number;
+  nodes: Record<NodeName, NodeStatus>;
+  progress: Partial<Record<NodeName, string>>;
+  tools: ToolCall[];
+  dossier?: Dossier;
+  metrics?: Metrics;
+  grade?: DossierGrade;
+  rubric?: SchoolRubric;
+  brief?: InstitutionalBrief | null;
+  snippets: WebSnippet[];
+  twins: TwinCard[];
+  baseline?: Baseline;
+  radar?: RadarData;
+  twinAnalysis?: TwinAnalysis | null;
+  probability?: ProbabilityBreakdown;
+  debate: DebateTurn[];
+  citationWarnings: string[];
+  counterfactuals: Counterfactual[];
+  report?: DeltaReport;
+  errors: { node: string | null; message: string; recoverable: boolean }[];
+}
+
+export const emptyRun = (runId: string): RunView => ({
+  runId, status: "connecting", lastSeq: -1,
+  nodes: Object.fromEntries(NODES.map((n) => [n, "pending"])) as Record<NodeName, NodeStatus>,
+  progress: {}, tools: [], snippets: [], twins: [], debate: [], citationWarnings: [], counterfactuals: [], errors: [],
+});
+
+const upsertTurn = (turns: DebateTurn[], t: DebateTurn) =>
+  turns.some((x) => x.turn === t.turn) ? turns.map((x) => (x.turn === t.turn ? t : x)) : [...turns, t];
+
+export function reduce(r: RunView, ev: Envelope): RunView {
+  if (ev.seq <= r.lastSeq) return r;                                   // idempotent replay
+  const n: RunView = { ...r, lastSeq: ev.seq };
+  const setNode = (node: NodeName, s: NodeStatus) => {
+    if (n.nodes[node] === "degraded" && s === "done") return;
+    n.nodes = { ...n.nodes, [node]: s };
+  };
+  switch (ev.event) {
+    case "run_started":
+      n.status = "running"; n.schoolSlug = ev.school_slug; n.startedAt = ev.ts;
+      if (ev.cached_dossier) setNode("dossier_parser", "done");
+      break;
+    case "node_start": setNode(ev.node, "running"); break;
+    case "node_end":
+    case "node_complete": setNode(ev.node, "done"); break;
+    case "progress": n.progress = { ...n.progress, [ev.node]: ev.message }; break;
+    case "tool_call": n.tools = [...n.tools.slice(-40), ev as unknown as ToolCall]; break;
+    case "dossier_parsed": n.dossier = ev.dossier; n.metrics = ev.metrics; break;
+    case "scorecard": n.grade = ev.grade; n.metrics = ev.metrics; break;
+    case "school_rubric": n.rubric = ev.rubric; break;
+    case "fact_checks": n.brief = ev.brief; n.snippets = ev.snippets; break;
+    case "twins": n.twins = ev.twins; break;
+    case "baseline": n.baseline = ev.baseline; break;
+    case "radar": n.radar = ev.radar; break;
+    case "twin_analysis": n.twinAnalysis = ev.analysis; break;
+    case "probability": n.probability = ev.probability; setNode("committee_docket", "done"); break;
+    case "debate_turn_start":
+      setNode(ev.speaker, "running");
+      n.debate = upsertTurn(n.debate, { turn: ev.turn, speaker: ev.speaker, content: "", citations: [],
+                                        recommendation: null, degraded: false, streaming: true });
+      break;
+    case "debate_token":
+      n.debate = n.debate.map((t) => (t.turn === ev.turn ? { ...t, content: t.content + ev.delta } : t));
+      break;
+    case "debate_reset":
+      n.debate = n.debate.map((t) => (t.turn === ev.turn ? { ...t, content: "" } : t));
+      break;
+    case "debate_turn_end":
+      n.debate = upsertTurn(n.debate, {
+        turn: ev.turn, speaker: ev.speaker, content: ev.content, citations: ev.citations,
+        recommendation: ev.recommendation, degraded: ev.degraded, streaming: false,
+      });
+      if (ev.turn === 4) { setNode("advocate", "done"); setNode("chair", "done"); }
+      break;
+    case "citation_warning": n.citationWarnings = [...n.citationWarnings, ...ev.refs]; break;
+    case "counterfactuals": n.counterfactuals = ev.counterfactuals; break;
+    case "final_report": n.report = ev.report; break;
+    case "error":
+      n.errors = [...n.errors, { node: ev.node, message: ev.message, recoverable: ev.recoverable }];
+      if (ev.node && ev.recoverable) n.nodes = { ...n.nodes, [ev.node]: "degraded" };
+      break;
+    case "done":
+      n.status = ev.status === "complete" ? "complete" : "failed"; n.finishedAt = ev.ts;
+      break;
+  }
+  return n;
+}
+
+type Highlight = { kind: "dossier" | "cds" | "twin" | "web" | "model"; ref: string } | null;
+
+interface RunStore {
+  runs: Record<string, RunView>;
+  activeRunId?: string;
+  highlight: Highlight;
+  whatIf: Record<string, WhatIfResponse | undefined>;
+  ensureRun: (id: string) => void;
+  setActive: (id: string) => void;
+  applyMany: (id: string, evs: Envelope[]) => void;
+  setHighlight: (h: Highlight) => void;
+  setWhatIf: (id: string, r: WhatIfResponse | undefined) => void;
+}
+
+export const useRunStore = create<RunStore>((set) => ({
+  runs: {},
+  highlight: null,
+  whatIf: {},
+  ensureRun: (id) => set((s) => (s.runs[id] ? s : { runs: { ...s.runs, [id]: emptyRun(id) } })),
+  setActive: (id) => set({ activeRunId: id }),
+  applyMany: (id, evs) =>
+    set((s) => ({ runs: { ...s.runs, [id]: evs.reduce(reduce, s.runs[id] ?? emptyRun(id)) } })),
+  setHighlight: (highlight) => set({ highlight }),
+  setWhatIf: (id, r) => set((s) => ({ whatIf: { ...s.whatIf, [id]: r } })),
+}));
+
+// Narrow selectors: components re-render only when their slice changes.
+const EMPTY = emptyRun("");                       // stable fallback → no new references per render
+export const useActiveRun = <T,>(pick: (r: RunView) => T) =>
+  useRunStore((s) => pick(s.runs[s.activeRunId ?? ""] ?? EMPTY));
+```
+
+> **Selector caveat:** `useActiveRun` must return primitives or stable references (e.g. `r.twins`, not `r.twins.filter(...)`). Derive arrays with `useMemo` inside components, or wrap the selector with `useShallow` from `zustand/react/shallow`.
+
+#### 5.4.3 `lib/stream.ts` and `lib/api.ts`
+
+```ts
+// lib/stream.ts
+"use client";
+import { useEffect } from "react";
+import { API } from "./api";
+import type { Envelope } from "./types";
+import { useRunStore } from "@/store/run-store";
+
+export type RunSource = { kind: "live"; runId: string } | { kind: "demo"; name: string };
+
+export const EVENT_TYPES = [
+  "run_started", "node_start", "node_end", "node_complete", "progress", "tool_call", "dossier_parsed", "scorecard",
+  "school_rubric", "fact_checks", "twins", "baseline", "radar", "twin_analysis", "probability",
+  "debate_turn_start", "debate_token", "debate_reset", "debate_turn_end", "citation_warning",
+  "counterfactuals", "final_report", "error", "done",
+] as const;
+
+export const runIdOf = (src: RunSource) => (src.kind === "live" ? src.runId : `demo-${src.name}`);
+
+export function useRunStream(src: RunSource) {
+  const { ensureRun, setActive, applyMany } = useRunStore.getState();
+  const key = src.kind === "live" ? src.runId : src.name;
+
+  useEffect(() => {
+    const runId = runIdOf(src);
+    ensureRun(runId);
+    setActive(runId);
+    const url = src.kind === "live"
+      ? `${API}/api/evaluate/${src.runId}/stream`
+      : `${API}/api/demo/${src.name}/stream`;
+    const es = new EventSource(url);                      // reconnects itself and sends Last-Event-ID
+    let buffer: Envelope[] = [];
+    let raf = 0;
+    const flush = () => {
+      raf = 0;
+      if (buffer.length) { applyMany(runId, buffer); buffer = []; }
+    };
+    const onEvent = (e: MessageEvent<string>) => {
+      const env = JSON.parse(e.data) as Envelope;
+      buffer.push(env);
+      if (env.event === "done") { flush(); es.close(); return; }
+      if (!raf) raf = requestAnimationFrame(flush);
+    };
+    EVENT_TYPES.forEach((t) => es.addEventListener(t, onEvent as EventListener));
+    return () => { es.close(); if (raf) cancelAnimationFrame(raf); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src.kind, key]);
+}
+```
+
+```ts
+// lib/api.ts
+import type { WhatIfRequest, WhatIfResponse } from "./types";
+
+export const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+export class ApiError extends Error {
+  constructor(public status: number, message: string) { super(message); }
+}
+
+async function json<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, body.detail ?? res.statusText);
+  }
+  return res.json() as Promise<T>;
+}
+
+export function sessionId(): string {
+  try {
+    let id = localStorage.getItem("adcom.sid");
+    if (!id) { id = crypto.randomUUID(); localStorage.setItem("adcom.sid", id); }
+    return id;
+  } catch {
+    return crypto.randomUUID();                            // private mode: per-tab session
+  }
+}
+
+export interface IntakeFormData {
+  intended_major: string; target_schools: string[]; early_round: Record<string, string>;
+  activities_text?: string; resume_text?: string; essay_text?: string; recommendation_text?: string;
+  hooks: string[]; context: Record<string, unknown>; application_deadline?: string;
+}
+
+export async function createEvaluation(form: IntakeFormData, files: { transcript?: File; resume?: File }) {
+  const fd = new FormData();
+  fd.append("intake", JSON.stringify({ ...form, session_id: sessionId(), consent: true }));
+  if (files.transcript) fd.append("transcript", files.transcript);
+  if (files.resume) fd.append("resume", files.resume);
+  return json<{ run_id: string; stream_url: string; school_slug: string }>(
+    await fetch(`${API}/api/evaluate`, { method: "POST", body: fd }),
+  );
+}
+
+export const evaluateSchool = async (runId: string, slug: string) =>
+  json<{ run_id: string; stream_url: string }>(
+    await fetch(`${API}/api/evaluate/${runId}/schools/${slug}`, { method: "POST" }),
+  );
+
+export const whatIf = async (req: WhatIfRequest, signal?: AbortSignal) =>
+  json<WhatIfResponse>(await fetch(`${API}/api/what-if`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req), signal,
+  }));
+
+export const searchSchools = async (q: string) =>
+  json<{ slug: string; name: string; score: number }[]>(await fetch(`${API}/api/schools?q=${encodeURIComponent(q)}`));
+```
+
+### 5.5 Center stage: the Live Committee Room
+
+#### 5.5.1 `lib/citations.ts`: tokenize streamed text with inline citations
+
+While tokens are streaming, a citation can arrive cut in half (`…weighs rigor [[cds:c7.ri`). The tokenizer hides any unterminated `[[…` tail until its `]]` arrives, so raw brackets never flash on screen.
+
+```ts
+import type { Citation } from "./types";
+import type { RunView } from "@/store/run-store";
+
+export type Seg =
+  | { type: "text"; text: string }
+  | { type: "cite"; kind: Citation["kind"]; ref: string; valid: boolean | undefined };
+
+const RE = /\[\[(dossier|cds|twin|web|model):([^\]\s]+)\]\]/g;
+const REC_LINE = /\n?RECOMMENDATION:.*$/m;
+
+export function tokenize(content: string, streaming: boolean, citations: Citation[] = []): Seg[] {
+  let text = content.replace(REC_LINE, "");                 // the stamp renders the recommendation
+  if (streaming) {
+    const open = text.lastIndexOf("[[");
+    if (open !== -1 && text.indexOf("]]", open) === -1) text = text.slice(0, open);
+  }
+  const validity = new Map(citations.map((c) => [`${c.kind}:${c.ref}`, c.valid]));
+  const segs: Seg[] = [];
+  let last = 0;
+  for (const m of text.matchAll(RE)) {
+    const i = m.index ?? 0;
+    if (i > last) segs.push({ type: "text", text: text.slice(last, i) });
+    segs.push({ type: "cite", kind: m[1] as Citation["kind"], ref: m[2],
+                valid: streaming ? undefined : (validity.get(`${m[1]}:${m[2]}`) ?? false) });
+    last = i + m[0].length;
+  }
+  if (last < text.length) segs.push({ type: "text", text: text.slice(last) });
+  return segs;
+}
+
+const C7_LABEL: Record<string, string> = {
+  rigor: "Rigor", academic_gpa: "GPA", test_scores: "Tests", essay: "Essay", recommendations: "Recs",
+  extracurriculars: "ECs", talent_ability: "Talent", character: "Character", applicant_interest: "Interest",
+  first_generation: "First-gen", alumni_relation: "Legacy", interview: "Interview",
+};
+
+/** Human label for a chip, resolved against the run so chips read like evidence, not IDs. */
+export function chipLabel(kind: Citation["kind"], ref: string, run: RunView): string {
+  switch (kind) {
+    case "twin": {
+      const t = run.twins.find((x) => String(x.index) === ref);
+      return t ? `Twin ${ref} ${t.outcome === "accepted" ? "✓" : t.outcome === "waitlisted" ? "◐" : "✕"}` : `Twin ${ref}`;
+    }
+    case "cds":
+      if (ref.startsWith("c7.")) return `C7 · ${C7_LABEL[ref.slice(3)] ?? ref.slice(3)}`;
+      if (ref.startsWith("major.")) return `Major ×${run.rubric?.major_multiplier.toFixed(2) ?? "?"}`;
+      return `CDS · ${ref.replaceAll("_", " ")}`;
+    case "web": {
+      const s = run.snippets.find((x) => x.id === ref);
+      return s ? `${ref} · ${new URL(s.url).hostname.replace("www.", "")}` : ref;
+    }
+    case "dossier": {
+      const [root, idx] = ref.split(".");
+      if (root === "activities" && run.dossier) return run.dossier.activities[Number(idx)]?.name ?? "Activity";
+      return root.replaceAll("_", " ");
+    }
+    case "model":
+      return ref === "p_final" ? "Model P(admit)" : `Model · ${ref}`;
+  }
+}
+```
+
+#### 5.5.2 `CitationChip.tsx` + `CitationText.tsx`
+
+```tsx
+"use client";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { chipLabel, tokenize } from "@/lib/citations";
+import type { Citation } from "@/lib/types";
+import { useRunStore, type RunView } from "@/store/run-store";
+import { cn } from "@/lib/utils";
+
+const KIND_STYLE: Record<Citation["kind"], string> = {
+  dossier: "bg-paper/90 text-paper-ink",
+  cds: "bg-advocate/15 text-advocate ring-1 ring-advocate/40",
+  twin: "bg-tier1/15 text-tier1 ring-1 ring-tier1/40",
+  web: "bg-muted/15 text-ink ring-1 ring-line",
+  model: "bg-admit/15 text-admit ring-1 ring-admit/40",
+};
+
+export function CitationChip({ kind, refId, valid, run }: {
+  kind: Citation["kind"]; refId: string; valid: boolean | undefined; run: RunView;
+}) {
+  const setHighlight = useRunStore((s) => s.setHighlight);
+  const label = chipLabel(kind, refId, run);
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onMouseEnter={() => setHighlight({ kind, ref: refId })}
+          onMouseLeave={() => setHighlight(null)}
+          onFocus={() => setHighlight({ kind, ref: refId })}
+          onBlur={() => setHighlight(null)}
+          className={cn(
+            "mx-0.5 inline-flex translate-y-[-1px] items-center rounded-md px-1.5 py-0.5 font-mono text-[11px] leading-none",
+            KIND_STYLE[kind],
+            valid === false && "bg-waitlist/10 text-waitlist line-through ring-waitlist/40",
+          )}
+          aria-label={`Evidence: ${label}${valid === false ? " (unverified)" : ""}`}
+        >
+          {label}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs text-xs">
+        {valid === false ? "The validator couldn't match this citation to the docket. Treat it as unverified." : <EvidencePreview kind={kind} refId={refId} run={run} />}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function EvidencePreview({ kind, refId, run }: { kind: Citation["kind"]; refId: string; run: RunView }) {
+  if (kind === "web") {
+    const s = run.snippets.find((x) => x.id === refId);
+    return s ? <p><b>{s.title}</b><br />{s.content.slice(0, 220)}…</p> : null;
+  }
+  if (kind === "twin") {
+    const t = run.twins.find((x) => String(x.index) === refId);
+    return t ? <p>{t.headline}<br />{t.spike_summary}</p> : null;
+  }
+  if (kind === "cds" && refId.startsWith("c7.")) {
+    const level = run.rubric?.factor_levels[refId.slice(3)];
+    return <p>Common Data Set C7: <b>{level?.replaceAll("_", " ")}</b> ({run.rubric?.name})</p>;
+  }
+  return <p className="font-mono">{kind}:{refId}</p>;
+}
+
+export function CitationText({ content, streaming, citations, run }: {
+  content: string; streaming: boolean; citations: Citation[]; run: RunView;
+}) {
+  return (
+    <p className="whitespace-pre-wrap text-[15px] leading-7">
+      {tokenize(content, streaming, citations).map((seg, i) =>
+        seg.type === "text"
+          ? <span key={i}>{seg.text}</span>
+          : <CitationChip key={i} kind={seg.kind} refId={seg.ref} valid={seg.valid} run={run} />,
+      )}
+      {streaming && <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-ink align-middle" />}
+    </p>
+  );
+}
+```
+
+#### 5.5.3 `DebateBubble.tsx`, `RecommendationStamp.tsx`, `CommitteeRoom.tsx`
+
+```tsx
+"use client";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { CitationText } from "./CitationText";
+import { FactCheckStrip } from "./FactCheckStrip";
+import { ToolTicker } from "../room/ToolTicker";
+import { useActiveRun, type RunView } from "@/store/run-store";
+import type { DebateTurn, Disposition } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+const VOICE = {
+  advocate: { name: "Regional Admissions Officer", role: "Advocate", initial: "R", color: "advocate", side: "self-start" },
+  chair: { name: "Committee Chair", role: "Skeptic", initial: "C", color: "chair", side: "self-end" },
+} as const;
+
+export function DebateBubble({ turn, run }: { turn: DebateTurn; run: RunView }) {
+  const v = VOICE[turn.speaker];
+  return (
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 26 }}
+      className={cn("max-w-[86%] rounded-2xl border bg-panel p-4 shadow-lg", v.side,
+                    turn.speaker === "advocate" ? "border-advocate/40" : "border-chair/40")}
+      aria-live={turn.streaming ? "polite" : undefined}
+    >
+      <header className="mb-2 flex items-center gap-2 text-xs text-muted">
+        <span className={cn("grid size-7 place-items-center rounded-full font-display text-sm font-semibold text-room",
+                            turn.speaker === "advocate" ? "bg-advocate" : "bg-chair")}>{v.initial}</span>
+        <span className="font-medium text-ink">{v.name}</span>
+        <span>· {v.role} · Turn {turn.turn}</span>
+        {turn.degraded && <span className="ml-auto rounded bg-waitlist/15 px-1.5 text-waitlist">fallback</span>}
+      </header>
+      <CitationText content={turn.content} streaming={turn.streaming} citations={turn.citations} run={run} />
+    </motion.article>
+  );
+}
+
+const STAMP_COLOR: Record<Disposition, string> = {
+  "ADMIT": "text-admit border-admit", "LIKELY ADMIT": "text-admit border-admit",
+  "WAITLIST": "text-waitlist border-waitlist", "LIKELY DENY": "text-deny border-deny", "DENY": "text-deny border-deny",
+};
+
+export function RecommendationStamp({ value }: { value: Disposition }) {
+  return (
+    <motion.div
+      initial={{ scale: 2.4, opacity: 0, rotate: -18 }}
+      animate={{ scale: 1, opacity: 1, rotate: -8 }}
+      transition={{ type: "spring", stiffness: 420, damping: 18 }}
+      className={cn("self-center rounded-md border-4 px-6 py-2 font-display text-3xl font-black tracking-widest",
+                    "mix-blend-screen", STAMP_COLOR[value])}
+      role="status"
+      aria-label={`Committee recommendation: ${value}`}
+    >
+      {value}
+    </motion.div>
+  );
+}
+
+function TypingIndicator({ speaker }: { speaker: "advocate" | "chair" }) {
+  return (
+    <div className={cn("flex items-center gap-1 rounded-full bg-panel px-3 py-2 text-xs text-muted",
+                       speaker === "advocate" ? "self-start" : "self-end")}>
+      {VOICE[speaker].name} is thinking
+      {[0, 1, 2].map((i) => (
+        <motion.span key={i} className="size-1 rounded-full bg-muted"
+          animate={{ opacity: [0.2, 1, 0.2] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.15 }} />
+      ))}
+    </div>
+  );
+}
+
+export function CommitteeRoom() {
+  const run = useActiveRun((r) => r);
+  const scroller = useRef<HTMLDivElement>(null);
+  const pinned = useRef(true);                              // auto-scroll unless the user scrolled up
+
+  useEffect(() => {
+    const el = scroller.current;
+    if (el && pinned.current) el.scrollTop = el.scrollHeight;
+  }, [run.debate, run.progress]);
+
+  const last = run.debate.at(-1);
+  const final = run.debate.find((t) => t.recommendation)?.recommendation;
+
+  return (
+    <section className="flex h-full flex-col">
+      <header className="border-b border-line px-6 py-3">
+        <h2 className="font-display text-xl">Committee Room · {run.rubric?.name ?? "…"}</h2>
+        <p className="text-xs text-muted">
+          {run.rubric?.major_college ?? run.rubric?.major_category?.replaceAll("_", " ")} · CDS {run.rubric ? "loaded" : "loading"}
+        </p>
+        <ToolTicker />
+        <FactCheckStrip />
+      </header>
+
+      <div ref={scroller}
+           onScroll={(e) => { const el = e.currentTarget; pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}
+           className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-6">
+        {run.debate.length === 0 && <PreMeeting run={run} />}
+        <AnimatePresence initial={false}>
+          {run.debate.map((t) => <DebateBubble key={t.turn} turn={t} run={run} />)}
+        </AnimatePresence>
+        {last?.streaming && last.content === "" && <TypingIndicator speaker={last.speaker} />}
+        {final && <RecommendationStamp value={final} />}
+      </div>
+    </section>
+  );
+}
+
+/** Before the debate starts: the room "whispers" each node's progress so the center is never empty. */
+function PreMeeting({ run }: { run: RunView }) {
+  const lines = Object.entries(run.progress);
+  return (
+    <div className="mx-auto mt-10 max-w-md space-y-3 text-center text-sm text-muted">
+      <p className="font-display text-lg text-ink">The committee is assembling.</p>
+      {lines.map(([node, msg]) => (
+        <motion.p key={node} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{msg}</motion.p>
+      ))}
+    </div>
+  );
+}
+```
+
+`ToolTicker` renders the last 6 `run.tools` as mono chips (`⚙ tavily.search · cache_hit`). Statuses are colored (started = pulsing, done = emerald, failed = amber) and the chips slide in from the right. `FactCheckStrip` shows one badge per `brief.fact_checks` (✓ confirmed / ↻ updated / ⚠ conflict / ? unverified); hovering a badge shows `note` and its sources.
+
+### 5.6 Right panel: Analytics & Arbitrage Simulator
+
+Order from top to bottom, each a collapsible section: **Probability gauge → Waterfall → Radar → The 5 Historical Twins → What-If → Pivots & Essay Edits**. Before any data arrives, every section shows a `Skeleton` sized to its final shape, so nothing jumps when data lands.
+
+#### 5.6.1 `ProbabilityGauge.tsx`
+
+```tsx
+"use client";
+import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import { useEffect } from "react";
+import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
+import { useActiveRun, useRunStore } from "@/store/run-store";
+import type { Disposition } from "@/lib/types";
+
+const DISP_COLOR: Record<Disposition, string> = {
+  "ADMIT": "var(--color-admit)", "LIKELY ADMIT": "var(--color-admit)", "WAITLIST": "var(--color-waitlist)",
+  "LIKELY DENY": "var(--color-deny)", "DENY": "var(--color-deny)",
+};
+const pct = (x: number) => `${(x * 100).toFixed(x < 0.1 ? 1 : 0)}%`;
+
+export function ProbabilityGauge() {
+  const prob = useActiveRun((r) => r.probability);
+  const sim = useRunStore((s) => (s.activeRunId ? s.whatIf[s.activeRunId] : undefined));
+  const shown = sim && sim.applied.length ? sim.simulated : prob;
+  const target = shown ? shown.p_final * 100 : 0;
+
+  const mv = useMotionValue(0);
+  const label = useTransform(mv, (v) => `${v.toFixed(v < 10 ? 1 : 0)}%`);
+  useEffect(() => {
+    const controls = animate(mv, target, { duration: 1.1, ease: [0.16, 1, 0.3, 1] });
+    return () => controls.stop();
+  }, [target, mv]);
+
+  return (
+    <div className="relative h-60" aria-live="polite"
+         aria-label={shown ? `Estimated admit probability ${pct(shown.p_final)}` : "Calculating probability"}>
+      <ResponsiveContainer>
+        <RadialBarChart innerRadius="80%" outerRadius="100%" startAngle={210} endAngle={-30} data={[{ value: target }]}>
+          <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+          <RadialBar dataKey="value" cornerRadius={12} background={{ fill: "var(--color-panel-2)" }}
+                     fill={shown ? DISP_COLOR[shown.disposition] : "var(--color-line)"} animationDuration={1100} />
+        </RadialBarChart>
+      </ResponsiveContainer>
+      <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">P(admit)</p>
+          <motion.p className="font-display text-6xl font-semibold tabular-nums">{label}</motion.p>
+          {shown && (
+            <>
+              <p className="font-mono text-xs text-muted">80% range {pct(shown.p_low)}–{pct(shown.p_high)}</p>
+              <p className="mt-1 text-sm font-semibold" style={{ color: DISP_COLOR[shown.disposition] }}>
+                {shown.disposition}
+              </p>
+            </>
+          )}
+          {sim && sim.applied.length > 0 && (
+            <p className="mt-1 rounded-full bg-advocate/15 px-2 font-mono text-xs text-advocate">
+              simulated {sim.delta_pp >= 0 ? "+" : ""}{sim.delta_pp.toFixed(1)} pp
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+#### 5.6.2 `Waterfall.tsx`: where the number comes from
+
+```tsx
+"use client";
+import { useMemo } from "react";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useActiveRun, useRunStore } from "@/store/run-store";
+
+export function Waterfall() {
+  const comps = useActiveRun((r) => r.probability?.components);
+  const highlight = useRunStore((s) => s.highlight);
+  const rows = useMemo(() => {
+    if (!comps) return [];
+    let cum = 0;
+    return comps.flatMap((c) => {
+      if (c.key === "base") { cum = c.delta_pp; return [{ key: c.key, label: "Base rate", offset: 0, value: c.delta_pp, sign: "base", detail: c.detail }]; }
+      if (Math.abs(c.delta_pp) < 0.1) return [];
+      const start = cum; cum += c.delta_pp;
+      return [{ key: c.key, label: c.label, offset: Math.min(start, cum), value: Math.abs(c.delta_pp),
+                sign: c.delta_pp >= 0 ? "up" : "down", detail: `${c.delta_pp >= 0 ? "+" : ""}${c.delta_pp.toFixed(1)} pp · ${c.detail}` }];
+    });
+  }, [comps]);
+
+  return (
+    <div className="h-64">
+      <ResponsiveContainer>
+        <BarChart data={rows} layout="vertical" margin={{ left: 8, right: 16 }}>
+          <XAxis type="number" domain={[0, "dataMax"]} tickFormatter={(v) => `${v}%`} stroke="var(--color-muted)" fontSize={11} />
+          <YAxis type="category" dataKey="label" width={130} stroke="var(--color-muted)" fontSize={11} />
+          <Tooltip cursor={{ fill: "var(--color-panel-2)" }}
+                   formatter={(_v, _n, item) => [item.payload.detail, item.payload.label]} />
+          <Bar dataKey="offset" stackId="w" fill="transparent" isAnimationActive={false} />
+          <Bar dataKey="value" stackId="w" radius={4} animationDuration={700}>
+            {rows.map((r) => (
+              <Cell key={r.key}
+                    fill={r.sign === "base" ? "var(--color-muted)" : r.sign === "up" ? "var(--color-admit)" : "var(--color-deny)"}
+                    stroke={highlight?.kind === "model" && highlight.ref === r.key ? "var(--color-ink)" : undefined}
+                    strokeWidth={2} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+```
+
+#### 5.6.3 `RadarCompare.tsx`: 6 axes, you vs the admitted median
+
+```tsx
+"use client";
+import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from "recharts";
+import { useActiveRun } from "@/store/run-store";
+
+export function RadarCompare() {
+  const radar = useActiveRun((r) => r.radar);
+  if (!radar) return <div className="h-64 animate-pulse rounded-xl bg-panel-2" />;
+  const data = radar.axes.map((a) => ({
+    axis: a.assumed ? `${a.label}*` : a.label, you: a.you ?? 0, admitted: a.admitted_median ?? 0,
+    youRaw: a.you_raw, admRaw: a.admitted_raw,
+  }));
+  return (
+    <figure>
+      <div className="h-64">
+        <ResponsiveContainer>
+          <RadarChart data={data} outerRadius="75%">
+            <PolarGrid stroke="var(--color-line)" />
+            <PolarAngleAxis dataKey="axis" tick={{ fill: "var(--color-muted)", fontSize: 11 }} />
+            <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+            <Radar name="Admitted median" dataKey="admitted" stroke="var(--color-tier2)" strokeDasharray="4 3"
+                   fill="var(--color-tier2)" fillOpacity={0.08} />
+            <Radar name="You" dataKey="you" stroke="var(--color-advocate)" fill="var(--color-advocate)"
+                   fillOpacity={0.25} animationDuration={900} />
+            <Tooltip formatter={(_v, name, item) =>
+              [name === "You" ? item.payload.youRaw : item.payload.admRaw, name]} />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+      <figcaption className="text-[11px] text-muted">
+        Admitted median from {radar.n_admitted} admitted Reddit applicants. *Essay & Personal compares
+        against the typical applicant-pool rating (twins have no essays).
+      </figcaption>
+    </figure>
+  );
+}
+```
+
+#### 5.6.4 `TwinCards.tsx` + `TwinCard.tsx`: the 5 historical twins
+
+```tsx
+"use client";
+import { AnimatePresence, motion } from "framer-motion";
+import { ExternalLink } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { TierTag } from "@/components/dossier/TierTag";
+import { useActiveRun, useRunStore } from "@/store/run-store";
+import type { TwinCard as Twin } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+const OUTCOME = {
+  accepted: { label: "ACCEPTED", icon: "✓", cls: "bg-admit/15 text-admit" },
+  waitlisted: { label: "WAITLISTED", icon: "◐", cls: "bg-waitlist/15 text-waitlist" },
+  rejected: { label: "REJECTED", icon: "✕", cls: "bg-deny/15 text-deny" },
+} as const;
+
+export function TwinCards() {
+  const twins = useActiveRun((r) => r.twins);
+  const baseline = useActiveRun((r) => r.baseline);
+  return (
+    <section aria-labelledby="twins-h">
+      <h3 id="twins-h" className="font-display text-lg">The 5 Historical Twins</h3>
+      {baseline && (
+        <p className="mb-2 font-mono text-[11px] text-muted">
+          50 nearest: {baseline.n_accepted}✓ {baseline.n_waitlisted}◐ {baseline.n_rejected}✕ · n_eff {baseline.n_effective.toFixed(1)}
+          {" · "}Reddit bias ×{baseline.odds_inflation.toFixed(1)} corrected
+          {baseline.widened_to_peers && " · widened to peer schools"}
+        </p>
+      )}
+      <ol className="space-y-2">
+        {twins.map((t, i) => (
+          <motion.li key={t.id} initial={{ opacity: 0, x: 24, rotate: 2 }} animate={{ opacity: 1, x: 0, rotate: 0 }}
+                     transition={{ delay: i * 0.12, type: "spring", stiffness: 300, damping: 24 }}>
+            <TwinCard twin={t} />
+          </motion.li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function TwinCard({ twin }: { twin: Twin }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const lit = useRunStore((s) => s.highlight?.kind === "twin" && s.highlight.ref === String(twin.index));
+  const comparison = useActiveRun((r) => r.twinAnalysis?.comparisons.find((c) => c.twin_index === twin.index));
+  const o = OUTCOME[twin.outcome];
+
+  useEffect(() => { if (lit) ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, [lit]);
+
+  return (
+    <div ref={ref}
+         className={cn("rounded-xl border border-line bg-panel transition-shadow",
+                       lit && "ring-2 ring-tier1 shadow-[0_0_24px_-4px_var(--color-tier1)]")}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open}
+              className="flex w-full items-center gap-3 p-3 text-left">
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-panel-2 font-mono text-xs">{twin.index}</span>
+        <span className={cn("rounded px-1.5 py-0.5 font-mono text-[10px] font-bold", o.cls)}>{o.icon} {o.label}</span>
+        <span className="min-w-0 flex-1 truncate font-mono text-xs">{twin.headline}</span>
+        <span className="font-mono text-xs text-muted" title="hybrid similarity">{Math.round(twin.hybrid_score * 100)}%</span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <div className="space-y-3 border-t border-line p-3 text-sm">
+              {twin.spike_summary && <p><span className="text-muted">Spike:</span> {twin.spike_summary}</p>}
+              <ul className="space-y-1">
+                {twin.top_activities.map((a, i) => (
+                  <li key={i} className="flex gap-2"><TierTag tier={a.tier} /><span className="text-xs">{a.description}</span></li>
+                ))}
+              </ul>
+              {comparison && (
+                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+                  <dt className="text-muted">Same</dt><dd>{comparison.key_similarity}</dd>
+                  <dt className="text-muted">Different</dt><dd>{comparison.key_difference}</dd>
+                  <dt className="text-muted">Likely decider</dt><dd>{comparison.plausible_deciding_factor}</dd>
+                </dl>
+              )}
+              <div className="flex items-center justify-between text-[11px] text-muted">
+                <span>Cycle {twin.cycle_year ?? "?"} · semantic {Math.round(twin.semantic_similarity * 100)}% · stats {Math.round(twin.stat_proximity * 100)}%</span>
+                <a href={twin.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-ink">
+                  original post <ExternalLink className="size-3" />
+                </a>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+```
+
+#### 5.6.5 `WhatIfPanel.tsx`: sliders → `/api/what-if` → gauge
+
+```tsx
+"use client";
+import { useEffect, useMemo } from "react";
+import { create } from "zustand";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { whatIf } from "@/lib/api";
+import type { WhatIfRequest } from "@/lib/types";
+import { useActiveRun, useRunStore } from "@/store/run-store";
+
+type Draft = Omit<WhatIfRequest, "run_id">;
+export const useWhatIfDraft = create<{ draft: Draft; set: (d: Partial<Draft>) => void; reset: () => void }>((set) => ({
+  draft: {},
+  set: (d) => set((s) => ({ draft: { ...s.draft, ...d } })),
+  reset: () => set({ draft: {} }),
+}));
+
+const MAJORS = ["computer_science", "math_stats", "data_science", "electrical_engineering", "physics_astro",
+                "economics", "biology", "neuroscience", "business", "undecided"];
+
+export function WhatIfPanel() {
+  const runId = useRunStore((s) => s.activeRunId);
+  const setWhatIf = useRunStore((s) => s.setWhatIf);
+  const sim = useRunStore((s) => (runId ? s.whatIf[runId] : undefined));
+  const prob = useActiveRun((r) => r.probability);
+  const rubric = useActiveRun((r) => r.rubric);
+  const metrics = useActiveRun((r) => r.metrics);
+  const cfs = useActiveRun((r) => r.counterfactuals);
+  const { draft, set, reset } = useWhatIfDraft();
+
+  const baseSat = metrics?.sat_equivalent ?? rubric?.sat_25 ?? 1400;
+  const majors = useMemo(() => {
+    const fromCfs = cfs.filter((c) => c.kind === "major_switch").map((c) => c.id.replace("cf_major_", ""));
+    return Array.from(new Set([rubric?.major_category, ...fromCfs, ...MAJORS].filter(Boolean))) as string[];
+  }, [cfs, rubric]);
+  const cfDelta = (major: string) => cfs.find((c) => c.id === `cf_major_${major}`)?.delta_pp;
+
+  // Debounced recompute; aborts stale requests so the gauge never shows an out-of-date value.
+  useEffect(() => {
+    if (!runId || !prob) return;
+    if (Object.keys(draft).length === 0) { setWhatIf(runId, undefined); return; }
+    const ctl = new AbortController();
+    const t = setTimeout(() => {
+      whatIf({ run_id: runId, ...draft }, ctl.signal).then((r) => setWhatIf(runId, r)).catch(() => {});
+    }, 140);
+    return () => { clearTimeout(t); ctl.abort(); };
+  }, [draft, runId, prob, setWhatIf]);
+
+  const disabled = !prob;
+  return (
+    <section aria-labelledby="whatif-h" className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 id="whatif-h" className="font-display text-lg">What-If Simulator</h3>
+        <Button variant="ghost" size="sm" onClick={reset} disabled={disabled}>Reset</Button>
+      </div>
+
+      <label className="block text-xs text-muted">
+        SAT <span className="float-right font-mono text-ink">{draft.withhold_sat ? "withheld" : draft.sat ?? baseSat}</span>
+        <Slider className="mt-2" min={1200} max={1600} step={10} disabled={disabled || !!draft.withhold_sat}
+                value={[draft.sat ?? baseSat]} onValueChange={([v]) => set({ sat: v })} aria-label="SAT score" />
+        <span className="mt-1 block font-mono text-[10px]">school middle 50%: {rubric?.sat_25 ?? "?"}–{rubric?.sat_75 ?? "?"}</span>
+      </label>
+      {rubric?.test_policy !== "required" && (
+        <label className="flex items-center justify-between text-xs text-muted">
+          Apply test-optional
+          <Switch checked={!!draft.withhold_sat} onCheckedChange={(v) => set({ withhold_sat: v })} disabled={disabled} />
+        </label>
+      )}
+
+      <label className="block text-xs text-muted">
+        Intended major
+        <Select value={draft.major_category ?? rubric?.major_category} onValueChange={(v) => set({ major_category: v })} disabled={disabled}>
+          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {majors.map((m) => (
+              <SelectItem key={m} value={m}>
+                {m.replaceAll("_", " ")}
+                {cfDelta(m) !== undefined && <span className="ml-2 font-mono text-admit">+{cfDelta(m)!.toFixed(1)} pp</span>}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </label>
+
+      <label className="flex items-center justify-between text-xs text-muted">
+        Add a Tier 2 activity
+        <Switch checked={(draft.add_activities ?? []).includes(2)} disabled={disabled}
+                onCheckedChange={(v) => set({ add_activities: v ? [2] : [] })} />
+      </label>
+
+      <label className="block text-xs text-muted">
+        Essay strength <span className="float-right font-mono text-ink">+{draft.essay_steps ?? 0} step</span>
+        <Slider className="mt-2" min={0} max={2} step={1} disabled={disabled}
+                value={[draft.essay_steps ?? 0]} onValueChange={([v]) => set({ essay_steps: v as 0 | 1 | 2 })} />
+      </label>
+
+      <label className="block text-xs text-muted">
+        Application round
+        <Select value={draft.early_round ?? "RD"} onValueChange={(v) => set({ early_round: v as Draft["early_round"] })} disabled={disabled}>
+          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+          <SelectContent>{["RD", "EA", "REA", "ED", "ED2"].map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+        </Select>
+      </label>
+
+      {rubric && rubric.factor_levels.applicant_interest !== "not_considered" && (
+        <label className="flex items-center justify-between text-xs text-muted">
+          Demonstrated interest (visit / interview)
+          <Switch checked={!!draft.demonstrated_interest} onCheckedChange={(v) => set({ demonstrated_interest: v })} disabled={disabled} />
+        </label>
+      )}
+
+      {sim && (
+        <div className="rounded-lg bg-panel-2 p-3 text-xs">
+          <p className="font-mono">
+            {sim.delta_pp >= 0 ? "▲" : "▼"} {Math.abs(sim.delta_pp).toFixed(1)} pp ·{" "}
+            <span className={sim.confidence === "data_backed" ? "text-admit" : "text-waitlist"}>{sim.confidence.replace("_", " ")}</span>
+          </p>
+          {sim.applied.length > 0 && <p className="text-muted">{sim.applied.join(" · ")}</p>}
+          {sim.warnings.map((w) => <p key={w} className="text-waitlist">⚠ {w}</p>)}
+        </div>
+      )}
+    </section>
+  );
+}
+```
+
+#### 5.6.6 `PivotList.tsx` + `EssayEdits.tsx`
+
+- **PivotList** renders `report.ranked_pivots` in order. Each card shows the title, a **delta chip bound from `counterfactuals` by `counterfactual_id`** (never from LLM prose), a confidence badge (`data_backed` emerald / `model_estimate` amber), an effort pill (hours / days / weeks / months), `why_it_works`, a numbered `concrete_steps` list, and `tradeoffs` in muted italics. A **"Try it"** button maps the counterfactual into the what-if draft, so the gauge visibly jumps:
+
+```ts
+export function cfToDraft(cf: Counterfactual): Partial<Draft> {
+  switch (cf.kind) {
+    case "major_switch": return { major_category: cf.id.replace("cf_major_", "") };
+    case "test_score": return cf.overrides.sat === null ? { withhold_sat: true } : { sat: cf.overrides.sat as number };
+    case "add_activity": return { add_activities: [2] };
+    case "early_round": return { early_round: cf.overrides.early_round as Draft["early_round"] };
+    case "demonstrated_interest": return { demonstrated_interest: true };
+    case "essay": return { essay_steps: 1 };
+  }
+}
+```
+
+  `cf_promote_t3` also maps to `add_activities: [2]`. Its overrides were computed by promoting a Tier 3 rather than adding a Tier 2, so the what-if result can differ by a few tenths of a point. The UI labels it "≈". For exact parity, add a `promote_tier3: bool` field to `WhatIfRequest` (15 minutes of work).
+
+- **Major Arbitrage callout:** when the top pivot is a `major_switch`, render it as a hero card: "**Major Arbitrage:** applying to Math in LAS instead of direct-entry CS in Grainger → **+X pp** (data-backed, n = 41 similar applicants)", followed by `major_arbitrage_note` (what the student gives up).
+- **EssayEdits:** for each edit, the `current_excerpt` sits in a paper-colored quote block with a red underline; the `direction` follows, then the `example_rewrite` in a green-bordered block with a **Copy** button.
+
+### 5.7 Left panel: Applicant Dossier
+
+#### 5.7.1 `HarvardScorecard.tsx` + `TierTag.tsx`
+
+```tsx
+"use client";
+import { motion } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useActiveRun, useRunStore } from "@/store/run-store";
+import type { Pillar, Tier } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+const PILLARS: { key: Pillar; label: string }[] = [
+  { key: "academic", label: "Academic" }, { key: "extracurricular", label: "Extracurricular" },
+  { key: "personal", label: "Personal" }, { key: "athletic", label: "Athletic" },
+];
+// 1 (strongest) → 6: emerald → coral
+const RATING_BG = ["", "bg-admit text-room", "bg-admit/70 text-room", "bg-tier2 text-room",
+                   "bg-waitlist/80 text-room", "bg-deny/80 text-room", "bg-deny text-room"];
+
+export function HarvardScorecard() {
+  const harvard = useActiveRun((r) => r.grade?.harvard);
+  const weights = useActiveRun((r) => r.rubric?.pillar_weights);
+  return (
+    <div className="grid grid-cols-4 gap-2" aria-label="Harvard-style ratings, 1 is strongest">
+      {PILLARS.map(({ key, label }, i) => {
+        const r = harvard?.[key];
+        return (
+          <Tooltip key={key}>
+            <TooltipTrigger asChild>
+              <motion.div
+                initial={{ rotateY: 90, opacity: 0 }}
+                animate={r ? { rotateY: 0, opacity: 1 } : {}}
+                transition={{ delay: i * 0.15, type: "spring", stiffness: 200, damping: 20 }}
+                className={cn("flex aspect-square flex-col items-center justify-center rounded-lg",
+                              r ? RATING_BG[r.rating] : "animate-pulse bg-panel-2")}
+              >
+                <span className="font-display text-3xl font-bold leading-none">{r ? `${r.rating}${r.modifier}` : "–"}</span>
+                <span className="mt-1 text-[10px] uppercase tracking-wider">{label.slice(0, 4)}</span>
+                {weights && <span className="font-mono text-[9px] opacity-70">w {(weights[key] * 100).toFixed(0)}%</span>}
+              </motion.div>
+            </TooltipTrigger>
+            {r && (
+              <TooltipContent className="max-w-xs text-xs">
+                <p className="font-semibold">{label}: {r.rating}{r.modifier} (1 = strongest)</p>
+                <p className="mt-1">{r.rationale}</p>
+                <p className="mt-1 font-mono text-muted">evidence: {r.evidence.join(", ")}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+}
+
+const TIER_STYLE: Record<Tier, string> = {
+  1: "bg-tier1 text-room", 2: "bg-tier2 text-room", 3: "bg-tier3 text-room", 4: "bg-tier4 text-ink",
+};
+
+export function TierTag({ tier, lit = false }: { tier: Tier; lit?: boolean }) {
+  return (
+    <span className={cn("inline-flex h-5 min-w-8 items-center justify-center rounded-full px-1.5 font-mono text-[10px] font-bold",
+                        TIER_STYLE[tier], lit && "ring-2 ring-ink")}
+          aria-label={`Tier ${tier}`}>
+      T{tier}
+    </span>
+  );
+}
+```
+
+#### 5.7.2 Dossier panel composition
+
+| Block | Data | Behavior |
+|---|---|---|
+| `MetricsStrip` | `metrics` (UW/W GPA, SAT eq., advanced courses, rigor index, trend) | Numbers count up (`animate`); a trend arrow shows ↗ / → / ↘; the label reads "computed from transcript". |
+| `HarvardScorecard` | `grade.harvard`, `rubric.pillar_weights` | Badges flip in one by one; the tooltip shows rationale + evidence; small text shows the *school weight* of each pillar |
+| `SpikeBanner` | `grade.spike` | One line with a strength meter (none / emerging / moderate / strong) |
+| `ActivityList` | `dossier.activities` + `grade.activity_grades` | Rows are sorted by tier with a `TierTag` and a `core` star; before grading the row shows a pulsing "grading…" pill. A citation hover on `dossier:activities.N` rings that row. |
+| `AwardsList` | `dossier.awards` | Level chips (school → international) |
+| `ReaderNote` | `grade.reader_comments` | **Caveat** handwriting on a paper sticky note, slightly rotated: the human touch |
+| `WarningsDrawer` | `grade.grader_warnings`, `metrics`, extraction warnings | Collapsed by default: "2 guardrail adjustments", which shows the system's honesty |
+
+During intake (`/`), the same column hosts the `PdfDropzone`:
+
+```tsx
+"use client";
+import { useDropzone } from "react-dropzone";
+import { FileText, Upload } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export function PdfDropzone({ label, file, onFile }: { label: string; file?: File; onFile: (f: File) => void }) {
+  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
+    accept: { "application/pdf": [".pdf"] }, maxFiles: 1, maxSize: 10 * 1024 * 1024,
+    onDropAccepted: ([f]) => onFile(f),
+  });
+  return (
+    <div {...getRootProps()}
+         className={cn("cursor-pointer rounded-xl border-2 border-dashed border-line p-6 text-center transition",
+                       isDragActive && "border-advocate bg-advocate/10", file && "border-solid border-admit/60")}>
+      <input {...getInputProps()} aria-label={label} />
+      {file ? <FileText className="mx-auto size-8 text-admit" /> : <Upload className="mx-auto size-8 text-muted" />}
+      <p className="mt-2 text-sm">{file ? file.name : `Drop your ${label} (PDF)`}</p>
+      {fileRejections.length > 0 && <p className="mt-1 text-xs text-deny">PDF only, up to 10 MB.</p>}
+    </div>
+  );
+}
+```
+
+### 5.8 Top bar, school tabs, intake wizard, page shell
+
+- **`TopBar`**: wordmark · `SchoolTabs` · `PipelineStepper` · elapsed timer (from `startedAt`) · "Projector" toggle.
+- **`SchoolTabs`**: one tab per entry in `intake.target_schools`. The first school's run starts at submit. Clicking another tab calls `evaluateSchool(parentRunId, slug)` once, stores the child `runId` in a `tabs` map, and switches `activeRunId`. Child runs skip Node 1 and start streaming within about 1 s. Each tab dot shows status: live (pulsing) / done (disposition color) / not started (hollow).
+- **`PipelineStepper`**: five numbered steps (Dossier → Institution → Twins → Committee → Delta) bound to `run.nodes`. The Committee step shows `turn n/4`. A degraded node shows an amber ring with a tooltip of the error message.
+- **`IntakeWizard`** (`/`), 4 steps, each with a progress dot:
+  1. **Upload**: transcript dropzone (required unless activities are pasted), resume dropzone (optional).
+  2. **Writing**: activities list textarea (paste from Common App), essay textarea with a live word count, optional recommendation letter.
+  3. **Targets**: intended major (free text with category hint), `SchoolPicker` (debounced `searchSchools`, up to 8), per-school round select (ED/EA/RD shown only if the school offers it, using `early_plans`), deadline date.
+  4. **Context & consent**: optional residency state, school type, first-gen and low-income switches, hooks (legacy, recruited athlete). A short line explains: "Race and ethnicity are not asked. Race-conscious admissions ended in 2023, and our model never uses them." The required consent checkbox reads: "These are my own materials. Delete everything within 24 hours." A **"Load Maya's demo file"** link sits beside it.
+  - Submit → `createEvaluation()` → `router.push('/room/' + run_id)`. A 429 shows a toast offering the demo replay.
+
+```tsx
+// app/room/[runId]/page.tsx
+import { WarRoom } from "@/components/room/WarRoom";
+export default async function Page({ params }: { params: Promise<{ runId: string }> }) {
+  const { runId } = await params;
+  return <WarRoom source={{ kind: "live", runId }} />;
+}
+```
+
+```tsx
+// components/room/WarRoom.tsx
+"use client";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useRunStream, type RunSource } from "@/lib/stream";
+import { TopBar } from "./TopBar";
+import { DossierPanel } from "@/components/dossier/DossierPanel";
+import { CommitteeRoom } from "@/components/committee/CommitteeRoom";
+import { AnalyticsPanel } from "@/components/analytics/AnalyticsPanel";
+
+export function WarRoom({ source }: { source: RunSource }) {
+  useRunStream(source);
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className="flex h-dvh flex-col bg-room">
+        <TopBar source={source} />
+        {/* ≥1440px: three columns */}
+        <main className="hidden min-h-0 flex-1 grid-cols-[340px_minmax(0,1fr)_420px] 2xl:grid">
+          <aside className="min-h-0 overflow-y-auto border-r border-line p-4"><DossierPanel /></aside>
+          <div className="min-h-0"><CommitteeRoom /></div>
+          <aside className="min-h-0 overflow-y-auto border-l border-line p-4"><AnalyticsPanel /></aside>
+        </main>
+        {/* <1440px: tabs, Committee first */}
+        <Tabs defaultValue="committee" className="flex min-h-0 flex-1 flex-col 2xl:hidden">
+          <TabsList className="mx-4 mt-2 self-start">
+            <TabsTrigger value="committee">Committee</TabsTrigger>
+            <TabsTrigger value="dossier">Dossier</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
+          <TabsContent value="committee" className="min-h-0 flex-1"><CommitteeRoom /></TabsContent>
+          <TabsContent value="dossier" className="min-h-0 flex-1 overflow-y-auto p-4"><DossierPanel /></TabsContent>
+          <TabsContent value="analytics" className="min-h-0 flex-1 overflow-y-auto p-4"><AnalyticsPanel /></TabsContent>
+        </Tabs>
+      </div>
+    </TooltipProvider>
+  );
+}
+```
+
+(The 1024–1439 px two-column + gauge-pill `Sheet` variant from §5.2 is a polish item for Hour 26+; tabs cover it until then.)
+
+### 5.9 Interaction details that win demos
+
+| Moment | Detail |
+|---|---|
+| **Citation → evidence** | Hovering `[Twin 2 ✓]` pulses twin card 2 gold and scrolls it into view. `[C7 · Essay]` rings the essay row in the C7 grid. `[Model · major]` outlines the waterfall bar. One global `highlight` drives every panel, which visibly proves the agents are grounded. |
+| **Gauge sweep** | On `probability`, the arc animates from 0 over 1.1 s with an ease-out-expo curve and the numeral counts up with it. The 80% range appears after the sweep. |
+| **Recommendation stamp** | After turn 4, the stamp drops in at 2.4× scale with a spring, rotated −8°. Optionally play a 120 ms thunk sound, muted by default. |
+| **Twin deal** | Cards slide in from the right with a 120 ms stagger and a slight rotation, like cards being dealt onto a table. |
+| **Major arbitrage reveal** | Click "Try it" on the hero pivot: the major select flips, the gauge sweeps up, and the delta chip flashes emerald. This is the demo's money shot (§7). |
+| **Fallbacks are visible, not hidden** | Degraded nodes get an amber ring and a "fallback" chip, and unverified citations are struck through. Being honest about failure builds judge trust. |
+
+### 5.10 Accessibility & performance checklist
+
+- Every color signal has a paired icon or text (✓/◐/✕, T1–T4, "WAITLIST"). Contrast is ≥ 4.5:1 on panel backgrounds and must be checked in projector mode.
+- The streaming bubble has `aria-live="polite"`, as do gauge updates. The stamp has `role="status"`. All chips and cards are keyboard-focusable, with focus driving the same `highlight`.
+- `prefers-reduced-motion` disables springs and staggers. The numbers still update.
+- Token updates are rAF-batched (§5.4). Wrap `DebateBubble` in `React.memo` keyed by `turn` + `content.length`. Recharts components only re-render on their own slices.
+- Code-split the War Room route; lazy-load Recharts (`next/dynamic`, `ssr: false`) so the intake page stays light.
+- Recharts needs a sized parent: every `ResponsiveContainer` sits inside an explicit-height wrapper (already done above).
+
+---
+
+## 6. Hour-by-Hour Execution Schedule (36 hours, 3–4 devs)
+
+### 6.1 Team & tracks
+
+| Role | Track | Owns | Section refs |
+|---|---|---|---|
+| **Dev A: Data & RAG** | Track A | Supabase, migrations, PullPush scrape, Reddit extraction, resolver, Scorecard/CDS loads, RPCs, stats views, backtest & bias audit | §2, §4.7 SQL |
+| **Dev B: Agents & API** | Track B | `llm.py`, Nodes 1–5, prompts, scoring, graph, FastAPI, RunManager/SSE, what-if, deploy API | §3, §4 |
+| **Dev C: War Room UI** | Track C | Next.js shell, store/stream, committee room, dossier panel, intake, school tabs | §5.1–5.5, §5.7–5.8 |
+| **Dev D: Viz, Demo & Integration** (floater) | Track C+ | Gauge, waterfall, radar, twin cards, what-if UI, pivots, demo dossiers, fixtures, recordings, deploy web, pitch | §5.6, §4.8–4.9, §7 |
+
+**3-dev variant:** Dev D's work splits. A takes demo dossiers and fixtures (Hour 4) plus recordings; C takes the charts (Hours 12–24); B takes deploys. Cut items 1–4 from the cut list (§6.5) up front.
+
+**Ground rules**
+- **The contract is law.** Event names and payloads (§1.6, §4.2), Pydantic schemas (§3.3) and TS types (§5.4.1) are frozen at **Hour 2**. Any change after that is a PR that touches *both* the Python model and `lib/types.ts`, plus a message in the team channel.
+- **Never block on a dependency.** C and D build against the scripted SSE generator (Hour 3), then `FAKE_LLM` fixtures (Hour 6), then the real backend (Hour 15).
+- **Deploy early, deploy often.** The first deploy of both apps happens at Hour 16, not Hour 34.
+- **Syncs:** a 10-minute standup at H0, 6, 12, 18, 24, 30, with a demo of what works (not a status report). Each one ends by updating the "live risks" list.
+- **The demo persona is fictional.** Maya's transcript, activities and essay are written by the team. No real student data ever enters a slide, a recording or a fixture.
+
+### 6.2 The plan in 6-hour blocks
+
+#### Hours 0–6: Foundations & contracts
+
+| Hour | Track A: Data & RAG | Track B: Agents & API | Track C: UI | Dev D: Viz & Demo |
+|---|---|---|---|---|
+| 0–1 | Create the Supabase project, apply migrations 0001–0008, add school seed CSV + aliases | Repo scaffold, `uv` env, `config.py`, `.env` template, `llm.py`, smoke-test the Claude call | `create-next-app`, Tailwind v4 tokens (§5.1), shadcn init, fonts | Choose the demo story: **Maya, CS → UIUC Grainger**, backups CMU and Michigan |
+| 1–2 | **Start the PullPush scrape in the background** (`etl.run_etl scrape`, ~25 min); Scorecard key + `load_scorecard` | Write Pydantic schemas (§3.3) | Write `lib/types.ts` (§5.4.1) | Write Maya's fictional transcript (PDF), activities, essay; 2 backup personas |
+| **2** | **CONTRACT FREEZE**: event taxonomy, schemas, TS types reviewed together (20 min) | ← | ← | ← |
+| 2–4 | Extraction smoke test on 200 posts; **Opus vs Haiku comparison on 50 posts** (§2.9.11), decision at H4 | FastAPI skeleton + `RunManager` + **scripted fake SSE** that replays a hand-written event list | Store + reducer + `useRunStream` against the fake SSE; 3-column shell | Gauge + waterfall against static JSON |
+| 4–6 | Launch the **full extraction** (background, ~2 h); collect CDS PDF URLs for the 5 demo schools | Node 1 (extract + metrics + grade + guardrails) on Maya's transcript via CLI | Committee room bubbles + citation tokenizer on a hand-written debate | Twin cards + radar on static JSON |
+
+**Hour 6 gate:** the fake SSE drives the whole War Room end to end. At least 5K raw posts are scraped. Node 1 produces a sensible `DossierGrade` for Maya. The ETL model decision is made.
+
+#### Hours 6–12: Data at scale, first real nodes
+
+| Hour | Track A | Track B | Track C | Dev D |
+|---|---|---|---|---|
+| 6–8 | Resolver triage loop: read `unresolved_schools.csv` → extend aliases → re-run the resolve step | Scoring module (§3.6) + `pytest` monotonicity tests | Dossier panel: metrics strip, Harvard scorecard, activity list, reader note | **Generate `FAKE_LLM` fixtures** from B's real Node 1 output plus hand-written Node 2–5 outputs |
+| 8–10 | `load_cds` for the 5 demo schools; first `load_twins` (≥ 3K) + `refresh_stats` | Node 2 (rubric + Tavily + brief); Node 3 (RPC + contrast selection + baseline) | Intake wizard (4 steps) + `PdfDropzone` + `SchoolPicker` | What-if panel UI with mocked responses |
+| 10–12 | RPC benchmarks (under 50 ms); data-quality SQL (§2.9.10); **human C7 spot-check** | Docket node + graph compiles (`START → N1 → N2‖N3 → docket`) | Pipeline stepper + tool ticker + pre-meeting "whispers" | Pivot list + essay edits + major arbitrage hero card |
+
+**Hour 12 gate:** `run_graph_cli` prints a real probability and waterfall for Maya at UIUC. At least 5K twins are loaded with embeddings. Every UI panel renders from `FAKE_LLM` fixtures through the real SSE path.
+
+#### Hours 12–18: Debate & integration
+
+| Hour | Track A | Track B | Track C | Dev D |
+|---|---|---|---|---|
+| 12–14 | Finish extraction → **10K+ twins**; verify `major_overrides.yaml` for the demo schools against official pages | Debate nodes (streaming, docket cache, citation validator, fallback turn) | Citation chips + cross-panel highlight; recommendation stamp | `/api/what-if` integration (B exposes the endpoint at H14) |
+| 14–16 | `admitted_profile_medians` + calibration view sanity (`odds_inflation` 1.5–5) | Node 5 + counterfactuals + persist; `/api/what-if`, `/api/twins` | **Switch from fixtures to the real backend** (H15) | **First deploy:** API on Railway/Fly, web on Vercel, CORS, env |
+| 16–18 | Start the **backtest** script: hold out the latest cycle and compute Brier score + AUC vs a base-rate-only baseline | Prompt iteration on debate quality across Maya at 3 schools; check `cache_read_input_tokens` > 0 | School tabs + child runs; error/degraded states | Record the first `event_log` → `record_demo.py` → replay route works |
+
+**Hour 18 gate: INTEGRATION.** A live run in the browser on the deployed stack shows a debate with valid citations, an animated gauge and working sliders.
+
+#### Hours 18–24: Hardening + staggered sleep
+
+**Sleep shifts:** A and C sleep H18–22; B and D sleep H22–26. Nobody pulls a full all-nighter. The demo is presented by tired people, so protect the presenter's sleep first.
+
+| Hour | Track A | Track B | Track C | Dev D |
+|---|---|---|---|---|
+| 18–22 | *(sleep)* | Robustness: kill Tavily, force API errors, check degraded paths and the watchdog; tune per-node effort for latency | *(sleep)* | Demo-mode route + `Shift+R` hotkey that swaps any live room to its replay; recorded backup video v0 |
+| 22–24 | Backtest results + **reliability curve**; **bias audit**: calibration by income bracket and first-gen subgroup on held-out twins | *(sleep)* | Animations pass (gauge sweep, twin deal, stamp), projector mode | *(sleep)* |
+
+**Hour 24 gate:** a demo-able end-to-end run exists, plus a recorded replay of Maya at UIUC. The backtest numbers exist, good or bad, and are written down honestly.
+
+#### Hours 24–30: Polish & proof
+
+| Hour | Track A | Track B | Track C | Dev D |
+|---|---|---|---|---|
+| 24–26 | "About the data" modal: twin count, schools, cycles, CDS coverage, calibration chart | *(sleep until 26)* → prompt tuning on 3 personas × 3 schools | Landing hero with a live dataset counter; empty and error states | *(sleep until 26)* → pitch script v1 (§7) |
+| 26–28 | Stretch: `fit_coefficients.py`; adopt fitted values only if sane (§3.9.3) | Rate limits + budget guard + `/api/health`; dossier cache by upload hash (§7.4) | 1024–1439 px layout; accessibility pass (§5.10) | **Rehearsal #1** (timed); collect judge-style questions from the team |
+| **28** | **FEATURE FREEZE**: from here on, only bug fixes, copy edits and demo-critical polish | ← | ← | ← |
+| 28–30 | Write the data card (sources, licenses/ToS notes, known biases) | Fix P0/P1 bugs from the rehearsal | Fix P0/P1 UI bugs | Q&A doc (§7.3) + Devpost draft |
+
+#### Hours 30–36: Freeze, rehearse, ship
+
+| Hour | Everyone |
+|---|---|
+| 30–32 | **Bug bash:** each dev runs 3 personas × 5 schools on production and logs issues in one sheet (P0 = demo path broken; P1 = visible glitch; P2 = later). Fix P0 only. |
+| 32 | **Re-record the final demo replays** (Maya at UIUC primary, Maya at CMU backup) on production; tag `v1.0`; final deploy |
+| **33** | **CODE FREEZE.** Venue check: projector mode, contrast, font size from the back row, venue Wi-Fi vs phone hotspot, both laptops logged in with tabs pre-opened |
+| 33–35 | Rehearsals #2–#5, hard-stopped at 3:00 with a timer. Rotate a "hostile judge" asking the §7.3 questions. |
+| 35–36 | Buffer. Submit Devpost (video, repo link, README with architecture diagram). Charge laptops. Eat. |
+
+### 6.3 Mock & fallback ladder (what to use when)
+
+| Layer | Mock / fallback | Available from | Kill switch |
+|---|---|---|---|
+| Backend events | Scripted fake SSE (hand-written event list) | H3 | `/api/dev/fake-stream` (delete before H33) |
+| LLM calls | `FAKE_LLM=1` fixtures (§4.9) | H6 | env var |
+| Web research | Postgres cache, then DB-only brief (`institutional_brief = None`) | H10 | unset `TAVILY_API_KEY` |
+| Sparse school | Peer-group widening in Node 3 | H10 | automatic |
+| Debate turn failure | Template turn, marked `degraded` | H14 | automatic |
+| Whole live run | Recorded replay (`/room/demo/<name>`) | H18 | `Shift+R` in the War Room |
+| Whole venue network | Backup screen recording (MP4) on two laptops + a USB stick | H22 / H32 | play the file |
+
+### 6.4 Risk register
+
+| Risk | Likelihood | Impact | Mitigation | Owner |
+|---|---|---|---|---|
+| PullPush is slow, rate-limited or down | Med | High | Start the scrape at H1; checkpoint/resume; keep partial data. If it's down for more than 2 h, switch to another public Reddit archive (e.g., Arctic Shift dumps) with the same JSONL shape. | A |
+| Extraction cost or time overrun | Med | Med | H4 model decision gate; extract demo-school posts first (filter by school mentions); `--limit` | A |
+| CDS PDFs are scanned or messy | Med | Med | Send the whole PDF (Claude reads scanned pages); hand-enter C7 for the 5 demo schools (15 min) | A |
+| Debate is too long or too slow | Med | High | `effort=low`, 110–170 words per turn; reduce to 2 turns via `TURN_BRIEFS` if needed; demo uses a cached dossier | B |
+| LLM grades are inflated | Med | Med | Anchors + clamps (§3.6.1); prompt calibration language; show warnings in UI | B |
+| SSE buffered by a proxy | Low | High | `X-Accel-Buffering: no`; test on the production host by H16 | B/D |
+| Supabase free-tier limits | Low | Med | 10K × 1536 float4 ≈ 60 MB of vectors, well under 500 MB; HNSW build takes about 1 min | A |
+| Anthropic rate limits during judging | Low | High | `max_concurrent_runs=6`; dossier cache; replay fallback | B |
+| A judge challenges on data ethics or legality | High | Med | §7.3 answers rehearsed; data card; no usernames; race excluded | D |
+| Presenter exhaustion | High | High | Staggered sleep; presenter sleeps H22–26 at minimum | Lead |
+
+### 6.5 Cut list (cut from the top when behind)
+
+1. `fit_coefficients.py` (keep priors; say so honestly)
+2. `/r/[runId]` share page
+3. 1024–1439 px two-column layout (tabs cover it)
+4. Transfer-applicant path (r/TransferToTop25 stays in the corpus for stats only)
+5. School tabs beyond the first school (show one school, pre-recorded others)
+6. Essay edits panel (keep pivots)
+7. Live Tavily fact-check (DB-only brief; keep the CDS citations)
+8. Radar (keep gauge, waterfall and twins)
+
+**Never cut:** the live debate with citations, the twin cards, the gauge + waterfall, the major arbitrage pivot, and the replay fallback.
+
+---
+
+## 7. The 3-Minute Judging Pitch & Demo Script
+
+### 7.1 Narrative arc
+
+**Hook** (admissions is a committee, not a calculator) → **Proof** (real rubric, real data, real debate, live on screen) → **Payoff** (one concrete, data-backed move that changes the outcome) → **Why it matters** (every student gets the committee's view, not only those who can pay for it).
+
+Two people present. **Presenter (P)** talks and owns the story. **Driver (D)** runs the laptop and never speaks. D works from a printed copy of the "Screen action" column.
+
+### 7.2 Second-by-second script
+
+| Time | Who | Script (spoken) | Screen action (Driver) |
+|---|---|---|---|
+| **0:00–0:12** | P | "When Harvard was sued in *SFFA v. Harvard*, the trial record showed how admissions readers actually score applicants: **one to six**, across academic, extracurricular, personal and athletic. Not a GPA calculator. A rubric, and then a committee that argues." | Landing page; hero headline animates in; dataset counter ticking: *{N_TWINS} real applicants · {N_SCHOOLS} schools* |
+| 0:12–0:27 | P | "Every student gets judged that way, but almost none of them ever see it. So we built the committee. **AdCom** puts your whole application in front of five AI agents, grounded in each school's Common Data Set, federal College Scorecard data, and **{N_TWINS} real applicants' outcomes** from Reddit." | Scroll to intake; Maya's file is already attached (transcript PDF, activities, essay). Target: **UIUC**, Computer Science. |
+| 0:27–0:32 | P | "Meet Maya. Her file is fictional; the data she's judged against is not." | **Click "Convene the committee."** War Room opens; skeletons shimmer; stepper lights ① |
+| 0:32–0:50 | P | "Agent one reads her transcript like an admissions reader. GPA and rigor are **computed** from the courses, not guessed by a model. Then it grades every activity, Tier 1 to 4, and gives her a Harvard-scale scorecard: academic **2-minus**, extracurricular **3-plus**." | Dossier panel fills; metric counters count up; Harvard badges flip in; Tier medallions snap onto activities. **Hover the Academic badge** to show the rationale tooltip. |
+| 0:50–1:08 | P | "In parallel, two agents go to work. One pulls UIUC's Common Data Set weights and fact-checks them live on the web. The other runs a hybrid SQL plus vector search over our corpus and finds the **five real applicants most like Maya who applied to UIUC**." | Tool ticker scrolls (`tavily.search`, `rpc.match_applicant_twins`); **twin cards deal in**. **Click twin #2** to expand it: activities, outcome, link to the original post. |
+| 1:08–1:15 | P | "Two got in. Three didn't. Watch what the committee does with that." | Radar morphs in; gauge sweeps to **{P_UIUC}**, WAITLIST amber |
+| 1:15–1:50 | P | *(let the debate stream for ~5 s first)* "Now the committee meets, live. The regional officer argues for her spike. The chair pushes back with hard data: CS at Grainger is one of the most capacity-constrained majors in the country. **Every claim carries a citation.** Hover one…" | Debate streams token by token. **Hover a `[Twin 3 ✕]` chip** and twin card 3 pulses gold. **Hover `[Major ×0.38]`** and the waterfall bar outlines. |
+| 1:50–2:05 | P | "…and the evidence lights up. The **number** never comes from a language model. It's math you can audit: the school's base rate, the major's bottleneck, her rubric weighted by what UIUC says it values, then a Bayesian update from her twins, corrected for Reddit's self-selection bias." | Chair's final turn lands; **RECOMMENDATION stamp drops**. Point to the waterfall bars from top to bottom. |
+| 2:05–2:30 | P | "So what should Maya *do*? Agent five reruns the model on every lever she controls. Biggest one: **major arbitrage**. Same student, applying to Math in Liberal Arts & Sciences instead of direct-entry CS: **{DELTA_MAJOR} points**, backed by {N_MAJOR} similar applicants. And it tells her the tradeoff: internal transfer into CS is hard." | Final report appears. **Click "Try it" on the Major Arbitrage hero card** → major select flips → **gauge sweeps up** to {P_ARB}, delta chip flashes emerald. |
+| 2:30–2:42 | P | "Every slider is live. SAT to their 75th percentile? Plus {DELTA_SAT}. A stronger essay? The agents even point to the exact sentence to rewrite." | **Drag the SAT slider** → gauge moves in real time; scroll to one essay edit card (excerpt → rewrite). |
+| 2:42–3:00 | P | "Private admissions counseling is out of reach for most families. AdCom gives every student the committee's view of their file: grounded in real data, honest about uncertainty, and gone from our servers in 24 hours. **We're AdCom.** Thank you." | Zoom out to the full War Room; last frame shows gauge + stamp + twins. |
+
+**Timing rules:** if the debate is slow, D presses `Shift+R` at 1:15 to swap to the replay without saying anything; it looks identical. If the run is ahead of schedule, P adds nothing and lets the stream play. Silence while tokens stream reads as confidence.
+
+### 7.3 The hardest judge questions (rehearse until each answer is under 30 s)
+
+**Q1. "Reddit data is self-reported and self-selected. Isn't your model just biased?"**
+> "Yes, the raw data is biased, so we measure the bias and correct for it instead of hiding it. Three things. First, for every school we compare the Reddit admit rate with the official CDS rate. Reddit typically overstates admits by about {ODDS_INFLATION_TYPICAL}× in odds, and we divide that inflation out before twins touch the probability. Second, the twins can only *update* a model built on official data: they're capped at 20 effective applicants against a 12-applicant prior, so they can't override the CDS. Third, we backtested on a held-out admissions cycle: Brier score {BRIER} versus {BRIER_BASE} for the base-rate baseline, and the calibration curve is in our 'About the data' panel. We show the 80% range on every number, because certainty would be a lie."
+
+**Q2. "Students are uploading transcripts. What about FERPA and privacy?"**
+> "FERPA governs how schools disclose education records. A student choosing to share their own transcript with a tool isn't a FERPA disclosure, but we hold ourselves to that standard anyway. The PDF is never written to disk or database; it lives in memory for the run. Names, IDs, emails and phone numbers are extracted specifically so we can redact them, and are then discarded. What we keep is a redacted evaluation that **auto-deletes after 24 hours** via a Postgres cron job. There are no accounts and no training on user data, and Anthropic's commercial API terms don't use API inputs for training by default. For the Reddit corpus we store no usernames, only the public post link."
+
+**Q3. "LLMs hallucinate. Why should anyone trust a percentage from this?"**
+> "Because no language model produces the percentage. LLMs extract, grade and argue; deterministic code computes the probability, and you can see each term in the waterfall. Grades are clamped to statistical anchors computed from the transcript, so a model can't call a 3.6 student an academic 1. Every debate claim carries a citation that a validator checks against the evidence docket; unmatched citations are struck through on screen, not hidden. Web facts must cite a retrieved snippet or they're dropped. And Node 5 can only rank counterfactuals the model already computed, so it literally cannot invent a '+24%'."
+
+**Q4. "Race-conscious admissions ended in 2023. Does your model use race?"**
+> "No. Race is never asked of users, never embedded, never shown to the agents, and never in the model. We keep the self-reported field from Reddit posts only to *audit* our calibration across groups. The committee prompts explicitly bar speculating about protected characteristics, and the Personal rating, which was the controversial part of the Harvard case, must cite specific essay content."
+
+**Q5. "Why multiple agents instead of one big prompt?"**
+> "Separation of duties, the same reason real committees have them. The parser can't see the target school, so it can't grade toward an answer. The fact-checker and the twin search run in parallel on different evidence. The advocate and the chair are prompted to disagree, which surfaces the concerns one voice would smooth over, and the debate runs as a real loop in LangGraph, not one model role-playing both sides. It also means each step is streamable and individually testable."
+
+**Q6. "Is scraping Reddit allowed?"**
+> "We used PullPush, a public archive of Reddit posts, for non-commercial research during the hackathon. We store no usernames, link back to every source post, and keep only structured fields. A production version would license data through Reddit's Data API or partner with counselors for consented outcomes, and the pipeline is source-agnostic, so that's a loader change."
+
+**Q7. "Couldn't a student use this to game admissions?"**
+> "The advice is the same advice a good counselor gives: which school values what, where you're under-indexed, how to tell your story better. We explicitly refuse to recommend misrepresenting interests. The major-arbitrage advice requires real evidence of interest in the alternative major and always states the tradeoff."
+
+### 7.4 Pre-demo setup (the 30 minutes before you present)
+
+- [ ] **Dossier cache warm.** Run Maya's exact files once through production 30 minutes before the pitch. `RunManager` keeps an in-memory cache keyed by a hash of the uploaded bytes and text (24 h TTL, same privacy window as runs), so the on-stage run **skips Node 1** and the committee starts about 25 s sooner:
+
+```python
+# app/runs.py: add to RunManager
+import hashlib
+
+def dossier_key(inputs: RawApplicantInputs) -> str:
+    h = hashlib.sha256()
+    for part in (inputs.transcript_pdf_b64, inputs.resume_pdf_b64, inputs.resume_text, inputs.activities_text,
+                 inputs.essay_text, inputs.recommendation_text, inputs.intended_major):
+        h.update((part or "").encode())
+        h.update(b"\x00")
+    return h.hexdigest()
+
+# in start(): reuse a parsed dossier for identical uploads
+#     key = dossier_key(inputs)
+#     if prefill is None and (hit := self._dossier_cache.get(key)) and time.time() - hit[0] < 86_400:
+#         prefill = hit[1]
+# in _drive(), after run.final is set:
+#     self._dossier_cache[dossier_key(state["inputs"])] = (time.time(), {k: run.final[k] for k in PREFILL_KEYS})
+```
+
+  The Node 1 scorecard animation still plays: `_drive` re-emits `dossier_parsed` and `scorecard` from the prefill at the start of any cached run (§4.4), so the dossier panel fills just as it would live.
+- [ ] Prompt and Tavily caches are warm for UIUC and CMU (run each once).
+- [ ] `/api/health` is green on the venue network. The phone hotspot is tested as a fallback.
+- [ ] Laptop 1: intake page with Maya's files attached, projector mode on, zoom at 110%, notifications off. Laptop 2: `/room/demo/maya-uiuc` loaded and paused on the landing page.
+- [ ] The backup MP4 of the full 3-minute demo is on both laptops and a USB stick.
+- [ ] The final numbers below are filled in and agree with the recorded replay.
+
+### 7.5 Numbers to fill in from your real data (never invent these)
+
+| Placeholder | Source |
+|---|---|
+| `{N_TWINS}` | `select count(*) from applicant_twins` |
+| `{N_SCHOOLS}` / CDS coverage | `select count(*) from universities_cds` / `where c7_weights <> '{}'` |
+| `{P_UIUC}`, `{P_ARB}`, `{DELTA_MAJOR}`, `{N_MAJOR}`, `{DELTA_SAT}` | The final recorded Maya at UIUC run (`probability`, `counterfactuals` events) |
+| `{ODDS_INFLATION_TYPICAL}` | Median `odds_inflation` in `school_reddit_calibration` |
+| `{BRIER}`, `{BRIER_BASE}` | Backtest output (Hour 22–24) |
+
+If the backtest result is weak, say so plainly: "Our calibration is still rough, at Brier {BRIER}, which is why we show the range and not just a point estimate." Judges reward honesty over a polished number they can't verify.
+
+### 7.6 One-liners for the Devpost and the hallway
+
+- **Tagline:** *Your application, read by the committee — before the committee reads it.*
+- **One sentence:** AdCom runs your full application through a live, multi-agent admissions committee grounded in Common Data Set rubrics and {N_TWINS} real applicant outcomes, then shows you exactly which moves change your odds and by how much.
+- **30-second hallway version:** "Admissions isn't a GPA calculator. It's a rubric and a committee that argues. We rebuilt that: one agent reads your file on Harvard's 1-to-6 scale, one pulls the school's own weighting, one finds the five real applicants most like you, and then an advocate and a skeptic debate your file live, with every claim cited. The probability is auditable math, not model vibes. And it tells you the highest-leverage change, like applying to a sister major that admits applicants like you at roughly twice the rate."
+
+---
+
+*End of plan.*
