@@ -2221,7 +2221,7 @@ select count(*) filter (where c7_weights <> '{}') as with_c7, count(*) as total 
 | Stage | Volume | Wall clock | Cost |
 |---|---|---|---|
 | Scrape (Arctic Shift) | ~150–250 pages @ 4 s | 15–25 min | free |
-| Extract (1 at a time, local) | ~12K posts × ~2.5K in / ~1.2K out tokens | **Estimate: several hours**; measure tokens/s on the first `--limit 20` run before committing to the full run | **$0** (electricity). Quality is the cost: Gemma 4 E4B is much smaller than the Claude model this section used to assume. Smoke-test 20 posts, read every record against its post, and look at the `rejects.jsonl` reasons before running the full set. Posts that fail validation are skipped, not guessed. |
+| Extract (1 at a time, local) | ~12K posts × ~2.5K in / ~1.2K out tokens | **Measured on the RTX 4070 laptop (8 GB): about 71 tokens/s generation once warm.** At ~1.2K output tokens plus prompt processing that is roughly 20–40 s per post, i.e. **70–130 h for 12K posts**. Do not run the full set: cap at what fits the schedule (about 1,000 posts per 8 h) and prefer the 3–5K highest-signal posts. Cold start is slow (first load 15–50 s) and a memory-starved host (swap in use) drops to ~1 token/s | **$0** (electricity). Quality is the cost: Gemma 4 E4B is much smaller than the Claude model this section used to assume. Smoke-test 20 posts, read every record against its post, and look at the `rejects.jsonl` reasons before running the full set. Posts that fail validation are skipped, not guessed. |
 | Embeddings | 10K × ~350 tokens | a few minutes on the GPU | $0 (local EmbeddingGemma) |
 | CDS extraction | 50 PDFs × ~25K tokens | 10 min | ~$6 |
 
