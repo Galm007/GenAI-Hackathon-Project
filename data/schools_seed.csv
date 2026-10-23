@@ -1,0 +1,14 @@
+unitid,slug,short_name,peer_group,aliases
+166683,mit,MIT,tech,mit|massachusetts institute of technology
+166027,harvard,Harvard,hyps,harvard|harvard university|harvard college
+243744,stanford,Stanford,hyps,stanford|stanford university
+130794,yale,Yale,hyps,yale|yale university
+186131,princeton,Princeton,hyps,princeton|princeton university
+211440,cmu,Carnegie Mellon,tech,cmu|carnegie mellon|carnegie mellon university
+110635,uc_berkeley,UC Berkeley,uc,berkeley|uc berkeley|ucb|cal
+110662,ucla,UCLA,uc,ucla|university of california los angeles
+170976,umich,Michigan,public_ivy,umich|michigan|university of michigan
+145637,uiuc,UIUC,public_ivy,uiuc|illinois|university of illinois urbana champaign
+139755,georgia_tech,Georgia Tech,tech,georgia tech|gatech|gt
+228778,ut_austin,UT Austin,public_ivy,ut austin|university of texas at austin
+236948,uw_seattle,UW Seattle,public_ivy,uw seattle|university of washington|udub

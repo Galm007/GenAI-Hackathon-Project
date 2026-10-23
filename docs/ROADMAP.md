@@ -32,7 +32,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* `refresh_twin_stats()` fills the three `zetaris_export` tables; the `zetaris_reader` role can read only that schema.
 - [ ] **A05 — ETL foundations + PullPush scraper** · §2.9.1–2.9.2 · Deps: S01
   *Done when:* one page scraped from each subreddit lands in `data/raw/*.jsonl` with a checkpoint file; there are ≥4 s between requests; no author field is stored.
-- [ ] **A06 — School seed data + resolver** · §2.9.5, §2.9.8 (seed CSV) · Deps: S01
+- [x] **A06 — School seed data + resolver** · §2.9.5, §2.9.8 (seed CSV) · Deps: S01 — done by Jmar L. Pineda via Claude Code, 2026-10-23
   Writes `data/schools_seed.csv` (verify every unitid), `data/school_aliases.yaml` and `etl/school_resolver.py`.
   *Done when:* resolver tests pass: "UMich" → `umich`, "CMU SCS" → `cmu`, "UW" → `None` (ambiguous), unknown names land in the unresolved counter.
 - [ ] **A07 — Reddit structured extraction** · §2.9.3, §2.9.4, §2.9.6 · Deps: A05, A06, S02, B01, B05
