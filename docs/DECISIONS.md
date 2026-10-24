@@ -158,3 +158,8 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - The local setup audit is recorded in `docs/gridiii-setup-status.md`. No additional implementation step is claimed complete by publishing the branch.
 
 Publication note: Track D entries originally numbered D-014/D-015 were renumbered D-016/D-017 while merging the newer Track B entries, preserving both tracks’ decisions.
+
+## D-018 — Track D integration after C02–C08 land
+- Date: 2026-10-24 · By: gridiii via Codex · User scope: complete Track D, improve charts, and merge the verified result into main.
+- D04 keeps drafts and errors per run, debounces requests, aborts stale transports, and refuses late responses even if a transport ignores cancellation. One controller is mounted in WarRoom because its responsive layout mounts more than one analytics panel. The shared event/types/store contracts remain unchanged.
+- The current backend has deterministic what-if math but no HTTP route or live scoring context. Component lifecycle tests pass; D04's HTTP/browser acceptance is left open until replay integration is verified. Live graph, real data, hosting and Meterless evidence must not be claimed complete from fictional samples.

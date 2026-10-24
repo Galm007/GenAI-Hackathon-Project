@@ -141,6 +141,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Verified in `/dev/analytics`: six-axis comparison, dashed assumed Personal spoke, keyboard expansion, citation highlighting, and explicit missing-value states. Shared C02/C03 work remains unchanged.
 - [ ] **D04 — What-if panel** · §5.6.5 · Deps: C02, B03, B06
   *Done when:* sliders debounce and abort stale requests against `/api/what-if`; warnings render; "Reset" restores the baseline.
+  Controls and per-run draft/request handling implemented by gridiii via Codex, 2026-10-24; five lifecycle tests pass. Replay/API acceptance remains pending in this commit.
 - [ ] **D05 — Pivots, essay edits, arbitrage hero, `AnalyticsPanel`** · §5.6.6 · Deps: D02–D04
   *Done when:* "Try it" maps a counterfactual into the what-if draft and the gauge moves.
 - [ ] **D06 — Realistic fixtures** · §4.9, §6.3 · Deps: B08 (fallback: hand-written)

@@ -11,11 +11,13 @@ import { TopBar } from "./TopBar";
 import { DossierPanel } from "@/components/dossier/DossierPanel";
 import { CommitteeRoom } from "@/components/committee/CommitteeRoom";
 import { AnalyticsPanel } from "@/components/analytics/AnalyticsPanel";
+import { useWhatIfSimulation } from "@/components/analytics/what-if";
 import { BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function WarRoom({ source }: { source: RunSource }) {
   useRunStream(source);
+  useWhatIfSimulation();
 
   const probability = useActiveRun((r) => r.probability);
   const disposition = probability?.disposition;
