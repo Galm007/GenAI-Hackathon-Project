@@ -16,7 +16,7 @@ deployed X01 integration report or real partner judging evidence.
 | Charts | Correct signed waterfall, model range, six-axis radar, dashed assumed Personal axis, readable evidence tables |
 | Comparable cards | Expand by keyboard; missing test/source data stays unavailable; citation highlighting retained |
 | Essay copy | Browser shows success only after the clipboard write resolves; independent automation clipboard readback was unavailable |
-| Responsive checks | Wide three-column room, laptop drawer, and 390px phone analytics; phone body width equals viewport width |
+| Responsive checks | Wide three-column room, laptop drawer, and 390px phone analytics; phone body width equals viewport width. At exactly 1440px, only one dossier and one analytics sidebar render visibly, with no body overflow. |
 | Data disclosure | Unknown real metrics display "Not verified yet"; fictional corpus is excluded |
 
 The same-origin local API proxy was exercised on port 3001 → 8000. Zetaris remains

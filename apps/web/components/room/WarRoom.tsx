@@ -65,7 +65,7 @@ export function WarRoom({ source }: { source: RunSource }) {
         </main>
 
         {/* 1024px–1439px: Two columns (Dossier | Committee) + Floating Analytics Drawer */}
-        <div className="hidden min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)] lg:grid min-[1440px]:hidden relative">
+        <div className="hidden min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)] lg:max-[1440px]:grid relative">
           <aside
             aria-label="Applicant Dossier"
             className="min-h-0 overflow-y-auto border-r border-[var(--color-line)] p-4"

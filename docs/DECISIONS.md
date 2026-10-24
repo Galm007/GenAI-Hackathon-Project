@@ -198,3 +198,6 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - The user authorized completing Track D and merging the verified work into main. They confirmed hosting and the Meterless demo machine are not set up or known. Code, fixtures, replay, charts, pitch and deployment handoffs were completed within that available scope.
 - Final checks: 171 API tests and ruff pass; 43 web tests, lint, TypeScript and production build pass; fixture rebuilds are byte-for-byte deterministic. Browser checks cover the integrated replay, pivot/reset, restart, keyboard cards, copy feedback, data disclosure and responsive layouts.
 - D08–D10 stay unchecked until actual hosted live acceptance, verified A15/A16 metrics and real Nightshift/Nemotron plus World Model evidence exist. No paid calls, model loads, public tunnel or cloud account setup was performed. B13/B14/B16/B17/B18 are not claimed complete by Track D.
+
+### D-021 production breakpoint follow-up
+- Production browser testing at exactly 1440px exposed overlapping desktop/laptop layout variants. The laptop grid now applies only within its explicit 1024–1439px range. A rebuilt production page verifies one visible dossier, one analytics sidebar and no horizontal body overflow at 1440px. Lint, types and production build pass after the correction.
