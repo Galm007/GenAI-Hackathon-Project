@@ -117,7 +117,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* `/room/<id>` driven by the fake SSE shows the 3-column layout, live stepper states and tool chips. **H6 milestone (with C04/C05 skeletons).**
 - [x] **C04 — Committee room** · §5.5 · Deps: C03 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* streaming bubbles render citations without flashing raw `[[…`; the stamp lands; cross-panel highlight fires on chip hover; the Zetaris chip shows SQL.
-- [ ] **C05 — Dossier panel** · §5.7 · Deps: C03
+- [x] **C05 — Dossier panel** · §5.7 · Deps: C03 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* the metrics strip, Harvard scorecard flip-in, tier tags and reader note render from fake-SSE data.
 - [ ] **C06 — Intake wizard** · §5.8, §5.7.2 (dropzone) · Deps: C02, B03
   *Done when:* the 4-step wizard posts multipart to `/api/evaluate` and routes to the room; the 413/415/429 errors show toasts.
