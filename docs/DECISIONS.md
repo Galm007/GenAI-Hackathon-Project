@@ -201,3 +201,4 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 
 ### D-021 production breakpoint follow-up
 - Production browser testing at exactly 1440px exposed overlapping desktop/laptop layout variants. The laptop grid now applies only within its explicit 1024–1439px range. A rebuilt production page verifies one visible dossier, one analytics sidebar and no horizontal body overflow at 1440px. Lint, types and production build pass after the correction.
+- The final narrow-sidebar radar review exposed a clipped Personal label and crowded raw values. Long axis labels now wrap onto two lines and numeric columns have fixed, right-aligned widths. The rebuilt production chart was visually checked with the complete assumed label visible and separate comparison columns.

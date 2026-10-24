@@ -15,10 +15,15 @@ export function RadarCompare({ radar }: { radar: RadarData | null }) {
   const data = complete.map((a) => ({ ...a, axis: a.assumed ? `${a.label}*` : a.label, admitted: a.admitted_median }));
   const tick = ({ x = 0, y = 0, cx = 0, cy = 0, textAnchor, payload }: AxisTick) => {
     const assumed = data.find((a) => a.axis === payload?.value)?.assumed;
+    const label = payload?.value ?? "";
+    const lines = label.startsWith("Essay & Personal") ? ["Essay &", "Personal*"]
+      : label === "Spike (T1/T2)" ? ["Spike", "(T1/T2)"] : [label];
     return <g>
       <line x1={cx} y1={cy} x2={x} y2={y} stroke={assumed ? "var(--color-waitlist)" : "var(--color-line)"}
         strokeDasharray={assumed ? "4 4" : undefined} data-assumed-axis={assumed || undefined} />
-      <text x={x} y={y} dy={4} textAnchor={textAnchor} fill={assumed ? "var(--color-waitlist)" : "var(--color-muted)"} fontSize={10}>{payload?.value}</text>
+      <text x={x} y={y} dy={lines.length > 1 ? -2 : 4} textAnchor={textAnchor} fill={assumed ? "var(--color-waitlist)" : "var(--color-muted)"} fontSize={11}>
+        {lines.map((line, i) => <tspan key={line} x={x} dy={i ? 12 : 0}>{line}</tspan>)}
+      </text>
     </g>;
   };
   return (
@@ -45,11 +50,12 @@ export function RadarCompare({ radar }: { radar: RadarData | null }) {
         {omitted.length > 0 && <p role="status">Not plotted: {omitted.map((a) => a.label).join(", ")} (missing comparable values).</p>}
       </figcaption>
       <details className="mt-3 text-xs"><summary className="cursor-pointer text-muted">Read the comparison values</summary>
-        <table className="mt-2 w-full text-left"><caption className="sr-only">Raw comparison values; chart uses normalized 0-100 scores</caption>
-          <thead><tr><th className="py-2">Axis</th><th>You</th><th>Reference</th></tr></thead>
+        <table className="mt-2 w-full table-fixed text-left"><caption className="sr-only">Raw comparison values; chart uses normalized 0-100 scores</caption>
+          <colgroup><col className="w-1/2" /><col className="w-1/4" /><col className="w-1/4" /></colgroup>
+          <thead><tr><th className="py-2">Axis</th><th className="text-right">You</th><th className="text-right">Reference</th></tr></thead>
           <tbody>{radar.axes.map((a) => <tr key={a.key} className="border-t border-line">
             <th scope="row" className="py-2 pr-2 font-medium">{a.label}{a.assumed ? " (assumed)" : ""}</th>
-            <td>{formatRaw(a.you_raw)}</td><td>{formatRaw(a.admitted_raw)}</td>
+            <td className="text-right font-mono">{formatRaw(a.you_raw)}</td><td className="text-right font-mono">{formatRaw(a.admitted_raw)}</td>
           </tr>)}</tbody>
         </table>
       </details>
