@@ -1,6 +1,7 @@
 import type { WhatIfRequest, WhatIfResponse } from "./types";
 
-export const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// The same-origin Next proxy works locally without conflicting with Zetaris on port 3000.
+export const API = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }

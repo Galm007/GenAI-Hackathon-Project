@@ -154,6 +154,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Resumable API replay, real scoring-based what-if, snapshot registration, restart and Shift+R are verified. A recorder for completed fictional-persona runs is included. No real provider recording is claimed.
 - [ ] **D08 — Deploy** · §4.10 · Deps: B16, C06
   *Done when:* the web app is on Vercel, the API is co-located with Zetaris (VM or laptop + tunnel), and a live run works from a phone. **H18 milestone with X01.**
+  Prepared by gridiii via Codex, 2026-10-24: Vercel web config, same-origin API proxy, frontend environment example and deployment handoff. Local proxy/replay verified. Actual Vercel/API hosting, B16 and a live phone run remain unavailable, so this gate stays open.
 - [ ] **D09 — Pitch assets** · §5.9 ("About the data"), §7.5 · Deps: A15, A16
   *Done when:* the About-the-data modal shows real numbers, and `docs/pitch.md` has every §7.5 placeholder filled from real data (never invented).
 - [ ] **D10 — Meterless judging evidence** · §1.7, §7.4 · Deps: B17, B18, D07

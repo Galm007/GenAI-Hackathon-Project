@@ -12,7 +12,7 @@ This README gets a teammate from a fresh clone to a working local setup. How we 
 | [uv](https://docs.astral.sh/uv/getting-started/installation/) | Python 3.12+ and dependencies for `services/api` | Tracks A, B, D |
 | [Ollama](https://ollama.com/download) | runs the local Gemma models (Reddit/CDS extraction, embeddings) | Track A |
 | Docker with Compose | the Zetaris data-fabric bundle | Track A (and anyone running the full stack) |
-| Node.js and pnpm | the web app (`apps/web`, not created yet) | Track C |
+| Node.js and pnpm | the web app (`apps/web`) | Tracks C, D |
 | A Supabase project | Postgres with pgvector, the database for everything | Tracks A, B |
 
 Hardware for the local models: about 8 GB of GPU memory is comfortable, and 16 GB of RAM is tight if Zetaris is also running (see [Running the models](#running-the-local-models)).
@@ -107,7 +107,16 @@ cd services/api && uv run python -m scripts.smoke_meterless   # three PASS lines
 
 ## 7. Web app (Track C)
 
-`apps/web` has not been created yet (it is a Track C step in the roadmap). Once it exists, from that folder run `pnpm install` and `pnpm dev`.
+`apps/web` contains the intake, shared room, analytics and fictional replay. Start
+the API separately on port 8000. From `apps/web`, run `pnpm install --frozen-lockfile`
+and `pnpm dev --hostname 127.0.0.1 --port 3001`; Zetaris keeps port 3000.
+
+For the offline demo, start the API from `services/api` with
+`FAKE_LLM=1 ZETARIS_ENABLED=false uv run uvicorn app.main:app --host 127.0.0.1 --port 8000`,
+then open `http://127.0.0.1:3001/room/demo/maya-uiuc`. It needs no provider keys and
+is explicitly fictional. The web's same-origin API proxy defaults to local port
+8000. See [`docs/deployment.md`](docs/deployment.md) for hosting configuration and
+the live release gates; this demo does not mean the full graph is implemented.
 
 ## Data pipeline: what exists so far
 
