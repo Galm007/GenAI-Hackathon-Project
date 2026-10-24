@@ -8,6 +8,8 @@
 
 Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real probability via CLI · **H18** integration on the deployed stack · **H24** recorded replay · **H28** feature freeze · **H33** code freeze.
 
+> **gridiii's local completion status, 2026-10-24:** D01, D02 and D03 are implemented and verified on the local branch `gridiii/d01-demo-dossiers`. Their implementation commits are **not pushed**. This document can be published separately to report progress; the assets/components are not yet available from shared `main`. D02/D03 use the planned static-data preview, with live C02/C03 integration still pending.
+
 ---
 
 ## S: Shared foundations (do these first)
@@ -133,9 +135,10 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* each persona has every file, and Maya is a CS applicant to UIUC.
 - [x] **D02 — Probability gauge + waterfall** · §5.6.1–5.6.2 · Deps: C02 — done by gridiii via Codex, 2026-10-24 (sample-data components; live C02 wiring pending)
   *Done when:* both render from fixture data, animate, and show the what-if "simulated" state.
-  Verified in `/dev/analytics` using the planned §6.2 static-data fallback; see DECISIONS D-014. This does not complete C02 or live War Room integration.
-- [ ] **D03 — Radar + twin cards** · §5.6.3–5.6.4 · Deps: C02
+  Verified in `/dev/analytics` using the planned §6.2 static-data fallback. This does not complete C02 or live War Room integration.
+- [x] **D03 — Radar + twin cards** · §5.6.3–5.6.4 · Deps: C02 — done by gridiii via Codex, 2026-10-24 (sample-data components; live C02 wiring pending)
   *Done when:* the assumed Personal axis is dashed and labeled; twin cards expand and pulse on a `twin:` highlight.
+  Verified in `/dev/analytics`: six-axis comparison, dashed assumed Personal spoke, keyboard expansion, citation highlighting, and explicit missing-value states. Shared C02/C03 work remains unchanged.
 - [ ] **D04 — What-if panel** · §5.6.5 · Deps: C02, B03, B06
   *Done when:* sliders debounce and abort stale requests against `/api/what-if`; warnings render; "Reset" restores the baseline.
 - [ ] **D05 — Pivots, essay edits, arbitrage hero, `AnalyticsPanel`** · §5.6.6 · Deps: D02–D04

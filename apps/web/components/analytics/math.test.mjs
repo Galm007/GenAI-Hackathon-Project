@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildWaterfallRows, breakdownDifference, validProbability } from "./math.ts";
+import { buildWaterfallRows, breakdownDifference, validProbability, comparableAxes, safeSourceUrl, formatRaw } from "./math.ts";
 
 const contribution = (key, delta_pp) => ({ key, label: key, delta_pp, delta_logit: 0, detail: "fixture" });
 test("a decrease floats between the previous and next totals", () => {
@@ -24,4 +24,19 @@ test("empty data stays empty and invalid probabilities are rejected", () => {
   assert.deepEqual(buildWaterfallRows([]), []);
   for (const x of [NaN, Infinity, -0.1, 1.1]) assert.equal(validProbability(x), false);
   for (const x of [0, 0.214, 1]) assert.equal(validProbability(x), true);
+});
+test("unknown radar values are omitted while genuine zero remains comparable", () => {
+  const axes = [{ key: "zero", you: 0, admitted_median: 0 }, { key: "missing", you: null, admitted_median: 50 },
+    { key: "invalid", you: NaN, admitted_median: 70 }, { key: "range", you: 101, admitted_median: 50 }];
+  assert.deepEqual(comparableAxes({ n_admitted: 2, axes }).map((a) => a.key), ["zero"]);
+});
+test("source links accept HTTPS and reject executable, relative, and credential-bearing URLs", () => {
+  assert.equal(safeSourceUrl("https://www.reddit.com/r/collegeresults/"), "https://www.reddit.com/r/collegeresults/");
+  for (const url of ["", "/post", "javascript:alert(1)", "data:text/html,bad", "http://example.com", "https://user:pass@example.com"])
+    assert.equal(safeSourceUrl(url), null);
+});
+test("raw comparison values do not expose floating-point artifacts or invent missing scores", () => {
+  assert.equal(formatRaw(3.9299999999999997), "3.93");
+  assert.equal(formatRaw(null), "Unknown");
+  assert.equal(formatRaw(0), "0");
 });

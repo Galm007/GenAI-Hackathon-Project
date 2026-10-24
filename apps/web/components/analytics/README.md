@@ -28,3 +28,19 @@ the already supplied counterfactual delta. All values remain fictional.
 
 C02 is still required for live store wiring; a working sample-data component
 does not mean the live War Room is integrated. No API/model calls are made here.
+
+`RadarCompare` accepts the plan's `radar` output fields. Missing or invalid axes
+are explicitly omitted from the polygon and retained in its readable table;
+zero is a valid score. The Personal spoke is dashed and marked as an assumed
+reference, not a measured admitted-essay statistic. Fewer than three comparable
+axes produce a text fallback. The sample's six-axis normalization follows section
+4.7, using fictional reference values and two admitted sample profiles.
+
+`TwinCards` accepts `twins`, optional `baseline` and `comparisons`, and the shared
+highlight shape. Cards expand with keyboard or mouse; a `twin` highlight whose
+`ref` matches the citation index scrolls to and pulses that card. The neighbor
+count comes from the supplied baseline rather than a hard-coded 50. Missing
+scores stay unknown. Source links require credential-free HTTPS; the fictional
+samples deliberately have no original-post URLs. The preview has controls for
+Twin 2 highlighting and missing testing data. Reduced-motion settings disable
+chart, card-entry, expansion, and pulse animations.
