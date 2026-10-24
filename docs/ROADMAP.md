@@ -8,7 +8,7 @@
 
 Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real probability via CLI · **H18** integration on the deployed stack · **H24** recorded replay · **H28** feature freeze · **H33** code freeze.
 
-> **gridiii's local completion status, 2026-10-24:** D01, D02 and D03 are implemented and verified on the local branch `gridiii/d01-demo-dossiers`. Their implementation commits are **not pushed**. This document can be published separately to report progress; the assets/components are not yet available from shared `main`. D02/D03 use the planned static-data preview, with live C02/C03 integration still pending.
+> **gridiii's feature-branch status, 2026-10-24:** D01, D02 and D03 are implemented and verified on `gridiii/d01-demo-dossiers`; integration into shared `main` is pending. D02/D03 use the planned static-data preview, with live C02/C03 integration still pending. See [the setup audit](gridiii-setup-status.md) for verified local checks and remaining team dependencies.
 
 ---
 

@@ -139,3 +139,7 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - Samples: five fictional cards preserve the scripted numeric profiles and add original illustrative activities. They have no original-post URLs. Radar normalization follows section 4.7; its admitted count is two sample profiles and its reference data is explicitly fictional. Personal uses the plan's assumed 3.0 reference, not an invented essay median.
 - Verified: seven helper/edge-case tests, lint, TypeScript, production build, keyboard expansion, loading and missing-score states, one dashed assumed spoke, one highlighted card, and no production-browser console errors. Tooltip and raw-number formatting were visually reviewed.
 - Impact: D03's sample-data acceptance checks are complete; live C02/C03 wiring is still pending. Implementation commits stay local at the human's request; a separate documentation-only branch reports that distinction.
+
+### D-015 publication update (2026-10-24)
+- gridiii subsequently authorized publishing the implementation commits to `gridiii/d01-demo-dossiers` only. This supersedes the local-only publication instruction above. Shared `main`, other tracks' source files, and the earlier documentation-only branch remain unchanged.
+- The local setup audit is recorded in `docs/gridiii-setup-status.md`. No additional implementation step is claimed complete by publishing the branch.
