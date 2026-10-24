@@ -80,7 +80,7 @@ export function PipelineStepper() {
           );
         } else if (status === "degraded") {
           indicator = (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-waitlist)] bg-[var(--color-waitlist)]/20 text-[var(--color-waitlist)]">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-amber-500 bg-amber-500/20 text-amber-400 ring-2 ring-amber-500/50">
               <AlertTriangle className="h-3 w-3" />
             </span>
           );
@@ -98,20 +98,29 @@ export function PipelineStepper() {
               status === "running" && "bg-[var(--color-panel-2)] text-[var(--color-ink)] font-medium",
               status === "done" && "text-[var(--color-ink)]",
               status === "pending" && "text-[var(--color-muted)]",
-              status === "degraded" && "border border-[var(--color-waitlist)]/50 text-[var(--color-waitlist)]"
+              status === "degraded" &&
+                "border border-amber-500/60 bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/50"
             )}
           >
             {indicator}
             <span className="font-sans">{stepLabel}</span>
+            {status === "degraded" && (
+              <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[9px] font-mono font-semibold uppercase text-amber-300">
+                fallback
+              </span>
+            )}
           </div>
         );
 
-        if (status === "degraded" && err) {
+        if (status === "degraded") {
           return (
             <Tooltip key={step.key}>
               <TooltipTrigger asChild>{content}</TooltipTrigger>
-              <TooltipContent className="border-amber-500/50 text-xs">
-                {err.message} (Degraded fallback active)
+              <TooltipContent className="border border-amber-500/50 bg-[var(--color-panel)] text-xs text-[var(--color-ink)]">
+                <p className="font-semibold text-amber-400">Degraded Fallback Active</p>
+                <p className="text-[var(--color-muted)]">
+                  {err?.message ?? "Service error encountered. Operating with deterministic fallback facts."}
+                </p>
               </TooltipContent>
             </Tooltip>
           );

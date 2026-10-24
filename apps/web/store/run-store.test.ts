@@ -278,4 +278,128 @@ describe("run-store reducer", () => {
       expect(run.report).toBeDefined();
     });
   });
+
+  describe("C07: child runs, degraded states, and Zetaris queries", () => {
+    it("marks dossier_parser as done immediately when cached_dossier is true", () => {
+      let run = emptyRun("child-run");
+      run = reduce(run, {
+        seq: 0,
+        run_id: "child-run",
+        ts: 1000,
+        event: "run_started",
+        school_slug: "cmu",
+        cached_dossier: true,
+      });
+
+      expect(run.nodes.dossier_parser).toBe("done");
+      expect(run.status).toBe("running");
+      expect(run.schoolSlug).toBe("cmu");
+    });
+
+    it("preserves degraded node status when node_complete arrives later", () => {
+      let run = emptyRun("run-deg");
+      // Node starts
+      run = reduce(run, { seq: 0, run_id: "run-deg", ts: 1000, event: "node_start", node: "institutional" });
+      expect(run.nodes.institutional).toBe("running");
+
+      // Recoverable error occurs -> degraded
+      run = reduce(run, {
+        seq: 1,
+        run_id: "run-deg",
+        ts: 1001,
+        event: "error",
+        node: "institutional",
+        message: "Zetaris query timeout; falling back to local CDS",
+        recoverable: true,
+      });
+      expect(run.nodes.institutional).toBe("degraded");
+      expect(run.errors.length).toBe(1);
+
+      // Subsequent node_complete should NOT overwrite degraded to done
+      run = reduce(run, { seq: 2, run_id: "run-deg", ts: 1002, event: "node_complete", node: "institutional" });
+      expect(run.nodes.institutional).toBe("degraded");
+    });
+
+    it("populates sqlQueries on fact_checks event", () => {
+      let run = emptyRun("run-zetaris");
+      const mockQuery = {
+        id: "Z1",
+        purpose: "QueryGraingerAcceptanceRate",
+        sql: "SELECT admit_rate FROM ADCOM_PG.universities_cds WHERE slug = 'uiuc'",
+        rows: [{ admit_rate: "0.22" }],
+        error: null,
+      };
+
+      run = reduce(run, {
+        seq: 5,
+        run_id: "run-zetaris",
+        ts: 1005,
+        event: "fact_checks",
+        brief: null,
+        snippets: [],
+        zetaris_queries: [mockQuery],
+      });
+
+      expect(run.sqlQueries.length).toBe(1);
+      expect(run.sqlQueries[0]?.id).toBe("Z1");
+      expect(run.sqlQueries[0]?.rows).toEqual([{ admit_rate: "0.22" }]);
+    });
+
+    it("startChildRun sets up child run with skipped Node 1, copied dossier, and tabs map", async () => {
+      useRunStore.setState({
+        runs: {},
+        tabs: {},
+        activeRunId: undefined,
+        parentRunId: undefined,
+        targetSchools: ["uiuc", "cmu", "umich"],
+      });
+
+      const store = useRunStore.getState();
+      const parentRun = emptyRun("parent-1");
+      parentRun.schoolSlug = "uiuc";
+      parentRun.dossier = {
+        high_school: { name: "Central High", state: "IL", school_type: "Public" },
+        activities: [],
+        awards: [],
+        courses: [],
+        test_scores: { sat_total: 1520, act_composite: null },
+      };
+      parentRun.grade = {
+        harvard: {} as any,
+        spike: { label: "USACO", description: "Competitive coding", strength: "strong" },
+        activity_grades: [],
+        reader_comments: "Strong applicant",
+        grader_warnings: [],
+        major_category: "computer_science",
+        rigor_label: "most_demanding",
+        essay: null,
+      };
+      useRunStore.setState({
+        runs: { "parent-1": parentRun },
+        activeRunId: "parent-1",
+        parentRunId: "parent-1",
+        tabs: { uiuc: "parent-1" },
+      });
+
+      // Start child run for CMU
+      const childRunId = await useRunStore.getState().startChildRun("cmu");
+      expect(childRunId).toBeDefined();
+
+      const state = useRunStore.getState();
+      expect(state.activeRunId).toBe(childRunId);
+      expect(state.tabs["cmu"]).toBe(childRunId);
+
+      const childRun = state.runs[childRunId];
+      expect(childRun).toBeDefined();
+      expect(childRun.schoolSlug).toBe("cmu");
+      expect(childRun.status).toBe("running");
+      // Node 1 skipped:
+      expect(childRun.nodes.dossier_parser).toBe("done");
+      // Node 2 running:
+      expect(childRun.nodes.institutional).toBe("running");
+      // Dossier & grade copied:
+      expect(childRun.dossier?.test_scores.sat_total).toBe(1520);
+      expect(childRun.grade?.spike?.strength).toBe("strong");
+    });
+  });
 });

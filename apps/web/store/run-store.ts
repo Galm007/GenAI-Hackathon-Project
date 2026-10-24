@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { evaluateSchool } from "@/lib/api";
 import type {
   Baseline, Counterfactual, DebateTurn, DeltaReport, Dossier, DossierGrade, Envelope, InstitutionalBrief,
   Metrics, NodeName, ProbabilityBreakdown, RadarData, SchoolRubric, ToolCall, TwinAnalysis, TwinCard,
@@ -13,6 +14,7 @@ export const NODES: NodeName[] = [
 export interface RunView {
   runId: string;
   schoolSlug?: string;
+  targetSchools?: string[];
   status: "connecting" | "running" | "complete" | "failed";
   lastSeq: number;
   startedAt?: number;
@@ -58,6 +60,7 @@ export function reduce(r: RunView, ev: Envelope): RunView {
   switch (ev.event) {
     case "run_started":
       n.status = "running"; n.schoolSlug = ev.school_slug; n.startedAt = ev.ts;
+      if (ev.target_schools) n.targetSchools = ev.target_schools;
       if (ev.cached_dossier) setNode("dossier_parser", "done");
       break;
     case "node_start": setNode(ev.node, "running"); break;
@@ -111,25 +114,73 @@ export type Highlight = { kind: "dossier" | "cds" | "twin" | "web" | "model" | "
 export interface RunStore {
   runs: Record<string, RunView>;
   activeRunId?: string;
+  parentRunId?: string;
+  tabs: Record<string, string>;
+  targetSchools: string[];
   highlight: Highlight;
   whatIf: Record<string, WhatIfResponse | undefined>;
   ensureRun: (id: string) => void;
   setActive: (id: string) => void;
+  setParentRunId: (id: string) => void;
+  setTabRun: (slug: string, runId: string) => void;
+  setTargetSchools: (schools: string[]) => void;
   applyMany: (id: string, evs: Envelope[]) => void;
   setHighlight: (h: Highlight) => void;
   setWhatIf: (id: string, r: WhatIfResponse | undefined) => void;
+  startChildRun: (slug: string) => Promise<string>;
 }
 
-export const useRunStore = create<RunStore>((set) => ({
+export const useRunStore = create<RunStore>((set, get) => ({
   runs: {},
+  tabs: {},
+  targetSchools: ["uiuc", "cmu", "umich"],
   highlight: null,
   whatIf: {},
   ensureRun: (id) => set((s) => (s.runs[id] ? s : { runs: { ...s.runs, [id]: emptyRun(id) } })),
   setActive: (id) => set({ activeRunId: id }),
+  setParentRunId: (id) => set({ parentRunId: id }),
+  setTabRun: (slug, runId) => set((s) => ({ tabs: { ...s.tabs, [slug]: runId } })),
+  setTargetSchools: (targetSchools) => set({ targetSchools }),
   applyMany: (id, evs) =>
     set((s) => ({ runs: { ...s.runs, [id]: evs.reduce(reduce, s.runs[id] ?? emptyRun(id)) } })),
   setHighlight: (highlight) => set({ highlight }),
   setWhatIf: (id, r) => set((s) => ({ whatIf: { ...s.whatIf, [id]: r } })),
+  startChildRun: async (slug: string): Promise<string> => {
+    const s = get();
+    const parentId = s.parentRunId || s.activeRunId || "initial";
+    const parentRun = s.runs[parentId] ?? s.runs[s.activeRunId ?? ""] ?? EMPTY;
+
+    if (s.tabs[slug]) {
+      set({ activeRunId: s.tabs[slug] });
+      return s.tabs[slug];
+    }
+
+    let childRunId = `${parentId}-${slug}`;
+    try {
+      const res = await evaluateSchool(parentId, slug);
+      if (res?.run_id) childRunId = res.run_id;
+    } catch {
+      // Offline fallback
+    }
+
+    const child = emptyRun(childRunId);
+    child.schoolSlug = slug;
+    child.status = "running";
+    child.startedAt = Date.now();
+    child.dossier = parentRun.dossier;
+    child.metrics = parentRun.metrics;
+    child.grade = parentRun.grade;
+    child.nodes.dossier_parser = "done"; // Node 1 skipped!
+    child.nodes.institutional = "running"; // Node 2 starts immediately
+
+    set((prev) => ({
+      runs: { ...prev.runs, [childRunId]: child },
+      tabs: { ...prev.tabs, [slug]: childRunId },
+      activeRunId: childRunId,
+    }));
+
+    return childRunId;
+  },
 }));
 
 // Narrow selectors: components re-render only when their slice changes.

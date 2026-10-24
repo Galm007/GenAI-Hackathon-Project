@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useActiveRun } from "@/store/run-store";
 import { SchoolTabs } from "./SchoolTabs";
 import { PipelineStepper } from "./PipelineStepper";
+import { DataFabricDrawer } from "./DataFabricDrawer";
 import { Button } from "@/components/ui/button";
-import { Monitor, Clock } from "lucide-react";
+import { Monitor, Clock, Database } from "lucide-react";
 import type { RunSource } from "@/lib/stream";
 import Link from "next/link";
 
@@ -18,10 +19,12 @@ export function TopBar({ source, onSelectSchool }: TopBarProps) {
   const startedAt = useActiveRun((r) => r.startedAt);
   const finishedAt = useActiveRun((r) => r.finishedAt);
   const status = useActiveRun((r) => r.status);
+  const sqlQueries = useActiveRun((r) => r.sqlQueries);
 
   // Elapsed timer state
   const [elapsedSec, setElapsedSec] = useState(0);
   const [isProjector, setIsProjector] = useState(false);
+  const [isFabricOpen, setIsFabricOpen] = useState(false);
 
   // Timer update loop
   useEffect(() => {
@@ -100,6 +103,23 @@ export function TopBar({ source, onSelectSchool }: TopBarProps) {
           </div>
         )}
 
+        {/* Data Fabric Drawer Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsFabricOpen(true)}
+          className="h-7 px-2.5 text-xs font-mono text-[var(--color-muted)] hover:text-white hover:border-[var(--color-advocate)] transition-colors"
+          title="Inspect Zetaris federated SQL queries"
+        >
+          <Database className="mr-1.5 h-3.5 w-3.5 text-[var(--color-advocate)]" />
+          <span>Data Fabric</span>
+          {sqlQueries.length > 0 && (
+            <span className="ml-1 rounded-full bg-[var(--color-advocate)]/20 px-1.5 py-0.2 text-[10px] font-bold text-[var(--color-advocate)]">
+              {sqlQueries.length}
+            </span>
+          )}
+        </Button>
+
         <Button
           variant="outline"
           size="sm"
@@ -115,6 +135,12 @@ export function TopBar({ source, onSelectSchool }: TopBarProps) {
           Projector
         </Button>
       </div>
+
+      {/* Zetaris Data Fabric Drawer */}
+      <DataFabricDrawer
+        open={isFabricOpen}
+        onOpenChange={setIsFabricOpen}
+      />
     </header>
   );
 }

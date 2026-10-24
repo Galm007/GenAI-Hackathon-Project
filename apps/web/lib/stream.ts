@@ -15,32 +15,68 @@ export const EVENT_TYPES = [
 
 export const runIdOf = (src: RunSource) => (src.kind === "live" ? src.runId : `demo-${src.name}`);
 
+export function connectStream(runId: string, streamUrl?: string): () => void {
+  if (typeof window === "undefined") return () => {};
+
+  const { ensureRun, applyMany } = useRunStore.getState();
+  ensureRun(runId);
+
+  const url = streamUrl ?? `${API}/api/evaluate/${runId}/stream`;
+  let es: EventSource;
+  try {
+    es = new EventSource(url);
+  } catch {
+    return () => {};
+  }
+
+  let buffer: Envelope[] = [];
+  let raf = 0;
+  const flush = () => {
+    raf = 0;
+    if (buffer.length) {
+      applyMany(runId, buffer);
+      buffer = [];
+    }
+  };
+
+  const onEvent = (e: MessageEvent<string>) => {
+    try {
+      const env = JSON.parse(e.data) as Envelope;
+      buffer.push(env);
+      if (env.event === "done") {
+        flush();
+        es.close();
+        return;
+      }
+      if (!raf) raf = requestAnimationFrame(flush);
+    } catch {
+      // ignore parse error
+    }
+  };
+
+  EVENT_TYPES.forEach((t) => es.addEventListener(t, onEvent as EventListener));
+
+  return () => {
+    es.close();
+    if (raf) cancelAnimationFrame(raf);
+  };
+}
+
 export function useRunStream(src: RunSource) {
-  const { ensureRun, setActive, applyMany } = useRunStore.getState();
+  const { ensureRun, setActive, setParentRunId } = useRunStore.getState();
   const key = src.kind === "live" ? src.runId : src.name;
 
   useEffect(() => {
     const runId = runIdOf(src);
     ensureRun(runId);
     setActive(runId);
+    setParentRunId(runId);
+
     const url = src.kind === "live"
       ? `${API}/api/evaluate/${src.runId}/stream`
       : `${API}/api/demo/${src.name}/stream`;
-    const es = new EventSource(url);                      // reconnects itself and sends Last-Event-ID
-    let buffer: Envelope[] = [];
-    let raf = 0;
-    const flush = () => {
-      raf = 0;
-      if (buffer.length) { applyMany(runId, buffer); buffer = []; }
-    };
-    const onEvent = (e: MessageEvent<string>) => {
-      const env = JSON.parse(e.data) as Envelope;
-      buffer.push(env);
-      if (env.event === "done") { flush(); es.close(); return; }
-      if (!raf) raf = requestAnimationFrame(flush);
-    };
-    EVENT_TYPES.forEach((t) => es.addEventListener(t, onEvent as EventListener));
-    return () => { es.close(); if (raf) cancelAnimationFrame(raf); };
+
+    return connectStream(runId, url);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src.kind, key]);
 }
