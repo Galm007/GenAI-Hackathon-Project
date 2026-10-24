@@ -80,7 +80,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* tests cover GPA normalization, the tier→EC anchor, every grade guardrail (§3.10 "Grade guardrails") and C7 → pillar weights.
 - [x] **B06 — Probability, counterfactuals, what-if** · §3.6.3–3.6.4, §4.6 · Deps: B05 — done by Aron via Claude Code, 2026-10-24
   *Done when:* §3.10 tests pass (monotonicity, waterfall within 0.5 pp, `cf.overrides` reproducing `p_new` exactly); `db.major_arbitrage` is mocked.
-- [ ] **B07 — Supabase helpers + web research** · §3.5.4–3.5.5, §4.3 (`db.py` additions), §4.4 (school cache) · Deps: B01
+- [x] **B07 — Supabase helpers + web research** · §3.5.4–3.5.5, §4.3 (`db.py` additions), §4.4 (school cache) · Deps: B01 — done by Aron via Claude Code, 2026-10-24
   *Done when:* functions are unit-tested with a mocked client; with A03 available, `match_twins` hits the real RPC.
 - [ ] **B08 — Node 1: dossier parser + rubric grader** · §3.7.1 · Deps: B04, B05, S02
   *Done when:* guardrail and redaction tests pass; a real run on Maya's dossier (D01) produces a sensible `DossierGrade`, or the report notes "not run" without keys.

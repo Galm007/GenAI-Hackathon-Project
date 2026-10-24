@@ -4219,7 +4219,7 @@ from __future__ import annotations
 
 import hashlib
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from supabase import AsyncClient, acreate_client
@@ -4285,7 +4285,7 @@ def _qhash(slug: str, query: str) -> str:
 
 
 async def research_cache_get(slug: str, query: str, max_age_days: int = 7) -> list[dict] | None:
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=max_age_days)).isoformat()
+    cutoff = (datetime.now(UTC) - timedelta(days=max_age_days)).isoformat()
     res = await (await sb()).table("web_research_cache").select("results") \
         .eq("query_hash", _qhash(slug, query)).gte("fetched_at", cutoff).maybe_single().execute()
     return res.data["results"] if res is not None and res.data else None
@@ -4294,7 +4294,7 @@ async def research_cache_get(slug: str, query: str, max_age_days: int = 7) -> li
 async def research_cache_put(slug: str, query: str, results: list[dict]) -> None:
     await (await sb()).table("web_research_cache").upsert({
         "query_hash": _qhash(slug, query), "school_slug": slug, "query": query, "results": results,
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fetched_at": datetime.now(UTC).isoformat(),
     }).execute()
 
 

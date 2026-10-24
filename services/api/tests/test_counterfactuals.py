@@ -1,23 +1,17 @@
-import importlib.util
 import json
-import sys
-import types
 from types import SimpleNamespace
 
 import pytest
 
 from app.api_models import WhatIfRequest
 from app.schemas.delta import Counterfactual
+from app.scoring import counterfactuals as CF
 from app.scoring.probability import ScoringInputs, compute_probability
 from app.scoring.rubric import build_school_rubric
 from app.scoring.whatif import run_what_if
 
 from .test_probability import inputs
 from .test_scoring_metrics import S, dossier, grade
-
-if importlib.util.find_spec("app.db") is None:       # app/db.py arrives with B07; tests mock it either way
-    sys.modules["app.db"] = types.ModuleType("app.db")
-from app.scoring import counterfactuals as CF  # noqa: E402
 
 SCHOOL = {"slug": "uiuc", "name": "UIUC", "admit_rate": 0.44, "test_policy": "optional",
           "early_plans": {"ea": True}, "c7_weights": {"applicant_interest": "considered"},
