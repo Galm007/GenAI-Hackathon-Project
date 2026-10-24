@@ -1,0 +1,30 @@
+/* apps/web/app/globals.css (tokens; Tailwind v4 reads these via @theme) */
+@import "tailwindcss";
+
+@theme {
+  --color-room: #0b1020;
+  --color-panel: #121a2e;
+  --color-panel-2: #18223a;
+  --color-line: #26324d;
+  --color-ink: #e8ecf5;
+  --color-muted: #8a94ad;
+  --color-paper: #f4efe6;
+  --color-paper-ink: #1d2433;
+  --color-advocate: #4c7dff;
+  --color-chair: #ff5a4e;
+  --color-admit: #34d399;
+  --color-waitlist: #fbbf24;
+  --color-deny: #f87171;
+  --color-tier1: #e8c268;
+  --color-tier2: #c9d1e0;
+  --color-tier3: #c98e5a;
+  --color-tier4: #64748b;
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+  --font-hand: var(--font-caveat);
+}
+
+body { background: var(--color-room); color: var(--color-ink); }
+.projector body, body.projector { font-size: 18px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

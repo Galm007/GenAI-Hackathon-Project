@@ -109,7 +109,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 
 ## C: War Room UI
 
-- [ ] **C01 — Next.js scaffold + design tokens** · §5.1–5.3 · Deps: none
+- [x] **C01 — Next.js scaffold + design tokens** · §5.1–5.3 · Deps: none — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* `pnpm build` passes; the tokens, the 4 fonts and the shadcn components from §5.3 are installed; routes exist as stubs.
 - [ ] **C02 — Types, API client, store, stream (CONTRACT)** · §5.4 · Deps: C01, B02
   *Done when:* `tsc --noEmit` passes; reducer unit tests cover idempotent replay (`seq ≤ lastSeq` ignored) and token batching.
