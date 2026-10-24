@@ -243,4 +243,39 @@ describe("run-store reducer", () => {
       expect(run.nodes.chair).toBe("done");
     });
   });
+
+  describe("fake_stream.json replay", () => {
+    it("drives full run to completion from fake stream fixture", async () => {
+      const fs = await import("fs");
+      const path = await import("path");
+      const fixturePath = path.resolve(__dirname, "../../../data/fixtures/fake_stream.json");
+      const raw = fs.readFileSync(fixturePath, "utf-8");
+      const fixture = JSON.parse(raw);
+
+      useRunStore.setState({ runs: {}, activeRunId: undefined, highlight: null, whatIf: {} });
+      const store = useRunStore.getState();
+      store.ensureRun("fake");
+
+      // Apply the 72 events from the fake stream
+      store.applyMany("fake", fixture.events);
+
+      const run = useRunStore.getState().runs["fake"];
+      expect(run).toBeDefined();
+      expect(run.schoolSlug).toBe("uiuc");
+      expect(run.status).toBe("complete");
+      expect(run.nodes.dossier_parser).toBe("done");
+      expect(run.nodes.institutional).toBe("done");
+      expect(run.nodes.twins).toBe("done");
+      expect(run.nodes.committee_docket).toBe("done");
+      expect(run.nodes.advocate).toBe("done");
+      expect(run.nodes.chair).toBe("done");
+      expect(run.tools.length).toBeGreaterThan(0);
+      expect(run.twins.length).toBe(5);
+      expect(run.debate.length).toBe(2);
+      expect(run.probability).toBeDefined();
+      expect(run.probability?.disposition).toBe("WAITLIST");
+      expect(run.counterfactuals.length).toBeGreaterThan(0);
+      expect(run.report).toBeDefined();
+    });
+  });
 });

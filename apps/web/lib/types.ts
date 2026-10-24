@@ -4,6 +4,7 @@ export type Disposition = "ADMIT" | "LIKELY ADMIT" | "WAITLIST" | "LIKELY DENY" 
 export type Pillar = "academic" | "extracurricular" | "personal" | "athletic";
 export type NodeName =
   | "dossier_parser" | "institutional" | "twins" | "committee_docket" | "advocate" | "chair" | "delta_engine";
+export type NodeStatus = "pending" | "running" | "done" | "degraded";
 export type Tier = 1 | 2 | 3 | 4;
 
 export interface PillarRating {

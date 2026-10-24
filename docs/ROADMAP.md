@@ -113,7 +113,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* `pnpm build` passes; the tokens, the 4 fonts and the shadcn components from §5.3 are installed; routes exist as stubs.
 - [x] **C02 — Types, API client, store, stream (CONTRACT)** · §5.4 · Deps: C01, B02 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* `tsc --noEmit` passes; reducer unit tests cover idempotent replay (`seq ≤ lastSeq` ignored) and token batching.
-- [ ] **C03 — War Room shell, top bar, pipeline stepper, tool ticker** · §5.8, §5.2, §5.5.3 (ticker notes) · Deps: C02, B03
+- [x] **C03 — War Room shell, top bar, pipeline stepper, tool ticker** · §5.8, §5.2, §5.5.3 (ticker notes) · Deps: C02, B03 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* `/room/<id>` driven by the fake SSE shows the 3-column layout, live stepper states and tool chips. **H6 milestone (with C04/C05 skeletons).**
 - [ ] **C04 — Committee room** · §5.5 · Deps: C03
   *Done when:* streaming bubbles render citations without flashing raw `[[…`; the stamp lands; cross-panel highlight fires on chip hover; the Zetaris chip shows SQL.
