@@ -192,3 +192,9 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Step: D09 preparation · Date: 2026-10-24 · By: gridiii via Codex.
 - Added an accessible About-the-data panel and `data/data-report.json`. Unknown real corpus, coverage and calibration results remain null and display "Not verified yet". The landing page's unsupported 10,000+ applicant claim was removed; a direct fictional-demo link was added.
 - `docs/pitch.md` is a complete rehearsal script for the current prototype, with calculated fixture figures labeled illustrative and all live proof gates explicit. It does not present an authored replay as a live provider run. D09 remains open until A15/A16 deliver real figures and the final live pitch can be verified.
+
+## D-024 — Track D release evidence remains an explicit gate
+- Step: D10 preparation / final Track D verification · Date: 2026-10-24 · By: gridiii via Codex.
+- The user authorized completing Track D and merging the verified work into main. They confirmed hosting and the Meterless demo machine are not set up or known. Code, fixtures, replay, charts, pitch and deployment handoffs were completed within that available scope.
+- Final checks: 171 API tests and ruff pass; 43 web tests, lint, TypeScript and production build pass; fixture rebuilds are byte-for-byte deterministic. Browser checks cover the integrated replay, pivot/reset, restart, keyboard cards, copy feedback, data disclosure and responsive layouts.
+- D08–D10 stay unchecked until actual hosted live acceptance, verified A15/A16 metrics and real Nightshift/Nemotron plus World Model evidence exist. No paid calls, model loads, public tunnel or cloud account setup was performed. B13/B14/B16/B17/B18 are not claimed complete by Track D.
