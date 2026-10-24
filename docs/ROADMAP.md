@@ -139,17 +139,18 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [x] **D03 — Radar + twin cards** · §5.6.3–5.6.4 · Deps: C02 — done by gridiii via Codex, 2026-10-24 (sample-data components; live C02 wiring pending)
   *Done when:* the assumed Personal axis is dashed and labeled; twin cards expand and pulse on a `twin:` highlight.
   Verified in `/dev/analytics`: six-axis comparison, dashed assumed Personal spoke, keyboard expansion, citation highlighting, and explicit missing-value states. Shared C02/C03 work remains unchanged.
-- [ ] **D04 — What-if panel** · §5.6.5 · Deps: C02, B03, B06
+- [x] **D04 — What-if panel** · §5.6.5 · Deps: C02, B03, B06 — done by gridiii via Codex, 2026-10-24
   *Done when:* sliders debounce and abort stale requests against `/api/what-if`; warnings render; "Reset" restores the baseline.
-  Controls and per-run draft/request handling implemented by gridiii via Codex, 2026-10-24; five lifecycle tests pass. Replay/API acceptance remains pending in this commit.
+  Debounce, stale-request cancellation, per-run drafts, warnings and reset verified against `/api/what-if` on the offline replay. Live evaluation awaits B13's scoring context; it is never replaced with fictional inputs.
 - [ ] **D05 — Pivots, essay edits, arbitrage hero, `AnalyticsPanel`** · §5.6.6 · Deps: D02–D04
   *Done when:* "Try it" maps a counterfactual into the what-if draft and the gauge moves.
 - [x] **D06 — Realistic fixtures** · §4.9, §6.3 · Deps: B08 (fallback: hand-written) — done by gridiii via Codex, 2026-10-24 (explicit hand-written fallback)
   Real per-node fixtures in `data/fixtures/` + a realistic `fake_stream.json` recorded from a real run.
   *Done when:* the UI runs end to end on `FAKE_LLM=1` with no keys.
   Per-schema fixtures, a four-turn offline stream, six-axis radar and reproducible what-if inputs are verified. All percentages use the actual scoring code. This is a fictional authored replay; replacing it with a live graph recording remains pending B13/B14.
-- [ ] **D07 — Demo route, `Shift+R`, recorded replays** · §4.8, §5.3 · Deps: B14, C04
+- [x] **D07 — Demo route, `Shift+R`, recorded replays** · §4.8, §5.3 · Deps: B14, C04 — done by gridiii via Codex, 2026-10-24 (portable authored-replay fallback; live recordings pending B13/B14)
   *Done when:* `/room/demo/maya-uiuc` plays like live; `Shift+R` swaps a live room to its replay.
+  Resumable API replay, real scoring-based what-if, snapshot registration, restart and Shift+R are verified. A recorder for completed fictional-persona runs is included. No real provider recording is claimed.
 - [ ] **D08 — Deploy** · §4.10 · Deps: B16, C06
   *Done when:* the web app is on Vercel, the API is co-located with Zetaris (VM or laptop + tunnel), and a live run works from a phone. **H18 milestone with X01.**
 - [ ] **D09 — Pitch assets** · §5.9 ("About the data"), §7.5 · Deps: A15, A16

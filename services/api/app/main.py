@@ -11,6 +11,8 @@ from sse_starlette.sse import EventSourceResponse
 
 from .api_models import IntakeForm
 from .config import settings
+from .demo import register_demo_runs
+from .demo import router as demo_router
 from .runs import RateLimited, RunManager, script_frames, sse_frames
 
 MAX_PDF_BYTES = 10 * 1024 * 1024
@@ -23,11 +25,21 @@ runs = RunManager()
 async def lifespan(app: FastAPI):
     # Later steps add: fake_llm.install() (B14), register_demo_runs (B14), Supabase warm-up (B07),
     # Zetaris prewarm (B15) — plan §4.3.
-    yield
-    await runs.shutdown()
+    restore = None
+    register_demo_runs(runs)
+    if settings.fake_llm:
+        from .fake_llm import install
+        restore = install()
+    try:
+        yield
+    finally:
+        if restore:
+            restore()
+        await runs.shutdown()
 
 
 app = FastAPI(title="AdCom API", version="0.1.0", lifespan=lifespan)
+app.state.run_manager = runs
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,           # ["http://localhost:3000", "https://adcom.vercel.app"]
@@ -35,6 +47,7 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Last-Event-ID"],
 )
+app.include_router(demo_router)
 
 
 async def _read_pdf(f: UploadFile | None) -> str | None:

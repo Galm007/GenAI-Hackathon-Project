@@ -8,6 +8,7 @@ import { useRunStream, type RunSource } from "@/lib/stream";
 import { useActiveRun } from "@/store/run-store";
 import { pct } from "@/lib/format";
 import { TopBar } from "./TopBar";
+import { ReplayControls } from "./ReplayControls";
 import { DossierPanel } from "@/components/dossier/DossierPanel";
 import { CommitteeRoom } from "@/components/committee/CommitteeRoom";
 import { AnalyticsPanel } from "@/components/analytics/AnalyticsPanel";
@@ -39,11 +40,12 @@ export function WarRoom({ source }: { source: RunSource }) {
     <TooltipProvider delayDuration={150}>
       <div className="flex h-dvh flex-col bg-[var(--color-room)]">
         <TopBar source={source} />
+        <ReplayControls source={source} />
 
         {/* ≥ 1440px: Three columns (Dossier | Committee | Analytics) */}
         <main
           role="main"
-          className="hidden min-h-0 flex-1 grid-cols-[340px_minmax(0,1fr)_420px] 2xl:grid"
+              className="hidden min-h-0 flex-1 grid-cols-[340px_minmax(0,1fr)_420px] min-[1440px]:grid"
         >
           <aside
             aria-label="Applicant Dossier"
@@ -63,7 +65,7 @@ export function WarRoom({ source }: { source: RunSource }) {
         </main>
 
         {/* 1024px–1439px: Two columns (Dossier | Committee) + Floating Analytics Drawer */}
-        <div className="hidden min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)] lg:grid 2xl:hidden relative">
+        <div className="hidden min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)] lg:grid min-[1440px]:hidden relative">
           <aside
             aria-label="Applicant Dossier"
             className="min-h-0 overflow-y-auto border-r border-[var(--color-line)] p-4"
@@ -137,11 +139,11 @@ export function WarRoom({ source }: { source: RunSource }) {
                   <span className="font-bold text-[var(--color-ink)]">
                     {pct(pFinal, 0)}
                   </span>
-                  <span className="text-[10px] text-[var(--color-muted)]">P(ADMIT)</span>
+                  <span className="hidden text-[10px] text-[var(--color-muted)] min-[480px]:inline">P(ADMIT)</span>
                   {disposition && (
                     <span
                       className={cn(
-                        "rounded px-1 py-0.2 text-[9px] font-bold uppercase",
+                        "hidden rounded px-1 py-0.2 text-[9px] font-bold uppercase min-[480px]:inline",
                         dispositionBadgeClass
                       )}
                     >

@@ -34,13 +34,14 @@ export function TopBar({ source, onSelectSchool }: TopBarProps) {
     }
 
     if (finishedAt) {
-      setElapsedSec(Math.max(0, Math.floor((finishedAt - startedAt) / 1000)));
+      const scale = startedAt < 1e12 ? 1 : 1000; // SSE timestamps are Unix seconds; preserve older millisecond replays.
+      setElapsedSec(Math.max(0, Math.floor((finishedAt - startedAt) / scale)));
       return;
     }
 
     const interval = setInterval(() => {
       const now = Date.now();
-      setElapsedSec(Math.max(0, Math.floor((now - startedAt) / 1000)));
+      setElapsedSec(Math.max(0, Math.floor((now - (startedAt < 1e12 ? startedAt * 1000 : startedAt)) / 1000)));
     }, 1000);
 
     return () => clearInterval(interval);
@@ -72,32 +73,32 @@ export function TopBar({ source, onSelectSchool }: TopBarProps) {
   const timeFormatted = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-room)] px-4 sm:px-6">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--color-line)] bg-[var(--color-room)] px-4 sm:px-6">
       {/* Left: Wordmark & School Tabs */}
-      <div className="flex items-center gap-4 sm:gap-6">
+      <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-initial sm:gap-6">
         <Link
           href="/"
-          className="flex items-center gap-2 transition-opacity hover:opacity-80"
+          className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
         >
           <span className="font-display text-base font-bold tracking-tight text-[var(--color-ink)]">
             ADCOM
           </span>
-          <span className="text-[var(--color-muted)]">▸</span>
-          <span className="font-sans text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
+          <span className="hidden text-[var(--color-muted)] sm:inline">▸</span>
+          <span className="hidden font-sans text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] sm:inline">
             War Room
           </span>
         </Link>
 
-        <SchoolTabs onSelectSchool={onSelectSchool} />
+        <div className="min-w-0 overflow-x-auto"><SchoolTabs onSelectSchool={onSelectSchool} /></div>
       </div>
 
       {/* Center: Pipeline Stepper */}
       <PipelineStepper />
 
       {/* Right: Elapsed timer & Projector mode */}
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         {startedAt && (
-          <div className="flex items-center gap-1.5 font-mono text-xs text-[var(--color-muted)]">
+          <div className="hidden items-center gap-1.5 font-mono text-xs text-[var(--color-muted)] xl:flex">
             <Clock className="h-3.5 w-3.5" />
             <span>⏱ {timeFormatted}</span>
           </div>
@@ -111,8 +112,8 @@ export function TopBar({ source, onSelectSchool }: TopBarProps) {
           className="h-7 px-2.5 text-xs font-mono text-[var(--color-muted)] hover:text-white hover:border-[var(--color-advocate)] transition-colors"
           title="Inspect Zetaris federated SQL queries"
         >
-          <Database className="mr-1.5 h-3.5 w-3.5 text-[var(--color-advocate)]" />
-          <span>Data Fabric</span>
+          <Database className="h-3.5 w-3.5 text-[var(--color-advocate)] sm:mr-1.5" />
+          <span className="sr-only sm:not-sr-only">Data Fabric</span>
           {sqlQueries.length > 0 && (
             <span className="ml-1 rounded-full bg-[var(--color-advocate)]/20 px-1.5 py-0.2 text-[10px] font-bold text-[var(--color-advocate)]">
               {sqlQueries.length}
@@ -131,8 +132,8 @@ export function TopBar({ source, onSelectSchool }: TopBarProps) {
           }`}
           title="Toggle high-contrast projector mode (?projector=1)"
         >
-          <Monitor className="mr-1.5 h-3.5 w-3.5" />
-          Projector
+          <Monitor className="h-3.5 w-3.5 sm:mr-1.5" />
+          <span className="sr-only sm:not-sr-only">Projector</span>
         </Button>
       </div>
 

@@ -34,7 +34,7 @@ export function SchoolTabs({ onSelectSchool }: SchoolTabsProps) {
     .map((r) => r.schoolSlug)
     .filter((s): s is string => Boolean(s));
 
-  const allSlugs = Array.from(
+  const allSlugs = activeRunId?.startsWith("demo-") ? [activeSlug] : Array.from(
     new Set([activeSlug, ...targetSchools, ...runSlugs])
   );
 
@@ -98,7 +98,7 @@ export function SchoolTabs({ onSelectSchool }: SchoolTabsProps) {
             aria-selected={isCurrent}
             onClick={() => handleTabClick(slug)}
             className={cn(
-              "inline-flex items-center gap-2 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
+                    "inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
               isCurrent
                 ? "bg-[var(--color-panel-2)] text-[var(--color-ink)] shadow-sm"
                 : "text-[var(--color-muted)] hover:bg-[var(--color-panel-2)]/50 hover:text-[var(--color-ink)]"
