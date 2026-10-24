@@ -130,3 +130,9 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - Found (tests/test_probability.py): when `p_model` hits a clamp (e.g. base 0.80, ×2.0 multiplier, strong ratings), the bars before twins sum to the unclamped `sigmoid(L)`, so the waterfall missed `p_final` by 1.5 pp, failing §3.10 "Waterfall integrity" (≤ 0.5 pp). The interval was also unclamped, so the UI could show "up to 99.96%" next to a capped 97% or a 0% lower bound.
 - We did: the twins bar is measured from the last bar (`p_final − sigmoid(L)`, `logit(p_final) − L`), which is identical to the plan whenever no clamp fires; `p_low`/`p_high` are clamped to [P_FLOOR, P_CEIL]. `with_overrides` lost its quoted annotation (ruff UP037). Plan §3.6.3 synced. Counterfactual reproducibility is unaffected.
 - Not in this step: the `/api/what-if` route itself. `run_what_if` is done and tested with a stand-in context, but the route needs `RunManager.scoring_context` (deferred in D-013 until db/zetaris land). `counterfactuals.py` keeps the plan's `from app import db`; the tests register a placeholder `app.db` until B07 and mock `major_arbitrage`.
+
+## D-015 — `app/agents/state.py` (§3.2) lands with B08
+- Step: B08 · Date: 2026-10-24 · By: Aron via Claude Code
+- Gap: no roadmap step lists §3.2, but every node imports `AdComState` from `app/agents/state.py`.
+- We did: added `state.py` verbatim from §3.2 in B08, its first consumer (all of its imports exist after B02/B06). No other change.
+- Also noted, not changed: the plan's `PHONE` regex starts at the first digit, so "(217) 555-0142" redacts to "([phone]". The number is fully removed; only the opening parenthesis remains, so it was left as written.
