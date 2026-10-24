@@ -46,3 +46,9 @@ export function schoolName(slug: string | null | undefined): string {
   if (!slug) return "Unknown School";
   return SCHOOL_NAMES[slug.toLowerCase()] ?? slug.toUpperCase();
 }
+
+export function countWords(str: string | null | undefined): number {
+  if (!str) return 0;
+  const words = str.trim().split(/\s+/).filter(Boolean);
+  return words.length;
+}
