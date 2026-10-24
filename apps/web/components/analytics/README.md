@@ -1,46 +1,34 @@
-# Analytics components (Track D)
+# Track D analytics
 
 Done by gridiii via Codex, 2026-10-24.
 
-The plan's section 6.2 explicitly schedules the Track D charts against static
-JSON while C builds the shared store. These components accept presentation props
-compatible with the backend fields, so C02 can pass data without changing its
-contract. They do not fetch data, own a store, or change the existing app routes.
+`AnalyticsPanel` reads the team's existing shared store. It integrates the gauge,
+waterfall, radar, expandable comparable applicants, per-run what-if drafts,
+ranked pivots and essay examples. Shared event names, schemas, types and store
+contracts are unchanged. One simulation controller is mounted in WarRoom so its
+responsive copies cannot issue duplicate requests.
 
-Preview: run `pnpm dev --hostname 127.0.0.1 --port 3001` from `apps/web`, then
-open `http://localhost:3001/dev/analytics`. Port 3000 is used by local Zetaris.
-The preview exposes loading, simulation, and citation-highlight states.
+The gauge displays the supplied model value and interval; hypothetical results
+are labeled simulated. Floating SVG waterfall bars retain signed contributions,
+running totals and zero-crossings on the same scale. Inconsistent supplied totals
+are flagged. Readable evidence tables accompany the charts. Unknown scores stay
+unknown. The Personal radar reference is dashed and assumed; it is not an
+observed admitted-essay median.
 
-Verification: `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm build`, and
-`node --experimental-strip-types --test components/analytics/math.test.mjs`.
+Pivots bind to computed counterfactual IDs, never numbers extracted from prose.
+Try it resets the prior draft before applying the selected scenario. Requests
+debounce, abort and ignore late responses. Reset restores the baseline. Request
+failures and warnings remain visible. Tier-promotion approximations are marked
+with ≈, as specified in the plan.
 
-`ProbabilityGauge` accepts the baseline and an optional `simulation` with
-`simulated`, `applied`, and `delta_pp`. A counterfactual-only preview has no supplied
-interval or disposition: those are displayed as unavailable rather than inferred.
-`Waterfall` accepts the shown probability and an optional `{kind, ref}` highlight.
-It displays the exact supplied contributions and flags inconsistent totals.
+Run the API on port 8000 in explicit FAKE_LLM mode and the web app on port 3001;
+see `docs/deployment.md`. `/room/demo/maya-uiuc` plays the full fictional replay
+without provider keys. `/dev/analytics` isolates loading, simulation, missing-data
+and highlight states, using the same Python-generated fixtures as the replay.
+No authored fixture is represented as a real model recording or corpus evidence.
 
-The sample takes its estimate and counterfactual from the existing scripted
-stream. The preview's academic contribution is the arithmetic residual between
-the scripted pre-twin estimate and earlier contributions, resolving the script's
-1.8-point waterfall discrepancy in this isolated fixture only. Simulation adds
-the already supplied counterfactual delta. All values remain fictional.
-
-C02 is still required for live store wiring; a working sample-data component
-does not mean the live War Room is integrated. No API/model calls are made here.
-
-`RadarCompare` accepts the plan's `radar` output fields. Missing or invalid axes
-are explicitly omitted from the polygon and retained in its readable table;
-zero is a valid score. The Personal spoke is dashed and marked as an assumed
-reference, not a measured admitted-essay statistic. Fewer than three comparable
-axes produce a text fallback. The sample's six-axis normalization follows section
-4.7, using fictional reference values and two admitted sample profiles.
-
-`TwinCards` accepts `twins`, optional `baseline` and `comparisons`, and the shared
-highlight shape. Cards expand with keyboard or mouse; a `twin` highlight whose
-`ref` matches the citation index scrolls to and pulses that card. The neighbor
-count comes from the supplied baseline rather than a hard-coded 50. Missing
-scores stay unknown. Source links require credential-free HTTPS; the fictional
-samples deliberately have no original-post URLs. The preview has controls for
-Twin 2 highlighting and missing testing data. Reduced-motion settings disable
-chart, card-entry, expansion, and pulse animations.
+Verification: `pnpm test`, `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm build`.
+API tests check exact pivot reproduction and waterfall conservation. Browser checks
+cover pivot/reset, replay restart, keyboard expansion, citations, desktop/drawer
+layouts and the 390px phone layout. Reduced-motion preferences disable chart and
+card animations.

@@ -8,7 +8,7 @@
 
 Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real probability via CLI · **H18** integration on the deployed stack · **H24** recorded replay · **H28** feature freeze · **H33** code freeze.
 
-> **gridiii's feature-branch status, 2026-10-24:** D01, D02 and D03 are implemented and verified on `gridiii/d01-demo-dossiers`; integration into shared `main` is pending. D02/D03 use the planned static-data preview, with live C02/C03 integration still pending. See [the setup audit](gridiii-setup-status.md) for verified local checks and remaining team dependencies.
+> **gridiii's Track D status, 2026-10-24:** D01–D07 components and the explicit offline-replay fallback are implemented and verified, including shared-store chart integration. D08–D10 retain their real deployment/data/provider acceptance gates. The authored replay does not complete the live graph or partner evidence. See [the setup audit](gridiii-setup-status.md) for local checks and team dependencies.
 
 ---
 
@@ -133,17 +133,18 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [x] **D01 — Fictional demo personas** · §6.2 (H1–2), §7 · Deps: none — done by gridiii via Codex, 2026-10-24
   Writes `data/demo_dossiers/{maya,backup1,backup2}/` (transcript PDF, `activities.txt`, `essay.txt`, `intake.json`). All of it must be fictional.
   *Done when:* each persona has every file, and Maya is a CS applicant to UIUC.
-- [x] **D02 — Probability gauge + waterfall** · §5.6.1–5.6.2 · Deps: C02 — done by gridiii via Codex, 2026-10-24 (sample-data components; live C02 wiring pending)
+- [x] **D02 — Probability gauge + waterfall** · §5.6.1–5.6.2 · Deps: C02 — done by gridiii via Codex, 2026-10-24
   *Done when:* both render from fixture data, animate, and show the what-if "simulated" state.
-  Verified in `/dev/analytics` using the planned §6.2 static-data fallback. This does not complete C02 or live War Room integration.
-- [x] **D03 — Radar + twin cards** · §5.6.3–5.6.4 · Deps: C02 — done by gridiii via Codex, 2026-10-24 (sample-data components; live C02 wiring pending)
+  Integrated into the shared-store room and verified on the offline replay. Native SVG geometry handles decreases and negative running totals correctly; the numeric model and interval remain visible to assistive technology.
+- [x] **D03 — Radar + twin cards** · §5.6.3–5.6.4 · Deps: C02 — done by gridiii via Codex, 2026-10-24
   *Done when:* the assumed Personal axis is dashed and labeled; twin cards expand and pulse on a `twin:` highlight.
-  Verified in `/dev/analytics`: six-axis comparison, dashed assumed Personal spoke, keyboard expansion, citation highlighting, and explicit missing-value states. Shared C02/C03 work remains unchanged.
+  Shared-store radar, comparisons and citation highlights are integrated. Six-axis comparison, dashed assumed Personal spoke, keyboard expansion and missing-value states are verified.
 - [x] **D04 — What-if panel** · §5.6.5 · Deps: C02, B03, B06 — done by gridiii via Codex, 2026-10-24
   *Done when:* sliders debounce and abort stale requests against `/api/what-if`; warnings render; "Reset" restores the baseline.
   Debounce, stale-request cancellation, per-run drafts, warnings and reset verified against `/api/what-if` on the offline replay. Live evaluation awaits B13's scoring context; it is never replaced with fictional inputs.
-- [ ] **D05 — Pivots, essay edits, arbitrage hero, `AnalyticsPanel`** · §5.6.6 · Deps: D02–D04
+- [x] **D05 — Pivots, essay edits, arbitrage hero, `AnalyticsPanel`** · §5.6.6 · Deps: D02–D04 — done by gridiii via Codex, 2026-10-24
   *Done when:* "Try it" maps a counterfactual into the what-if draft and the gauge moves.
+  Verified in the room: ranked pivot IDs bind to computed deltas, Try it sets a fresh scenario and opens the controls, the gauge changes, Reset restores baseline, and essay examples can be copied. No probability is extracted from generated prose.
 - [x] **D06 — Realistic fixtures** · §4.9, §6.3 · Deps: B08 (fallback: hand-written) — done by gridiii via Codex, 2026-10-24 (explicit hand-written fallback)
   Real per-node fixtures in `data/fixtures/` + a realistic `fake_stream.json` recorded from a real run.
   *Done when:* the UI runs end to end on `FAKE_LLM=1` with no keys.

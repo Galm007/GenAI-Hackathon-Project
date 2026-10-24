@@ -54,7 +54,7 @@ export default function AnalyticsPreview() {
             comparisons={sampleComparisons} highlight={twinHighlight ? { kind: "twin", ref: "2" } : null} />
         </div>
       </div>
-      <footer className="text-xs text-muted">Done by gridiii via Codex. Live data wiring belongs to C02 and the War Room integration.</footer>
+      <footer className="text-xs text-muted">Done by gridiii via Codex. The same charts are integrated into the room; this page isolates their loading, missing-data and highlight states.</footer>
     </main>
   );
 }
