@@ -131,8 +131,9 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [x] **D01 — Fictional demo personas** · §6.2 (H1–2), §7 · Deps: none — done by gridiii via Codex, 2026-10-24
   Writes `data/demo_dossiers/{maya,backup1,backup2}/` (transcript PDF, `activities.txt`, `essay.txt`, `intake.json`). All of it must be fictional.
   *Done when:* each persona has every file, and Maya is a CS applicant to UIUC.
-- [ ] **D02 — Probability gauge + waterfall** · §5.6.1–5.6.2 · Deps: C02
+- [x] **D02 — Probability gauge + waterfall** · §5.6.1–5.6.2 · Deps: C02 — done by gridiii via Codex, 2026-10-24 (sample-data components; live C02 wiring pending)
   *Done when:* both render from fixture data, animate, and show the what-if "simulated" state.
+  Verified in `/dev/analytics` using the planned §6.2 static-data fallback; see DECISIONS D-014. This does not complete C02 or live War Room integration.
 - [ ] **D03 — Radar + twin cards** · §5.6.3–5.6.4 · Deps: C02
   *Done when:* the assumed Personal axis is dashed and labeled; twin cards expand and pulse on a `twin:` highlight.
 - [ ] **D04 — What-if panel** · §5.6.5 · Deps: C02, B03, B06
