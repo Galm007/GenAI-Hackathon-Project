@@ -128,7 +128,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 
 ## D: Viz, Demo & Integration
 
-- [ ] **D01 — Fictional demo personas** · §6.2 (H1–2), §7 · Deps: none
+- [x] **D01 — Fictional demo personas** · §6.2 (H1–2), §7 · Deps: none — done by gridiii via Codex, 2026-10-24
   Writes `data/demo_dossiers/{maya,backup1,backup2}/` (transcript PDF, `activities.txt`, `essay.txt`, `intake.json`). All of it must be fictional.
   *Done when:* each persona has every file, and Maya is a CS applicant to UIUC.
 - [ ] **D02 — Probability gauge + waterfall** · §5.6.1–5.6.2 · Deps: C02

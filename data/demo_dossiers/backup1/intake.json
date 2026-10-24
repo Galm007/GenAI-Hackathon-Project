@@ -1,0 +1,24 @@
+{
+  "session_id": "demo-backup1-gridiii",
+  "intended_major": "Computer Engineering",
+  "target_schools": [
+    "cmu"
+  ],
+  "early_round": {
+    "cmu": "RD"
+  },
+  "activities_text": "FICTIONAL DEMO APPLICANT: Leo Park\nDone by gridiii | AdCom D01 | Snapshot: 2026-10-24\n\n1. Robotics team | Controls lead | School robotics club\nGrades 9-12 | 8 hours/week | 32 weeks/year\nDevelops motor-control software and coordinates tests with the mechanical team. Added checks for wheel slip and battery movement. The team earned a state-level design award in grade 11; this is a team award, not an individual national championship.\n\n2. Door-alert prototype | Hardware and firmware developer | Community center project\nGrades 11-12 | 4 hours/week | 28 weeks/year\nBuilt two adjustable light-and-sound prototypes for a meeting-room entrance. Revised the battery compartment and labels after supervised staff trials; wrote a repair sheet. Prototype only, with no certification, sales, patent, research publication, or measured accessibility outcome.\n\n3. Community repair table | Supervised volunteer\nGrades 10-12 | 2 hours/week | 30 weeks/year\nHelps inspect low-voltage devices and document repairs under adult supervision. Refers unsafe equipment to qualified services rather than attempting mains-voltage repairs.\n\nAwards: State robotics design award, team recipient (grade 11).\nNo recruited-athlete status or recommendation letter is provided.\n",
+  "essay_text": "FICTIONAL DEMO ESSAY: Leo Park\nDone by gridiii | AdCom D01 | Original fictional writing for testing\n\nAt 6:40 on the morning of our regional robotics meet, our machine drove straight into a table leg. It had followed its instructions exactly. That was the embarrassing part. I had tested the navigation routine on the glossy gym floor at school; the competition floor had a different surface, and our wheels slipped. Three weeks of neat plots had not prepared me for a table leg.\n\nI was the controls lead, so I reached for the laptop. Our mechanical lead reached for a strip of tape. She wanted a visible mark on each wheel so we could watch what happened during a turn. I wanted another sensor reading. For several minutes, we argued as though one of those tools had to win. Then our driver asked whether we could try both.\n\nThe tape showed what the logs did not: one wheel was intermittently losing contact when the battery shifted. We secured the battery, reran the test, and reduced the acceleration. Our team later earned a state-level design award for the season, but I remember the tape more clearly than the award. It was an inexpensive correction to an expensive assumption about whose evidence counted.\n\nI carried that lesson into an after-school electronics project. A staff member at our community center wanted a quieter, easier-to-see door alert for a meeting room. I built a prototype with a large light and an adjustable sound. My first enclosure was compact and, to me, elegant. During a supervised trial, a volunteer asked how she would replace the battery. The answer involved four screws and a very small screwdriver. I had solved a circuit and handed her a maintenance problem.\n\nThe next enclosure was larger. The battery door could be opened without tools, the labels used ordinary words, and the brightness control had a clear stop. I made a short repair sheet and left a second prototype for staff feedback. It remains a prototype rather than a certified accessibility device. That distinction is part of the project, not a footnote I want to hide.\n\nOn Saturdays I volunteer at the same center's supervised repair table. Sometimes the right contribution is tracing a broken connection. Sometimes it is admitting that a device is unsafe for us to open and helping the owner find a qualified repair service. I used to regard those moments as unfinished work. Now I see them as decisions that belong inside engineering.\n\nComputer engineering appeals to me because the boundary between a program and a physical object is where my assumptions become visible. A motor does not care how convincing my explanation sounds, and a user does not owe my prototype patience. I want to become better at designing systems that can be inspected, repaired, and questioned by the people who depend on them. Before our next test run, I will still open the laptop. I will also make room on the table for the tape.\n",
+  "resume_text": null,
+  "recommendation_text": null,
+  "hooks": [],
+  "context": {
+    "residency_state": "PA",
+    "country": "US",
+    "school_type": "public",
+    "first_gen": false,
+    "low_income": false
+  },
+  "application_deadline": "2027-01-03",
+  "consent": true
+}

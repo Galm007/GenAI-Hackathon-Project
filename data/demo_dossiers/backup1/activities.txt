@@ -1,0 +1,17 @@
+FICTIONAL DEMO APPLICANT: Leo Park
+Done by gridiii | AdCom D01 | Snapshot: 2026-10-24
+
+1. Robotics team | Controls lead | School robotics club
+Grades 9-12 | 8 hours/week | 32 weeks/year
+Develops motor-control software and coordinates tests with the mechanical team. Added checks for wheel slip and battery movement. The team earned a state-level design award in grade 11; this is a team award, not an individual national championship.
+
+2. Door-alert prototype | Hardware and firmware developer | Community center project
+Grades 11-12 | 4 hours/week | 28 weeks/year
+Built two adjustable light-and-sound prototypes for a meeting-room entrance. Revised the battery compartment and labels after supervised staff trials; wrote a repair sheet. Prototype only, with no certification, sales, patent, research publication, or measured accessibility outcome.
+
+3. Community repair table | Supervised volunteer
+Grades 10-12 | 2 hours/week | 30 weeks/year
+Helps inspect low-voltage devices and document repairs under adult supervision. Refers unsafe equipment to qualified services rather than attempting mains-voltage repairs.
+
+Awards: State robotics design award, team recipient (grade 11).
+No recruited-athlete status or recommendation letter is provided.

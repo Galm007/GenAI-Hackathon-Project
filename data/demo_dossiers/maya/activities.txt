@@ -1,0 +1,17 @@
+FICTIONAL DEMO APPLICANT: Maya Chen
+Done by gridiii | AdCom D01 | Snapshot: 2026-10-24
+
+1. Competitive programming | Team captain | School CS club
+Grades 10-12 | 6 hours/week | 40 weeks/year
+USACO Gold, achieved in grade 11. Leads weekly practice for 14 members. Prepares problems and reviews approaches with newer students. USACO Gold is a division achievement, not an Olympiad medal or a national rank.
+
+2. Crop-disease classifier | Independent researcher
+Grades 11-12 | 5 hours/week | 30 weeks/year
+Trained a small CNN using public leaf images. Revisited the train/test split after finding a background-sensitive prediction. Presented the project at a regional science fair; earned 2nd place in grade 11. School prototype only; no deployment, publication, clinical use, or verified farmer impact is claimed.
+
+3. Library coding workshops | Volunteer teacher | Public library
+Grades 11-12 | 2 hours/week | 35 weeks/year
+Teaches Scratch to middle-school students on Saturdays. Uses paper game rules and peer testing to help beginners explain what they expect their programs to do.
+
+Awards: USACO Gold (grade 11); regional science fair, 2nd place (grade 11).
+No recruited-athlete status or recommendation letter is provided.

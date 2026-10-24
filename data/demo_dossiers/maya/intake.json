@@ -1,0 +1,24 @@
+{
+  "session_id": "demo-maya-gridiii",
+  "intended_major": "Computer Science",
+  "target_schools": [
+    "uiuc"
+  ],
+  "early_round": {
+    "uiuc": "EA"
+  },
+  "activities_text": "FICTIONAL DEMO APPLICANT: Maya Chen\nDone by gridiii | AdCom D01 | Snapshot: 2026-10-24\n\n1. Competitive programming | Team captain | School CS club\nGrades 10-12 | 6 hours/week | 40 weeks/year\nUSACO Gold, achieved in grade 11. Leads weekly practice for 14 members. Prepares problems and reviews approaches with newer students. USACO Gold is a division achievement, not an Olympiad medal or a national rank.\n\n2. Crop-disease classifier | Independent researcher\nGrades 11-12 | 5 hours/week | 30 weeks/year\nTrained a small CNN using public leaf images. Revisited the train/test split after finding a background-sensitive prediction. Presented the project at a regional science fair; earned 2nd place in grade 11. School prototype only; no deployment, publication, clinical use, or verified farmer impact is claimed.\n\n3. Library coding workshops | Volunteer teacher | Public library\nGrades 11-12 | 2 hours/week | 35 weeks/year\nTeaches Scratch to middle-school students on Saturdays. Uses paper game rules and peer testing to help beginners explain what they expect their programs to do.\n\nAwards: USACO Gold (grade 11); regional science fair, 2nd place (grade 11).\nNo recruited-athlete status or recommendation letter is provided.\n",
+  "essay_text": "FICTIONAL DEMO ESSAY: Maya Chen\nDone by gridiii | AdCom D01 | Original fictional writing for testing\n\nThe first program I taught at the library had four instructions and a cat that refused to move. I had prepared a slide about variables. A sixth grader named Jo had prepared a much better question: \"How does it know what I mean?\" I answered by moving a blue block. The cat stayed still. I had attached the block to the wrong character.\n\nAt our school CS club, a mistake normally came with a verdict: wrong answer, time limit exceeded, try again. I liked that clarity. After reaching USACO Gold in eleventh grade, I became captain and led weekly practice for fourteen members. I could explain why an algorithm was faster. I was less good at noticing when a beginner had stopped asking questions because everyone else seemed to understand.\n\nJo did not stop asking. At the next Saturday workshop, I left the slides closed and asked each student to invent a rule for a game. One wanted a dragon to jump whenever the player clapped. Another wanted the floor to disappear, which made the rest of the room immediately interested. We drew arrows on paper before opening Scratch. I learned to ask what they expected before showing what their code actually did.\n\nThat question followed me into a different project. For a regional science fair, I trained a small convolutional neural network to classify crop-disease photographs. My first notebook produced a satisfying accuracy number. Then I tested a photograph with a hand in the corner. The prediction changed when I cropped the hand out. I had been pleased with an answer before understanding what question the model had learned to answer.\n\nI checked the image groups, rebuilt the split, and started keeping a page titled \"Things I cannot claim yet.\" The classifier was a school project using public leaf photographs, not a diagnosis tool for farmers. The second-place ribbon at the regional fair mattered to me, but the most useful conversation was with a visitor who asked whether the program would work on a cheap phone, outside, with an ordinary camera. I did not know. This time I wrote that down instead of making the answer sound better.\n\nBack at the library, I changed the final activity. Students traded games and wrote down one thing that surprised the other player. A bug became a conversation rather than a small private embarrassment. I began doing the same at club practice: we compared assumptions before comparing solutions.\n\nI am interested in computer science because I enjoy the moment when a precise rule meets a person or a photograph that does not fit neatly inside it. I still like an accepted solution on the competition screen. I also like the slower work of finding out what that solution leaves out. Teaching, competing, and building my classifier have all changed how I approach a difficult problem. In the end, I learned a lot.\n",
+  "resume_text": null,
+  "recommendation_text": null,
+  "hooks": [],
+  "context": {
+    "residency_state": "IL",
+    "country": "US",
+    "school_type": "public",
+    "first_gen": false,
+    "low_income": false
+  },
+  "application_deadline": "2026-11-01",
+  "consent": true
+}
