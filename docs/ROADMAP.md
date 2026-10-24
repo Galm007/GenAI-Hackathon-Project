@@ -71,7 +71,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* tests with a mocked `AsyncAnthropic` cover `parse` refusal → `LLMRefusal`, `max_tokens` → `LLMTruncated`, and fallback-block handling in `stream_text`; `emit()` is a no-op outside a graph.
 - [x] **B02 — Pydantic schemas (CONTRACT)** · §3.3 · Deps: S01 — done by Aron via Claude Code, 2026-10-23
   *Done when:* every model imports; `model_json_schema()` works for every LLM output model; no LLM output model uses `dict[str, X]`.
-- [ ] **B03 — API skeleton + RunManager + scripted fake SSE** · §4.1–4.5, §6.3 · Deps: B02
+- [x] **B03 — API skeleton + RunManager + scripted fake SSE** · §4.1–4.5, §6.3 · Deps: B02 — done by Aron via Claude Code, 2026-10-23
   Real `runs.py`/`sse_frames` and `/api/dev/fake-stream` replaying `data/fixtures/fake_stream.json` (a hand-written, minimal version is fine; D06 replaces it). `/api/evaluate` may drive the scripted stream until B13.
   *Done when:* `curl -N` on the fake stream shows `id:`/`event:` frames, and reconnecting with `Last-Event-ID` resumes without duplicates. **This unblocks Tracks C and D (target H4).**
 - [ ] **B04 — System prompts** · §3.4.2–3.4.6 · Deps: B02, S02

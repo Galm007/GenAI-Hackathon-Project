@@ -6338,6 +6338,7 @@ class RunManager:
         run = Run(run_id=str(uuid.uuid4()), session_id=session_id, school_slug=school_slug,
                   has_recommendations=bool(inputs.recommendation_text))
         self._runs[run.run_id] = run
+        self._active_sessions.add(session_id)      # before the task runs, so a double submit is refused
         state = {"run_id": run.run_id, "session_id": session_id, "inputs": inputs,
                  "school_slug": school_slug, **(prefill or {})}
         run.task = asyncio.create_task(self._drive(run, state))
@@ -6363,7 +6364,6 @@ class RunManager:
             run.cond.notify_all()
 
     async def _drive(self, run: Run, state: dict) -> None:
-        self._active_sessions.add(run.session_id)
         config = {"configurable": {"thread_id": run.run_id}, "recursion_limit": 40}
         watchdog = asyncio.create_task(self._watchdog(run))
         try:
@@ -6471,7 +6471,7 @@ async def sse_frames(run: Run, after: int, request: Request) -> AsyncIterator[di
     try:
         while True:
             async with run.cond:
-                await run.cond.wait_for(lambda: len(run.events) > i or run.done)
+                await run.cond.wait_for(lambda n=i: len(run.events) > n or run.done)
                 batch = run.events[i:]
             for ev in batch:
                 yield {"id": str(ev["seq"]), "event": ev["event"], "data": orjson.dumps(ev).decode()}
