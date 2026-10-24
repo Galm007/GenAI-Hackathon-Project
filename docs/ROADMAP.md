@@ -78,7 +78,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* the prompt modules import; a test asserts every citation form in `COMMITTEE_SYSTEM` matches `CITATION_RE`.
 - [x] **B05 — Scoring: metrics + school rubric** · §3.6.1–3.6.2 · Deps: B02 — done by Aron via Claude Code, 2026-10-24
   *Done when:* tests cover GPA normalization, the tier→EC anchor, every grade guardrail (§3.10 "Grade guardrails") and C7 → pillar weights.
-- [ ] **B06 — Probability, counterfactuals, what-if** · §3.6.3–3.6.4, §4.6 · Deps: B05
+- [x] **B06 — Probability, counterfactuals, what-if** · §3.6.3–3.6.4, §4.6 · Deps: B05 — done by Aron via Claude Code, 2026-10-24
   *Done when:* §3.10 tests pass (monotonicity, waterfall within 0.5 pp, `cf.overrides` reproducing `p_new` exactly); `db.major_arbitrage` is mocked.
 - [ ] **B07 — Supabase helpers + web research** · §3.5.4–3.5.5, §4.3 (`db.py` additions), §4.4 (school cache) · Deps: B01
   *Done when:* functions are unit-tested with a mocked client; with A03 available, `match_twins` hits the real RPC.

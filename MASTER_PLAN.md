@@ -4688,7 +4688,7 @@ class ScoringInputs(BaseModel):
     twin_sum_w_admit: float = 0.0
     odds_inflation: float = 1.0
 
-    def with_overrides(self, **kw) -> "ScoringInputs":
+    def with_overrides(self, **kw) -> ScoringInputs:
         return self.model_copy(update=kw)
 
 
@@ -4791,11 +4791,13 @@ def compute_probability(x: ScoringInputs) -> ProbabilityBreakdown:
     p_final, lo, hi, detail = twin_posterior(p_model, x.twin_sum_w, x.twin_sum_w2, x.twin_sum_w_admit,
                                              x.odds_inflation)
     p_final = _clamp(p_final, P_FLOOR, P_CEIL)
+    # Measured from the waterfall's last bar (unclamped), so the bars always sum to p_final.
     comps.append(ProbabilityComponent(key="twins", label="Applicant-twin evidence",
-                                      delta_logit=round(logit(p_final) - logit(p_model), 4),
-                                      delta_pp=round((p_final - p_model) * 100, 2), detail=detail))
+                                      delta_logit=round(logit(p_final) - L, 4),
+                                      delta_pp=round((p_final - sigmoid(L)) * 100, 2), detail=detail))
+    lo, hi = _clamp(float(lo), P_FLOOR, P_CEIL), _clamp(float(hi), P_FLOOR, P_CEIL)
     return ProbabilityBreakdown(
-        p_final=round(p_final, 4), p_low=round(float(lo), 4), p_high=round(float(hi), 4),
+        p_final=round(p_final, 4), p_low=round(lo, 4), p_high=round(hi, 4),
         p_model=round(p_model, 4), base_admit_rate=base, components=comps, disposition=disposition(p_final),
     )
 ```
