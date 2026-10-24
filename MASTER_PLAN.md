@@ -4042,11 +4042,17 @@ Rules
 #### 3.5.1 `app/config.py`
 
 ```python
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+API_DIR = Path(__file__).resolve().parents[1]
+ROOT = API_DIR.parents[1]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # Repo-root .env (README), with services/api/.env as an override; independent of the working directory.
+    model_config = SettingsConfigDict(env_file=(ROOT / ".env", API_DIR / ".env"), extra="ignore")
 
     anthropic_api_key: str | None = None        # the SDK also reads ANTHROPIC_API_KEY directly
     tavily_api_key: str | None = None
@@ -4074,14 +4080,12 @@ Every live-agent call goes through this module, so models, fallbacks, refusal ha
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TypeVar
 
 from anthropic import AsyncAnthropic
+from anthropic.types.beta import BetaMessage
 from pydantic import BaseModel
 
 from .config import settings
-
-T = TypeVar("T", bound=BaseModel)
 
 # Server-side refusal fallback: if a safety classifier declines, the API re-runs the request on Anthropic's
 # recommended fallback model inside the same call. "default" routes by refusal category. Remove these two
@@ -4103,7 +4107,7 @@ def cached_system(text: str) -> list[dict]:
     return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
 
 
-async def parse(
+async def parse[T: BaseModel](
     schema: type[T],
     *,
     system: str,
@@ -4113,7 +4117,10 @@ async def parse(
     model: str | None = None,
 ) -> T:
     """Structured output validated into `schema`. Claude Opus 5.5 always thinks; `effort` sets the depth."""
-    resp = await client.beta.messages.parse(
+    # The SDK validates every text block eagerly, which raises a bare ValidationError on truncated output and on
+    # the declined model's partial text before a fallback block. Read the unparsed message instead, branch on
+    # stop_reason, then validate only the final answer (see DECISIONS D-012).
+    raw = await client.beta.messages.with_raw_response.parse(
         model=model or settings.reasoning_model,
         max_tokens=max_tokens,
         system=cached_system(system),
@@ -4123,12 +4130,23 @@ async def parse(
         betas=[FALLBACK_BETA],
         fallbacks="default",
     )
+    resp = BetaMessage.model_validate(raw.http_response.json())
     if resp.stop_reason == "refusal":
         category = getattr(resp.stop_details, "category", None) if resp.stop_details else None
         raise LLMRefusal(f"{schema.__name__} refused (category={category})")
     if resp.stop_reason == "max_tokens":
         raise LLMTruncated(f"{schema.__name__} hit max_tokens={max_tokens}")
-    return resp.parsed_output
+    return schema.model_validate_json(_final_text(resp.content))
+
+
+def _final_text(content: list) -> str:
+    texts: list[str] = []
+    for block in content:
+        if block.type == "fallback":
+            texts = []                       # keep only text produced after the last hand-off
+        elif block.type == "text":
+            texts.append(block.text)
+    return "".join(texts)
 
 
 async def stream_text(
@@ -4163,13 +4181,7 @@ async def stream_text(
 
     if final.stop_reason == "refusal":
         raise LLMRefusal("debate turn refused")
-    texts: list[str] = []
-    for block in final.content:
-        if block.type == "fallback":
-            texts = []                       # keep only text produced after the last hand-off
-        elif block.type == "text":
-            texts.append(block.text)
-    return "".join(texts)
+    return _final_text(final.content)
 ```
 
 #### 3.5.3 `app/agents/events.py`: custom stream events
