@@ -80,11 +80,11 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* the prompt modules import; a test asserts every citation form in `COMMITTEE_SYSTEM` matches `CITATION_RE`.
 - [x] **B05 — Scoring: metrics + school rubric** · §3.6.1–3.6.2 · Deps: B02 — done by Aron via Claude Code, 2026-10-24
   *Done when:* tests cover GPA normalization, the tier→EC anchor, every grade guardrail (§3.10 "Grade guardrails") and C7 → pillar weights.
-- [ ] **B06 — Probability, counterfactuals, what-if** · §3.6.3–3.6.4, §4.6 · Deps: B05
+- [x] **B06 — Probability, counterfactuals, what-if** · §3.6.3–3.6.4, §4.6 · Deps: B05 — done by Aron via Claude Code, 2026-10-24
   *Done when:* §3.10 tests pass (monotonicity, waterfall within 0.5 pp, `cf.overrides` reproducing `p_new` exactly); `db.major_arbitrage` is mocked.
-- [ ] **B07 — Supabase helpers + web research** · §3.5.4–3.5.5, §4.3 (`db.py` additions), §4.4 (school cache) · Deps: B01
+- [x] **B07 — Supabase helpers + web research** · §3.5.4–3.5.5, §4.3 (`db.py` additions), §4.4 (school cache) · Deps: B01 — done by Aron via Claude Code, 2026-10-24
   *Done when:* functions are unit-tested with a mocked client; with A03 available, `match_twins` hits the real RPC.
-- [ ] **B08 — Node 1: dossier parser + rubric grader** · §3.7.1 · Deps: B04, B05, S02
+- [x] **B08 — Node 1: dossier parser + rubric grader** · §3.7.1 · Deps: B04, B05, S02 — done by Aron via Claude Code, 2026-10-24
   *Done when:* guardrail and redaction tests pass; a real run on Maya's dossier (D01) produces a sensible `DossierGrade`, or the report notes "not run" without keys.
 - [ ] **B09 — Node 2: institutional + Zetaris SQL tool** · §3.7.2, §2.10.7 · Deps: B04, B05, B07, A13 (fallback until then: `ZETARIS_ENABLED=false`)
   *Done when:* the tool loop is tested with a mocked client (budget of 3, `is_error` on rejected SQL); a real run emits `zetaris_queries`.
@@ -113,19 +113,19 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 
 - [x] **C01 — Next.js scaffold + design tokens** · §5.1–5.3 · Deps: none — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* `pnpm build` passes; the tokens, the 4 fonts and the shadcn components from §5.3 are installed; routes exist as stubs.
-- [ ] **C02 — Types, API client, store, stream (CONTRACT)** · §5.4 · Deps: C01, B02
+- [x] **C02 — Types, API client, store, stream (CONTRACT)** · §5.4 · Deps: C01, B02 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* `tsc --noEmit` passes; reducer unit tests cover idempotent replay (`seq ≤ lastSeq` ignored) and token batching.
-- [ ] **C03 — War Room shell, top bar, pipeline stepper, tool ticker** · §5.8, §5.2, §5.5.3 (ticker notes) · Deps: C02, B03
+- [x] **C03 — War Room shell, top bar, pipeline stepper, tool ticker** · §5.8, §5.2, §5.5.3 (ticker notes) · Deps: C02, B03 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* `/room/<id>` driven by the fake SSE shows the 3-column layout, live stepper states and tool chips. **H6 milestone (with C04/C05 skeletons).**
-- [ ] **C04 — Committee room** · §5.5 · Deps: C03
+- [x] **C04 — Committee room** · §5.5 · Deps: C03 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* streaming bubbles render citations without flashing raw `[[…`; the stamp lands; cross-panel highlight fires on chip hover; the Zetaris chip shows SQL.
-- [ ] **C05 — Dossier panel** · §5.7 · Deps: C03
+- [x] **C05 — Dossier panel** · §5.7 · Deps: C03 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* the metrics strip, Harvard scorecard flip-in, tier tags and reader note render from fake-SSE data.
-- [ ] **C06 — Intake wizard** · §5.8, §5.7.2 (dropzone) · Deps: C02, B03
+- [x] **C06 — Intake wizard** · §5.8, §5.7.2 (dropzone) · Deps: C02, B03 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* the 4-step wizard posts multipart to `/api/evaluate` and routes to the room; the 413/415/429 errors show toasts.
-- [ ] **C07 — School tabs, child runs, degraded states, data-fabric drawer** · §5.8, §5.9 · Deps: C04, B13
+- [x] **C07 — School tabs, child runs, degraded states, data-fabric drawer** · §5.8, §5.9 · Deps: C04, B13 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* switching tabs starts a child run (Node 1 skipped); degraded nodes show amber rings; the drawer lists Zetaris queries.
-- [ ] **C08 — Responsive, projector mode, accessibility, performance** · §5.2, §5.10 · Deps: C04–C07
+- [x] **C08 — Responsive, projector mode, accessibility, performance** · §5.2, §5.10 · Deps: C04–C07 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* the tabs layout works below 1440 px; `?projector=1` works; reduced motion is honored; Lighthouse accessibility ≥ 90 on the room page.
 
 ## D: Viz, Demo & Integration

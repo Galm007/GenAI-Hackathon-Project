@@ -124,7 +124,20 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - Fixed in the plan too (§4.4): `_active_sessions.add` moved from `_drive` into `start()`. In the plan's version two quick submits from one session both passed `_admit` before the task started, so the second ran (and billed) a duplicate. `sse_frames` binds `i` as a lambda default (ruff B023; same behavior).
 - Impact on other tracks: C/D can build against `POST /api/evaluate` → `/stream` (the real path) or `/api/dev/fake-stream`. The envelope and event names follow §1.6/§4.2 unchanged.
 
-## D-014 — Track D charts use the planned static-data fallback until C02 lands
+## D-014 — Probability waterfall and interval stay consistent at the clamps
+- Step: B06 · Date: 2026-10-24 · By: Aron via Claude Code (small and obvious fixes, AGENTS.md §7)
+- Plan said (§3.6.3): the twins component is `p_final − p_model`, where `p_model` is `sigmoid(L)` clamped to [0.005, 0.97]; `p_low`/`p_high` are the raw posterior percentiles.
+- Found (tests/test_probability.py): when `p_model` hits a clamp (e.g. base 0.80, ×2.0 multiplier, strong ratings), the bars before twins sum to the unclamped `sigmoid(L)`, so the waterfall missed `p_final` by 1.5 pp, failing §3.10 "Waterfall integrity" (≤ 0.5 pp). The interval was also unclamped, so the UI could show "up to 99.96%" next to a capped 97% or a 0% lower bound.
+- We did: the twins bar is measured from the last bar (`p_final − sigmoid(L)`, `logit(p_final) − L`), which is identical to the plan whenever no clamp fires; `p_low`/`p_high` are clamped to [P_FLOOR, P_CEIL]. `with_overrides` lost its quoted annotation (ruff UP037). Plan §3.6.3 synced. Counterfactual reproducibility is unaffected.
+- Not in this step: the `/api/what-if` route itself. `run_what_if` is done and tested with a stand-in context, but the route needs `RunManager.scoring_context` (deferred in D-013 until db/zetaris land). `counterfactuals.py` keeps the plan's `from app import db`; the tests register a placeholder `app.db` until B07 and mock `major_arbitrage`.
+
+## D-015 — `app/agents/state.py` (§3.2) lands with B08
+- Step: B08 · Date: 2026-10-24 · By: Aron via Claude Code
+- Gap: no roadmap step lists §3.2, but every node imports `AdComState` from `app/agents/state.py`.
+- We did: added `state.py` verbatim from §3.2 in B08, its first consumer (all of its imports exist after B02/B06). No other change.
+- Also noted, not changed: the plan's `PHONE` regex starts at the first digit, so "(217) 555-0142" redacts to "([phone]". The number is fully removed; only the opening parenthesis remains, so it was left as written.
+
+## D-016 — Track D charts use the planned static-data fallback until C02 lands
 - Step: D02 · Date: 2026-10-24 · By: gridiii via Codex
 - Plan: section 5.6 examples read the C02 store; section 6.2 explicitly schedules Track D charts against static JSON while C builds that store.
 - We did: implement prop-driven gauge and waterfall components and an isolated `/dev/analytics` preview. Component input fields remain structurally compatible with the Python outputs. No shared type, store, existing route, backend, or original scripted fixture was changed. C02 can pass its data and highlight directly when ready.
@@ -132,7 +145,7 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - Verified: four arithmetic/edge-case tests, lint, TypeScript, production build, and browser checks for baseline, simulation, loading, evidence details, and model highlighting.
 - Impact: D02's component-specific fixture acceptance checks are complete. Live store wiring and the integrated War Room remain pending C02/C03; their checkboxes stay unchanged.
 
-## D-015 — Radar and twin cards follow the same isolated Track D boundary
+## D-017 — Radar and twin cards follow the same isolated Track D boundary
 - Step: D03 · Date: 2026-10-24 · By: gridiii via Codex
 - Plan: section 5.6.3-5.6.4 uses shared store and dossier components that do not exist yet; section 6.2 schedules radar/cards on static data first.
 - We did: accept compatible presentation props, render a truly dashed and labeled assumed Personal spoke, and add accessible expandable cards with citation-index highlighting and a pulse. Tier labels live inside the card, avoiding changes to Track C. Missing radar comparisons are omitted visibly rather than converted to zero. Missing source links remain unavailable, and usable links must be credential-free HTTPS.
@@ -140,6 +153,8 @@ Append one entry whenever a commit deviates from the plan (a renamed field, a sw
 - Verified: seven helper/edge-case tests, lint, TypeScript, production build, keyboard expansion, loading and missing-score states, one dashed assumed spoke, one highlighted card, and no production-browser console errors. Tooltip and raw-number formatting were visually reviewed.
 - Impact: D03's sample-data acceptance checks are complete; live C02/C03 wiring is still pending. Implementation commits stay local at the human's request; a separate documentation-only branch reports that distinction.
 
-### D-015 publication update (2026-10-24)
+### D-017 publication update (2026-10-24)
 - gridiii subsequently authorized publishing the implementation commits to `gridiii/d01-demo-dossiers` only. This supersedes the local-only publication instruction above. Shared `main`, other tracks' source files, and the earlier documentation-only branch remain unchanged.
 - The local setup audit is recorded in `docs/gridiii-setup-status.md`. No additional implementation step is claimed complete by publishing the branch.
+
+Publication note: Track D entries originally numbered D-014/D-015 were renumbered D-016/D-017 while merging the newer Track B entries, preserving both tracks’ decisions.
