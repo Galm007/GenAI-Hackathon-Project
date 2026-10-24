@@ -187,3 +187,8 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Zetaris occupies port 3000, while the local web app uses 3001 and the API's default CORS allows only 3000. The web now defaults to relative API URLs and rewrites `/api/*` to the server-side `ADCOM_API_URL` origin (local default port 8000). Explicit `NEXT_PUBLIC_API_URL` remains supported for deployments using direct API access and configured CORS.
 - Added the Vercel web settings, frontend environment example and deployment handoff. No private keys are exposed in frontend configuration; no public tunnel, cloud resource or account was created. The Next tracing root is pinned to the web project, removing the unrelated home-directory lockfile warning.
 - D08 remains open: the user does not yet know the hosting project, B16/live graph are unfinished, and no hosted live run from a phone was verified. A production deployment is not claimed from a local build.
+
+## D-023 — Pitch and data disclosure distinguish verified metrics from fixtures
+- Step: D09 preparation · Date: 2026-10-24 · By: gridiii via Codex.
+- Added an accessible About-the-data panel and `data/data-report.json`. Unknown real corpus, coverage and calibration results remain null and display "Not verified yet". The landing page's unsupported 10,000+ applicant claim was removed; a direct fictional-demo link was added.
+- `docs/pitch.md` is a complete rehearsal script for the current prototype, with calculated fixture figures labeled illustrative and all live proof gates explicit. It does not present an authored replay as a live provider run. D09 remains open until A15/A16 deliver real figures and the final live pitch can be verified.

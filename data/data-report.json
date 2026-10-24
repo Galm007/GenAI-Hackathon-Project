@@ -1,0 +1,10 @@
+{
+  "status": "unavailable",
+  "verified_at": null,
+  "n_twins": null,
+  "n_schools": null,
+  "n_cds_schools": null,
+  "brier": null,
+  "brier_base": null,
+  "notes": "Team dataset and backtest have not been verified. Fictional replay counts are excluded."
+}

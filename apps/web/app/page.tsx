@@ -1,4 +1,5 @@
 import { IntakeWizard } from "@/components/intake/IntakeWizard";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -13,11 +14,12 @@ export default function Home() {
             Autonomous Admissions Committee
           </h1>
           <p className="max-w-2xl text-base sm:text-lg text-[var(--color-muted)]">
-            A real selection meeting simulator powered by multi-agent debate, empirical institutional data, and 10,000+ historical applicant twins.
+            Explore how an admissions committee could read your application, discuss the evidence, and compare possible next steps.
           </p>
         </header>
 
         <IntakeWizard />
+        <Link href="/room/demo/maya-uiuc" className="inline-flex items-center gap-2 rounded-full border border-[var(--color-advocate)]/30 bg-[var(--color-advocate)]/10 px-5 py-2.5 text-sm text-[var(--color-ink)] transition hover:bg-[var(--color-advocate)]/20">Explore the fictional demo <span aria-hidden="true">↗</span></Link>
       </div>
     </main>
   );

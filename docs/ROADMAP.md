@@ -157,6 +157,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Prepared by gridiii via Codex, 2026-10-24: Vercel web config, same-origin API proxy, frontend environment example and deployment handoff. Local proxy/replay verified. Actual Vercel/API hosting, B16 and a live phone run remain unavailable, so this gate stays open.
 - [ ] **D09 — Pitch assets** · §5.9 ("About the data"), §7.5 · Deps: A15, A16
   *Done when:* the About-the-data modal shows real numbers, and `docs/pitch.md` has every §7.5 placeholder filled from real data (never invented).
+  Prepared by gridiii via Codex, 2026-10-24: accessible data disclosure, report manifest, three-minute prototype pitch and rehearsal notes. Real corpus/coverage/calibration fields remain explicitly unverified, so A15/A16-dependent acceptance stays open.
 - [ ] **D10 — Meterless judging evidence** · §1.7, §7.4 · Deps: B17, B18, D07
   *Done when:* a short recorded demo shows the app, its Meterless provider connection, and one real request through Nightshift answered by a Nemotron lane (all keys and tokens hidden), plus the World Model conformance scorecard.
 
