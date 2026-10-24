@@ -76,7 +76,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* `curl -N` on the fake stream shows `id:`/`event:` frames, and reconnecting with `Last-Event-ID` resumes without duplicates. **This unblocks Tracks C and D (target H4).**
 - [x] **B04 — System prompts** · §3.4.2–3.4.6 · Deps: B02, S02 — done by Aron via Claude Code, 2026-10-24
   *Done when:* the prompt modules import; a test asserts every citation form in `COMMITTEE_SYSTEM` matches `CITATION_RE`.
-- [ ] **B05 — Scoring: metrics + school rubric** · §3.6.1–3.6.2 · Deps: B02
+- [x] **B05 — Scoring: metrics + school rubric** · §3.6.1–3.6.2 · Deps: B02 — done by Aron via Claude Code, 2026-10-24
   *Done when:* tests cover GPA normalization, the tier→EC anchor, every grade guardrail (§3.10 "Grade guardrails") and C7 → pillar weights.
 - [ ] **B06 — Probability, counterfactuals, what-if** · §3.6.3–3.6.4, §4.6 · Deps: B05
   *Done when:* §3.10 tests pass (monotonicity, waterfall within 0.5 pp, `cf.overrides` reproducing `p_new` exactly); `db.major_arbitrage` is mocked.

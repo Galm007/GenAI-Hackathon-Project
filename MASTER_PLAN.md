@@ -4379,8 +4379,7 @@ from __future__ import annotations
 import math
 from statistics import mean
 
-from app.schemas.dossier import (ActivityGrade, ComputedMetrics, Course, DossierGrade, ParsedDossier,
-                                 PillarRating)
+from app.schemas.dossier import ActivityGrade, ComputedMetrics, Course, DossierGrade, ParsedDossier, PillarRating
 from app.schemas.inputs import RawApplicantInputs
 
 LETTER_POINTS = {"A+": 4.0, "A": 4.0, "A-": 3.7, "B+": 3.3, "B": 3.0, "B-": 2.7, "C+": 2.3, "C": 2.0,
@@ -4404,7 +4403,7 @@ def normalize_gpa(courses: list[Course]) -> tuple[float | None, float | None]:
     if len(graded) < 6:
         return None, None
     uw = [LETTER_POINTS[c.letter_grade] for c in graded]
-    w = [min(5.0, p + (LEVEL_BONUS[c.level] if p >= 2.0 else 0.0)) for c, p in zip(graded, uw)]
+    w = [min(5.0, p + (LEVEL_BONUS[c.level] if p >= 2.0 else 0.0)) for c, p in zip(graded, uw, strict=True)]
     return round(mean(uw), 2), round(mean(w), 2)
 
 
