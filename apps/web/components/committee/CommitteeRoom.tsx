@@ -1,111 +1,131 @@
 "use client";
 
-import { useActiveRun } from "@/store/run-store";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { DebateBubble } from "./DebateBubble";
+import { RecommendationStamp } from "./RecommendationStamp";
+import { FactCheckStrip } from "./FactCheckStrip";
 import { ToolTicker } from "@/components/room/ToolTicker";
-import { Badge } from "@/components/ui/badge";
-import { Users, AlertCircle } from "lucide-react";
+import { useActiveRun, type RunView } from "@/store/run-store";
 import { schoolName } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+const VOICE_NAMES = {
+  advocate: "Regional Admissions Officer",
+  chair: "Committee Chair",
+};
+
+function TypingIndicator({ speaker }: { speaker: "advocate" | "chair" }) {
+  const name = VOICE_NAMES[speaker];
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-1.5 rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3.5 py-2 text-xs text-[var(--color-muted)]",
+        speaker === "advocate" ? "self-start" : "self-end"
+      )}
+    >
+      <span>{name} is thinking</span>
+      <div className="flex items-center gap-1 ml-1">
+        {[0, 1, 2].map((i) => (
+          <motion.span
+            key={i}
+            className="h-1.5 w-1.5 rounded-full bg-[var(--color-advocate)]"
+            animate={{ opacity: [0.2, 1, 0.2] }}
+            transition={{ repeat: Infinity, duration: 1, delay: i * 0.15 }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PreMeeting({ run }: { run: RunView }) {
+  const lines = Object.entries(run.progress);
+
+  return (
+    <div className="mx-auto my-auto max-w-md space-y-3 text-center text-sm text-[var(--color-muted)]">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-panel-2)] text-[var(--color-advocate)]">
+        <span className="font-display text-lg font-bold">AdCom</span>
+      </div>
+      <p className="font-display text-lg text-[var(--color-ink)]">
+        The committee is assembling.
+      </p>
+      {lines.map(([node, msg]) => (
+        <motion.p
+          key={node}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-xs font-mono text-[var(--color-advocate)]"
+        >
+          ⚙ {msg}
+        </motion.p>
+      ))}
+    </div>
+  );
+}
 
 export function CommitteeRoom() {
-  const rubric = useActiveRun((r) => r.rubric);
-  const schoolSlug = useActiveRun((r) => r.schoolSlug);
-  const debate = useActiveRun((r) => r.debate);
-  const status = useActiveRun((r) => r.status);
-  const nodes = useActiveRun((r) => r.nodes);
-  const progress = useActiveRun((r) => r.progress);
+  const run = useActiveRun((r) => r);
+  const scroller = useRef<HTMLDivElement>(null);
+  const pinned = useRef(true); // auto-scroll unless user scrolled up
 
-  const displaySchool = rubric?.name ?? (schoolSlug ? schoolName(schoolSlug) : "UIUC");
-  const majorDetail = rubric?.major_college ?? rubric?.major_category?.replaceAll("_", " ") ?? "Computer Science";
+  useEffect(() => {
+    const el = scroller.current;
+    if (el && pinned.current) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [run.debate, run.progress]);
+
+  const last = run.debate.at(-1);
+  const final = run.debate.find((t) => t.recommendation)?.recommendation;
+
+  const displaySchool =
+    run.rubric?.name ?? (run.schoolSlug ? schoolName(run.schoolSlug) : "UIUC");
+  const majorDetail =
+    run.rubric?.major_college ??
+    run.rubric?.major_category?.replaceAll("_", " ") ??
+    "Admissions Review";
 
   return (
     <section className="flex h-full flex-col bg-[var(--color-room)]">
-      {/* Header with Title and ToolTicker */}
-      <header className="border-b border-[var(--color-line)] bg-[var(--color-panel)] px-6 py-4">
+      <header className="border-b border-[var(--color-line)] bg-[var(--color-panel)] px-6 py-3.5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display text-lg font-bold text-[var(--color-ink)] flex items-center gap-2">
-              <Users className="h-4 w-4 text-[var(--color-advocate)]" />
+            <h2 className="font-display text-xl font-bold text-[var(--color-ink)]">
               Committee Room · {displaySchool}
             </h2>
             <p className="text-xs text-[var(--color-muted)]">
-              {majorDetail} · CDS {rubric ? "loaded" : "loading"}
+              {majorDetail} · CDS {run.rubric ? "loaded" : "loading"}
             </p>
           </div>
-          <Badge
-            variant="outline"
-            className={`text-xs ${
-              status === "complete"
-                ? "border-[var(--color-admit)] text-[var(--color-admit)]"
-                : "border-[var(--color-advocate)] text-[var(--color-advocate)] animate-pulse"
-            }`}
-          >
-            {status === "complete" ? "Adjourned" : "In Session"}
-          </Badge>
         </div>
 
-        {/* Live tool ticker */}
         <ToolTicker />
+        <FactCheckStrip />
       </header>
 
-      {/* Main Debate Area */}
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
-        {debate.length === 0 ? (
-          <div className="mx-auto my-auto max-w-md space-y-3 text-center text-sm text-[var(--color-muted)]">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-panel-2)] text-[var(--color-advocate)]">
-              <Users className="h-6 w-6" />
-            </div>
-            <p className="font-display text-lg text-[var(--color-ink)]">
-              The committee is assembling.
-            </p>
-            <p className="text-xs">
-              Regional Advocate and Committee Chair are reviewing the file and institutional evidence.
-            </p>
-            {Object.entries(progress).map(([node, msg]) => (
-              <p key={node} className="text-xs font-mono text-[var(--color-advocate)]">
-                ⚙ {msg}
-              </p>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {debate.map((turn) => {
-              const isAdvocate = turn.speaker === "advocate";
-              return (
-                <div
-                  key={turn.turn}
-                  className={`flex flex-col gap-1 rounded-xl border p-4 ${
-                    isAdvocate
-                      ? "border-[var(--color-advocate)]/30 bg-[var(--color-advocate)]/5 self-start mr-12"
-                      : "border-[var(--color-chair)]/30 bg-[var(--color-chair)]/5 self-end ml-12"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span
-                      className={
-                        isAdvocate
-                          ? "text-[var(--color-advocate)]"
-                          : "text-[var(--color-chair)]"
-                      }
-                    >
-                      {isAdvocate ? "(R) Regional AO · Advocate" : "(C) Committee Chair · Skeptic"}
-                    </span>
-                    {turn.recommendation && (
-                      <Badge variant="outline" className="text-[10px]">
-                        {turn.recommendation}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm leading-relaxed text-[var(--color-ink)] whitespace-pre-wrap">
-                    {turn.content}
-                    {turn.streaming && (
-                      <span className="inline-block w-1.5 h-4 ml-1 bg-[var(--color-advocate)] animate-pulse align-middle" />
-                    )}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+      <div
+        ref={scroller}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        }}
+        className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-6"
+      >
+        {run.debate.length === 0 && <PreMeeting run={run} />}
+
+        <AnimatePresence initial={false}>
+          {run.debate.map((t) => (
+            <DebateBubble key={t.turn} turn={t} run={run} />
+          ))}
+        </AnimatePresence>
+
+        {last?.streaming && last.content === "" && (
+          <TypingIndicator speaker={last.speaker} />
         )}
+
+        {final && <RecommendationStamp value={final} />}
       </div>
     </section>
   );

@@ -1,10 +1,11 @@
 "use client";
 
-import { useActiveRun } from "@/store/run-store";
+import { useActiveRun, useRunStore } from "@/store/run-store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Target, History, Sparkles } from "lucide-react";
 import { pct, pp } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export function AnalyticsPanel() {
   const probability = useActiveRun((r) => r.probability);
@@ -12,6 +13,7 @@ export function AnalyticsPanel() {
   const baseline = useActiveRun((r) => r.baseline);
   const counterfactuals = useActiveRun((r) => r.counterfactuals);
   const nodes = useActiveRun((r) => r.nodes);
+  const highlight = useRunStore((s) => s.highlight);
 
   const isDocketsLoading = nodes.committee_docket !== "done";
 
@@ -110,35 +112,44 @@ export function AnalyticsPanel() {
         </div>
         {twins.length > 0 ? (
           <div className="space-y-2 text-xs">
-            {twins.map((t) => (
-              <div
-                key={t.id}
-                className="flex items-center justify-between rounded border border-[var(--color-line)] bg-[var(--color-panel)] p-2.5"
-              >
-                <div>
-                  <div className="font-semibold text-[var(--color-ink)] flex items-center gap-1.5">
-                    <span
-                      className={
-                        t.outcome === "accepted"
-                          ? "text-[var(--color-admit)]"
-                          : t.outcome === "waitlisted"
-                          ? "text-[var(--color-waitlist)]"
-                          : "text-[var(--color-deny)]"
-                      }
-                    >
-                      {t.outcome === "accepted" ? "✓" : t.outcome === "waitlisted" ? "◐" : "✕"}
-                    </span>
-                    <span>Twin #{t.index}</span>
+            {twins.map((t) => {
+              const isHighlighted =
+                highlight?.kind === "twin" &&
+                (highlight.ref === String(t.index) || highlight.ref === t.id);
+              return (
+                <div
+                  key={t.id}
+                  className={cn(
+                    "flex items-center justify-between rounded border border-[var(--color-line)] bg-[var(--color-panel)] p-2.5 transition-all duration-200",
+                    isHighlighted &&
+                      "border-[var(--color-tier1)] bg-[var(--color-tier1)]/15 shadow-[0_0_15px_rgba(232,194,104,0.4)] ring-1 ring-[var(--color-tier1)] scale-[1.02]"
+                  )}
+                >
+                  <div>
+                    <div className="font-semibold text-[var(--color-ink)] flex items-center gap-1.5">
+                      <span
+                        className={
+                          t.outcome === "accepted"
+                            ? "text-[var(--color-admit)]"
+                            : t.outcome === "waitlisted"
+                            ? "text-[var(--color-waitlist)]"
+                            : "text-[var(--color-deny)]"
+                        }
+                      >
+                        {t.outcome === "accepted" ? "✓" : t.outcome === "waitlisted" ? "◐" : "✕"}
+                      </span>
+                      <span>Twin #{t.index}</span>
+                    </div>
+                    <div className="text-[10px] text-[var(--color-muted)] font-mono">
+                      GPA {t.gpa_uw?.toFixed(2) ?? "—"} · SAT {t.sat_score ?? "—"}
+                    </div>
                   </div>
-                  <div className="text-[10px] text-[var(--color-muted)] font-mono">
-                    GPA {t.gpa_uw?.toFixed(2) ?? "—"} · SAT {t.sat_score ?? "—"}
-                  </div>
+                  <Badge variant="outline" className="text-[10px] font-mono">
+                    {Math.round(t.hybrid_score * 100)}% match
+                  </Badge>
                 </div>
-                <Badge variant="outline" className="text-[10px] font-mono">
-                  {Math.round(t.hybrid_score * 100)}% match
-                </Badge>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-2">

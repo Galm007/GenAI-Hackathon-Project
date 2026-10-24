@@ -1,15 +1,17 @@
 "use client";
 
-import { useActiveRun } from "@/store/run-store";
+import { useActiveRun, useRunStore } from "@/store/run-store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Award, GraduationCap, PenTool } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function DossierPanel() {
   const dossier = useActiveRun((r) => r.dossier);
   const metrics = useActiveRun((r) => r.metrics);
   const grade = useActiveRun((r) => r.grade);
   const nodes = useActiveRun((r) => r.nodes);
+  const highlight = useRunStore((s) => s.highlight);
 
   const isLoading = nodes.dossier_parser === "running" || nodes.dossier_parser === "pending";
 
@@ -92,12 +94,24 @@ export function DossierPanel() {
               Activities & Extracurriculars
             </h3>
             <div className="space-y-2 pt-1 text-xs">
-              {dossier?.activities?.slice(0, 4).map((act, i) => (
-                <div key={i} className="rounded border border-[var(--color-line)] bg-[var(--color-panel)] p-2">
-                  <div className="font-medium text-[var(--color-ink)]">{act.name}</div>
-                  <div className="text-[11px] text-[var(--color-muted)] line-clamp-1">{act.description}</div>
-                </div>
-              )) ?? (
+              {dossier?.activities?.slice(0, 4).map((act, i) => {
+                const isHighlighted =
+                  highlight?.kind === "dossier" &&
+                  (highlight.ref === `activities.${i}` || highlight.ref === "activities");
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "rounded border border-[var(--color-line)] bg-[var(--color-panel)] p-2 transition-all duration-200",
+                      isHighlighted &&
+                        "border-[var(--color-advocate)] bg-[var(--color-advocate)]/15 shadow-[0_0_12px_rgba(76,125,255,0.4)] ring-1 ring-[var(--color-advocate)]"
+                    )}
+                  >
+                    <div className="font-medium text-[var(--color-ink)]">{act.name}</div>
+                    <div className="text-[11px] text-[var(--color-muted)] line-clamp-1">{act.description}</div>
+                  </div>
+                );
+              }) ?? (
                 <p className="text-xs text-[var(--color-muted)] italic">Awaiting dossier parsing...</p>
               )}
             </div>
