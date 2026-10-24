@@ -1,0 +1,60 @@
+[
+  {
+    "id": "cf_major_math_stats",
+    "kind": "major_switch",
+    "label": "Explore math & statistics",
+    "p_new": 0.4201,
+    "delta_pp": 8.33,
+    "confidence": "model_estimate",
+    "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+    "overrides": {
+      "major_multiplier": 1.12
+    }
+  },
+  {
+    "id": "cf_add_tier2",
+    "kind": "add_activity",
+    "label": "Build a Tier 2 activity",
+    "p_new": 0.3837,
+    "delta_pp": 4.69,
+    "confidence": "model_estimate",
+    "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+    "overrides": {
+      "ratings": {
+        "academic": 2.33,
+        "extracurricular": 1.5700000000000003,
+        "personal": 3.67,
+        "athletic": 4.0
+      }
+    }
+  },
+  {
+    "id": "cf_essay",
+    "kind": "essay",
+    "label": "Strengthen your personal essay",
+    "p_new": 0.3633,
+    "delta_pp": 2.65,
+    "confidence": "model_estimate",
+    "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+    "overrides": {
+      "ratings": {
+        "academic": 2.33,
+        "extracurricular": 2.67,
+        "personal": 2.67,
+        "athletic": 4.0
+      }
+    }
+  },
+  {
+    "id": "cf_sat_75",
+    "kind": "test_score",
+    "label": "Raise SAT to the school reference",
+    "p_new": 0.3379,
+    "delta_pp": 0.11,
+    "confidence": "model_estimate",
+    "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+    "overrides": {
+      "sat": 1530
+    }
+  }
+]

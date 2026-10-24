@@ -1,0 +1,38 @@
+{
+  "slug": "uiuc",
+  "name": "University of Illinois Urbana-Champaign",
+  "base_admit_rate": 0.44,
+  "ed_admit_rate": null,
+  "rd_admit_rate": null,
+  "pillar_weights": {
+    "academic": 0.55,
+    "extracurricular": 0.25,
+    "personal": 0.15,
+    "athletic": 0.05
+  },
+  "factor_levels": {
+    "rigor": "very_important",
+    "academic_gpa": "very_important",
+    "test_scores": "considered",
+    "essay": "important",
+    "extracurriculars": "important",
+    "applicant_interest": "not_considered"
+  },
+  "test_weight": 0.3,
+  "test_policy": "optional",
+  "sat_25": 1350,
+  "sat_75": 1530,
+  "hook_effects": {
+    "first_gen": 0.15
+  },
+  "residency_effect": 0.35,
+  "major_category": "computer_science",
+  "major_multiplier": 0.38,
+  "major_multiplier_source": "override",
+  "major_n": 0,
+  "major_college": "Grainger College of Engineering",
+  "direct_admit": true,
+  "notes": [
+    "Fictional fixture values for UI development."
+  ]
+}

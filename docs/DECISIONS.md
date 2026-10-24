@@ -163,3 +163,9 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Date: 2026-10-24 · By: gridiii via Codex · User scope: complete Track D, improve charts, and merge the verified result into main.
 - D04 keeps drafts and errors per run, debounces requests, aborts stale transports, and refuses late responses even if a transport ignores cancellation. One controller is mounted in WarRoom because its responsive layout mounts more than one analytics panel. The shared event/types/store contracts remain unchanged.
 - The current backend has deterministic what-if math but no HTTP route or live scoring context. Component lifecycle tests pass; D04's HTTP/browser acceptance is left open until replay integration is verified. Live graph, real data, hosting and Meterless evidence must not be claimed complete from fictional samples.
+
+## D-019 — Reproducible fictional fixtures use the scoring implementation
+- Step: D06 · Date: 2026-10-24 · By: gridiii via Codex.
+- The earlier hand-written stream's waterfall did not sum to its final probability. D06 now builds probabilities, intervals, dispositions and four counterfactuals through the real B06 scoring code. The original residual workaround in D-016 is superseded by these generated fixtures.
+- Per-schema inputs are explicitly fictional; B08 runs offline with the fixture provider. A four-turn, 100-event stream includes radar, complete dossier courses, accessible missing-source states and exact citation spans. Source URLs are absent rather than pointing to an unrelated subreddit listing.
+- The full War Room runs without provider keys using the plan's hand-written fallback. It is not a live graph recording, corpus validation, or partner judging evidence. A real graph recording remains a release gate after B13/B14. Shared store tests were adjusted for the new four-turn fixture; the analytics tests now use the team's Vitest runner.

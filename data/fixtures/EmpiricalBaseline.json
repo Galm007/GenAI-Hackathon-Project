@@ -1,0 +1,17 @@
+{
+  "n_neighbors": 40,
+  "n_accepted": 14,
+  "n_waitlisted": 4,
+  "n_rejected": 22,
+  "n_effective": 31.5,
+  "weighted_admit_rate": 0.36,
+  "wilson_low": 0.23,
+  "wilson_high": 0.51,
+  "odds_inflation": 2.4,
+  "deflated_admit_rate": 0.19,
+  "widened_to_peers": false,
+  "peer_schools": [],
+  "sum_w": 33.1,
+  "sum_w2": 34.8,
+  "sum_w_admit": 11.9
+}

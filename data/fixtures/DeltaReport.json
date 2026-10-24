@@ -1,0 +1,30 @@
+{
+  "headline_verdict": "A strong CS applicant held back by the major cap, not by her profile.",
+  "committee_disposition": "WAITLIST",
+  "ranked_pivots": [
+    {
+      "counterfactual_id": "cf_major_math_stats",
+      "title": "Apply through math & statistics",
+      "why_it_works": "The fictional scenario uses a less restrictive major multiplier; it does not establish a real admission advantage.",
+      "concrete_steps": [
+        "Check transfer-into-CS rules",
+        "Reframe the essay around modeling"
+      ],
+      "effort": "days",
+      "tradeoffs": "Moving into CS later is not guaranteed."
+    }
+  ],
+  "major_arbitrage_note": "Choose an alternative major only if it fits your interests. Verify curriculum and internal-transfer rules with the university.",
+  "essay_adjustments": [
+    {
+      "issue": "Generic ending",
+      "current_excerpt": "In the end, I learned a lot.",
+      "direction": "End on what she will build next.",
+      "example_rewrite": "Next I want to make the classifier run on a $30 phone."
+    }
+  ],
+  "risks_to_watch": [
+    "Major cap can change year to year"
+  ],
+  "disclaimer": "An estimate from public data, not a prediction of any admissions decision."
+}

@@ -1,0 +1,118 @@
+{
+  "scoring_inputs": {
+    "base_admit_rate": 0.44,
+    "major_multiplier": 0.38,
+    "pillar_weights": {
+      "academic": 0.55,
+      "extracurricular": 0.25,
+      "personal": 0.15,
+      "athletic": 0.05
+    },
+    "ratings": {
+      "academic": 2.33,
+      "extracurricular": 2.67,
+      "personal": 3.67,
+      "athletic": 4.0
+    },
+    "test_weight": 0.3,
+    "test_policy": "optional",
+    "sat": 1520,
+    "sat_25": 1350,
+    "sat_75": 1530,
+    "hooks": [],
+    "hook_effects": {},
+    "residency_effect": 0.35,
+    "early_round": "EA",
+    "ed_admit_rate": null,
+    "rd_admit_rate": null,
+    "ea_admit_rate": null,
+    "applicant_interest_weight": 0.0,
+    "demonstrated_interest": false,
+    "twin_sum_w": 33.1,
+    "twin_sum_w2": 34.8,
+    "twin_sum_w_admit": 11.9,
+    "odds_inflation": 2.4
+  },
+  "major_category": "computer_science",
+  "school": {
+    "slug": "uiuc",
+    "name": "University of Illinois Urbana-Champaign",
+    "early_plans": {
+      "ea": true
+    },
+    "major_competitiveness": {
+      "computer_science": {
+        "multiplier": 0.38
+      },
+      "math_stats": {
+        "multiplier": 1.12
+      }
+    }
+  },
+  "tiers": [
+    2,
+    3,
+    4
+  ],
+  "has_recommendations": false,
+  "counterfactuals": [
+    {
+      "id": "cf_major_math_stats",
+      "kind": "major_switch",
+      "label": "Explore math & statistics",
+      "p_new": 0.4201,
+      "delta_pp": 8.33,
+      "confidence": "model_estimate",
+      "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+      "overrides": {
+        "major_multiplier": 1.12
+      }
+    },
+    {
+      "id": "cf_add_tier2",
+      "kind": "add_activity",
+      "label": "Build a Tier 2 activity",
+      "p_new": 0.3837,
+      "delta_pp": 4.69,
+      "confidence": "model_estimate",
+      "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+      "overrides": {
+        "ratings": {
+          "academic": 2.33,
+          "extracurricular": 1.5700000000000003,
+          "personal": 3.67,
+          "athletic": 4.0
+        }
+      }
+    },
+    {
+      "id": "cf_essay",
+      "kind": "essay",
+      "label": "Strengthen your personal essay",
+      "p_new": 0.3633,
+      "delta_pp": 2.65,
+      "confidence": "model_estimate",
+      "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+      "overrides": {
+        "ratings": {
+          "academic": 2.33,
+          "extracurricular": 2.67,
+          "personal": 2.67,
+          "athletic": 4.0
+        }
+      }
+    },
+    {
+      "id": "cf_sat_75",
+      "kind": "test_score",
+      "label": "Raise SAT to the school reference",
+      "p_new": 0.3379,
+      "delta_pp": 0.11,
+      "confidence": "model_estimate",
+      "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+      "overrides": {
+        "sat": 1530
+      }
+    }
+  ]
+}

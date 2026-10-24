@@ -1,0 +1,81 @@
+{
+  "major_category": "computer_science",
+  "rigor_label": "most_demanding",
+  "activity_grades": [
+    {
+      "activity_index": 0,
+      "rationale": "National-level qualifier with sustained leadership.",
+      "tier": 2,
+      "spike_role": "core"
+    },
+    {
+      "activity_index": 1,
+      "rationale": "Self-directed project with a regional showing.",
+      "tier": 3,
+      "spike_role": "supporting"
+    },
+    {
+      "activity_index": 2,
+      "rationale": "Consistent local service.",
+      "tier": 4,
+      "spike_role": "peripheral"
+    }
+  ],
+  "spike": {
+    "label": "Competitive programming → applied ML",
+    "description": "Algorithms depth that is starting to turn into applied projects.",
+    "strength": "moderate"
+  },
+  "essay": {
+    "themes": [
+      "teaching",
+      "curiosity"
+    ],
+    "voice": "competent",
+    "strengths": [
+      "clear structure"
+    ],
+    "weaknesses": [
+      "ending summarizes instead of reflecting"
+    ],
+    "red_flags": [],
+    "strongest_line": null
+  },
+  "harvard": {
+    "academic": {
+      "rationale": "Top rigor and near-perfect grades; SAT at the school's 75th percentile.",
+      "evidence": [
+        "metrics.gpa_uw_4",
+        "courses",
+        "test_scores"
+      ],
+      "rating": 2,
+      "modifier": "-"
+    },
+    "extracurricular": {
+      "rationale": "One national-level activity with leadership.",
+      "evidence": [
+        "activities.0",
+        "awards.0"
+      ],
+      "rating": 3,
+      "modifier": "+"
+    },
+    "personal": {
+      "rationale": "Warm but conventional essay; no recommendation provided.",
+      "evidence": [
+        "essay"
+      ],
+      "rating": 4,
+      "modifier": "+"
+    },
+    "athletic": {
+      "rationale": "No athletics listed.",
+      "evidence": [],
+      "rating": 4,
+      "modifier": ""
+    }
+  },
+  "reader_comments": "Strong academic CS applicant with a moderate spike. Needs more evidence of impact beyond competitions to stand out in Grainger.",
+  "grader_warnings": []
+}

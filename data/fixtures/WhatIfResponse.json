@@ -1,0 +1,196 @@
+{
+  "baseline": {
+    "p_final": 0.3368,
+    "p_low": 0.2328,
+    "p_high": 0.4454,
+    "p_model": 0.5823,
+    "base_admit_rate": 0.44,
+    "components": [
+      {
+        "key": "base",
+        "label": "School admit rate",
+        "delta_logit": 0.0,
+        "delta_pp": 44.0,
+        "detail": "Overall admit rate 44.0%"
+      },
+      {
+        "key": "major",
+        "label": "Major competitiveness",
+        "delta_logit": -0.9676,
+        "delta_pp": -21.01,
+        "detail": "multiplier ×0.38"
+      },
+      {
+        "key": "academic",
+        "label": "Academic rating",
+        "delta_logit": 0.737,
+        "delta_pp": 15.43,
+        "detail": "rating 2.33 vs pool 3.0, school weight 0.55"
+      },
+      {
+        "key": "extracurricular",
+        "label": "Extracurricular rating",
+        "delta_logit": 0.415,
+        "delta_pp": 10.16,
+        "detail": "rating 2.67 vs pool 3.5, school weight 0.25"
+      },
+      {
+        "key": "personal",
+        "label": "Personal rating",
+        "delta_logit": -0.051,
+        "delta_pp": -1.27,
+        "detail": "rating 3.67 vs pool 3.5, school weight 0.15"
+      },
+      {
+        "key": "athletic",
+        "label": "Athletic rating",
+        "delta_logit": 0.0,
+        "delta_pp": 0.0,
+        "detail": "rating 4.00 vs pool 4.0, school weight 0.05"
+      },
+      {
+        "key": "test",
+        "label": "Test score position",
+        "delta_logit": 0.0899,
+        "delta_pp": 2.25,
+        "detail": "z=+0.60 in school's 25–75 band"
+      },
+      {
+        "key": "hooks",
+        "label": "Hooks (C7-gated)",
+        "delta_logit": 0.0,
+        "delta_pp": 0.0,
+        "detail": "none"
+      },
+      {
+        "key": "residency",
+        "label": "Residency",
+        "delta_logit": 0.35,
+        "delta_pp": 8.67,
+        "detail": "public-university residency effect"
+      },
+      {
+        "key": "early",
+        "label": "Application round",
+        "delta_logit": 0.0,
+        "delta_pp": 0.0,
+        "detail": "EA"
+      },
+      {
+        "key": "interest",
+        "label": "Demonstrated interest",
+        "delta_logit": 0.0,
+        "delta_pp": 0.0,
+        "detail": "counts only where C7 considers applicant interest"
+      },
+      {
+        "key": "twins",
+        "label": "Applicant-twin evidence",
+        "delta_logit": -1.0096,
+        "delta_pp": -24.55,
+        "detail": "20.0 effective twins; raw Reddit admit rate 36% deflated ×2.4 odds → 19%"
+      }
+    ],
+    "disposition": "WAITLIST"
+  },
+  "simulated": {
+    "p_final": 0.4201,
+    "p_low": 0.31,
+    "p_high": 0.5324,
+    "p_model": 0.8043,
+    "base_admit_rate": 0.44,
+    "components": [
+      {
+        "key": "base",
+        "label": "School admit rate",
+        "delta_logit": 0.0,
+        "delta_pp": 44.0,
+        "detail": "Overall admit rate 44.0%"
+      },
+      {
+        "key": "major",
+        "label": "Major competitiveness",
+        "delta_logit": 0.1133,
+        "delta_pp": 2.81,
+        "detail": "multiplier ×1.12"
+      },
+      {
+        "key": "academic",
+        "label": "Academic rating",
+        "delta_logit": 0.737,
+        "delta_pp": 17.97,
+        "detail": "rating 2.33 vs pool 3.0, school weight 0.55"
+      },
+      {
+        "key": "extracurricular",
+        "label": "Extracurricular rating",
+        "delta_logit": 0.415,
+        "delta_pp": 8.8,
+        "detail": "rating 2.67 vs pool 3.5, school weight 0.25"
+      },
+      {
+        "key": "personal",
+        "label": "Personal rating",
+        "delta_logit": -0.051,
+        "delta_pp": -1.0,
+        "detail": "rating 3.67 vs pool 3.5, school weight 0.15"
+      },
+      {
+        "key": "athletic",
+        "label": "Athletic rating",
+        "delta_logit": 0.0,
+        "delta_pp": 0.0,
+        "detail": "rating 4.00 vs pool 4.0, school weight 0.05"
+      },
+      {
+        "key": "test",
+        "label": "Test score position",
+        "delta_logit": 0.0899,
+        "delta_pp": 1.75,
+        "detail": "z=+0.60 in school's 25–75 band"
+      },
+      {
+        "key": "hooks",
+        "label": "Hooks (C7-gated)",
+        "delta_logit": 0.0,
+        "delta_pp": 0.0,
+        "detail": "none"
+      },
+      {
+        "key": "residency",
+        "label": "Residency",
+        "delta_logit": 0.35,
+        "delta_pp": 6.1,
+        "detail": "public-university residency effect"
+      },
+      {
+        "key": "early",
+        "label": "Application round",
+        "delta_logit": 0.0,
+        "delta_pp": 0.0,
+        "detail": "EA"
+      },
+      {
+        "key": "interest",
+        "label": "Demonstrated interest",
+        "delta_logit": 0.0,
+        "delta_pp": 0.0,
+        "detail": "counts only where C7 considers applicant interest"
+      },
+      {
+        "key": "twins",
+        "label": "Applicant-twin evidence",
+        "delta_logit": -1.7356,
+        "delta_pp": -38.42,
+        "detail": "20.0 effective twins; raw Reddit admit rate 36% deflated ×2.4 odds → 19%"
+      }
+    ],
+    "disposition": "WAITLIST"
+  },
+  "delta_pp": 8.33,
+  "applied": [
+    "Explore math & statistics"
+  ],
+  "warnings": [],
+  "confidence": "data_backed"
+}

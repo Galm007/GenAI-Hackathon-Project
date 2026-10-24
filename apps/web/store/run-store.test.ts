@@ -256,7 +256,7 @@ describe("run-store reducer", () => {
       const store = useRunStore.getState();
       store.ensureRun("fake");
 
-      // Apply the 72 events from the fake stream
+      // Apply the complete, explicitly fictional four-turn replay.
       store.applyMany("fake", fixture.events);
 
       const run = useRunStore.getState().runs["fake"];
@@ -271,7 +271,8 @@ describe("run-store reducer", () => {
       expect(run.nodes.chair).toBe("done");
       expect(run.tools.length).toBeGreaterThan(0);
       expect(run.twins.length).toBe(5);
-      expect(run.debate.length).toBe(2);
+      expect(run.debate.length).toBe(4);
+      expect(run.radar?.axes).toHaveLength(6);
       expect(run.probability).toBeDefined();
       expect(run.probability?.disposition).toBe("WAITLIST");
       expect(run.counterfactuals.length).toBeGreaterThan(0);

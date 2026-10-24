@@ -1,0 +1,31 @@
+{
+  "fact_checks": [
+    {
+      "field": "test_policy",
+      "db_value": "optional",
+      "web_value": "optional",
+      "verdict": "confirmed",
+      "source_ids": [
+        "W1"
+      ],
+      "note": "Fictional fixture, not a verified current-cycle policy."
+    }
+  ],
+  "strategic_priorities": [
+    {
+      "claim": "Growing interdisciplinary CS + X programs.",
+      "source_ids": [
+        "W1"
+      ],
+      "relevance_to_applicant": "some"
+    }
+  ],
+  "current_test_policy": "optional",
+  "major_admission_model": "direct_admit_capped",
+  "major_notes": "CS is capacity-capped; CS + X and math/stats are less constrained.",
+  "fit_signals": [
+    "Applied ML project aligns with CS + X"
+  ],
+  "misalignment_signals": [],
+  "analyst_summary": "Test-optional, direct admit to a capped major. The major multiplier dominates."
+}

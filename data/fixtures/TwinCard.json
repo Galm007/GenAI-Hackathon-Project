@@ -1,0 +1,167 @@
+[
+  {
+    "index": 1,
+    "id": "00000000-0000-4000-8000-000000000001",
+    "source_url": "",
+    "cycle_year": 2025,
+    "matched_school": "uiuc",
+    "outcome": "rejected",
+    "gpa_uw": 3.9,
+    "sat_score": 1500,
+    "act_score": null,
+    "ap_count": 10,
+    "intended_major": "Computer Science",
+    "major_category": "computer_science",
+    "hooks": [],
+    "ec_tier_summary": {
+      "t1": 0,
+      "t2": 1,
+      "t3": 2
+    },
+    "top_activities": [
+      {
+        "description": "Led school programming practice and local workshops.",
+        "role": "Club organizer",
+        "tier": 2
+      }
+    ],
+    "awards": [],
+    "spike_summary": "Fictional programming and community project profile.",
+    "headline": "3.90 UW · 1500 SAT · computer science (fixture)",
+    "semantic_similarity": 0.9,
+    "stat_proximity": 0.88,
+    "hybrid_score": 0.89
+  },
+  {
+    "index": 2,
+    "id": "00000000-0000-4000-8000-000000000002",
+    "source_url": "",
+    "cycle_year": 2025,
+    "matched_school": "uiuc",
+    "outcome": "accepted",
+    "gpa_uw": 3.92,
+    "sat_score": 1510,
+    "act_score": null,
+    "ap_count": 11,
+    "intended_major": "Computer Science",
+    "major_category": "computer_science",
+    "hooks": [],
+    "ec_tier_summary": {
+      "t1": 0,
+      "t2": 1,
+      "t3": 2
+    },
+    "top_activities": [
+      {
+        "description": "Developed a community coding project with documented usage.",
+        "role": "Project lead",
+        "tier": 2
+      }
+    ],
+    "awards": [],
+    "spike_summary": "Fictional programming and community project profile.",
+    "headline": "3.92 UW · 1510 SAT · computer science (fixture)",
+    "semantic_similarity": 0.87,
+    "stat_proximity": 0.86,
+    "hybrid_score": 0.86
+  },
+  {
+    "index": 3,
+    "id": "00000000-0000-4000-8000-000000000003",
+    "source_url": "",
+    "cycle_year": 2025,
+    "matched_school": "uiuc",
+    "outcome": "accepted",
+    "gpa_uw": 3.94,
+    "sat_score": 1520,
+    "act_score": null,
+    "ap_count": 12,
+    "intended_major": "Computer Science",
+    "major_category": "computer_science",
+    "hooks": [],
+    "ec_tier_summary": {
+      "t1": 0,
+      "t2": 1,
+      "t3": 2
+    },
+    "top_activities": [
+      {
+        "description": "Developed a community coding project with documented usage.",
+        "role": "Project lead",
+        "tier": 2
+      }
+    ],
+    "awards": [],
+    "spike_summary": "Fictional programming and community project profile.",
+    "headline": "3.94 UW · 1520 SAT · computer science (fixture)",
+    "semantic_similarity": 0.8400000000000001,
+    "stat_proximity": 0.84,
+    "hybrid_score": 0.8300000000000001
+  },
+  {
+    "index": 4,
+    "id": "00000000-0000-4000-8000-000000000004",
+    "source_url": "",
+    "cycle_year": 2025,
+    "matched_school": "uiuc",
+    "outcome": "waitlisted",
+    "gpa_uw": 3.96,
+    "sat_score": 1530,
+    "act_score": null,
+    "ap_count": 13,
+    "intended_major": "Computer Science",
+    "major_category": "computer_science",
+    "hooks": [],
+    "ec_tier_summary": {
+      "t1": 0,
+      "t2": 1,
+      "t3": 2
+    },
+    "top_activities": [
+      {
+        "description": "Led school programming practice and local workshops.",
+        "role": "Club organizer",
+        "tier": 2
+      }
+    ],
+    "awards": [],
+    "spike_summary": "Fictional programming and community project profile.",
+    "headline": "3.96 UW · 1530 SAT · computer science (fixture)",
+    "semantic_similarity": 0.81,
+    "stat_proximity": 0.8200000000000001,
+    "hybrid_score": 0.8
+  },
+  {
+    "index": 5,
+    "id": "00000000-0000-4000-8000-000000000005",
+    "source_url": "",
+    "cycle_year": 2025,
+    "matched_school": "uiuc",
+    "outcome": "rejected",
+    "gpa_uw": 3.98,
+    "sat_score": 1540,
+    "act_score": null,
+    "ap_count": 14,
+    "intended_major": "Computer Science",
+    "major_category": "computer_science",
+    "hooks": [],
+    "ec_tier_summary": {
+      "t1": 0,
+      "t2": 1,
+      "t3": 2
+    },
+    "top_activities": [
+      {
+        "description": "Led school programming practice and local workshops.",
+        "role": "Club organizer",
+        "tier": 2
+      }
+    ],
+    "awards": [],
+    "spike_summary": "Fictional programming and community project profile.",
+    "headline": "3.98 UW · 1540 SAT · computer science (fixture)",
+    "semantic_similarity": 0.78,
+    "stat_proximity": 0.8,
+    "hybrid_score": 0.77
+  }
+]

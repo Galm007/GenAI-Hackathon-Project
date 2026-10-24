@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
-import { buildWaterfallRows, breakdownDifference, validProbability, comparableAxes, safeSourceUrl, formatRaw } from "./math.ts";
+import { test } from "vitest";
+import { buildWaterfallRows, breakdownDifference, validProbability, comparableAxes, safeSourceUrl, formatRaw } from "./math";
 
-const contribution = (key, delta_pp) => ({ key, label: key, delta_pp, delta_logit: 0, detail: "fixture" });
+const contribution = (key: string, delta_pp: number) => ({ key, label: key, delta_pp, delta_logit: 0, detail: "fixture" });
 test("a decrease floats between the previous and next totals", () => {
   const rows = buildWaterfallRows([contribution("base", 44), contribution("major", -22.4)]);
   assert.ok(Math.abs(rows[1].offset - 21.6) < 1e-9);
@@ -16,7 +16,7 @@ test("small contributions remain in the total and negative totals retain their o
   assert.equal(rows[2].offset, rows[2].end);
 });
 test("inconsistent supplied totals are detectable rather than silently corrected", () => {
-  const data = { p_final: 0.214, components: [contribution("base", 44), contribution("major", -22.4)] };
+  const data = { p_final: 0.214, p_low: null, p_high: null, disposition: null, components: [contribution("base", 44), contribution("major", -22.4)] };
   assert.ok(Math.abs(breakdownDifference(data) - 0.2) < 1e-9);
   assert.ok(Math.abs(breakdownDifference({ ...data, p_final: 0.5 })) > 0.5);
 });
@@ -28,7 +28,8 @@ test("empty data stays empty and invalid probabilities are rejected", () => {
 test("unknown radar values are omitted while genuine zero remains comparable", () => {
   const axes = [{ key: "zero", you: 0, admitted_median: 0 }, { key: "missing", you: null, admitted_median: 50 },
     { key: "invalid", you: NaN, admitted_median: 70 }, { key: "range", you: 101, admitted_median: 50 }];
-  assert.deepEqual(comparableAxes({ n_admitted: 2, axes }).map((a) => a.key), ["zero"]);
+  const complete = axes.map((a) => ({ ...a, label: a.key, you_raw: a.you, admitted_raw: a.admitted_median, assumed: false }));
+  assert.deepEqual(comparableAxes({ n_admitted: 2, axes: complete }).map((a) => a.key), ["zero"]);
 });
 test("source links accept HTTPS and reject executable, relative, and credential-bearing URLs", () => {
   assert.equal(safeSourceUrl("https://www.reddit.com/r/collegeresults/"), "https://www.reddit.com/r/collegeresults/");

@@ -1,1242 +1,2125 @@
 {
- "name": "fake_stream",
- "school_slug": "uiuc",
- "events": [
-  {
-   "seq": 0,
-   "run_id": "fake",
-   "ts": 1793912345.0,
-   "event": "run_started",
-   "school_slug": "uiuc",
-   "cached_dossier": false
-  },
-  {
-   "seq": 1,
-   "run_id": "fake",
-   "ts": 1793912345.3,
-   "event": "node_start",
-   "node": "dossier_parser",
-   "label": "Dossier Parser & Rubric Grader"
-  },
-  {
-   "seq": 2,
-   "run_id": "fake",
-   "ts": 1793912345.6,
-   "event": "progress",
-   "node": "dossier_parser",
-   "message": "Reading transcript (2 pages)\u2026",
-   "pct": 0.1
-  },
-  {
-   "seq": 3,
-   "run_id": "fake",
-   "ts": 1793912347.1,
-   "event": "dossier_parsed",
-   "dossier": {
-    "high_school": {
-     "name": null,
-     "state": "IL",
-     "country": "US",
-     "school_type": "public",
-     "class_rank_text": null
+  "name": "maya-uiuc",
+  "school_slug": "uiuc",
+  "school": {
+    "slug": "uiuc",
+    "name": "University of Illinois Urbana-Champaign",
+    "early_plans": {
+      "ea": true
     },
-    "reported_gpas": [
-     {
-      "value": 3.94,
-      "scale": 4.0,
-      "weighted": false
-     }
+    "major_competitiveness": {
+      "computer_science": {
+        "multiplier": 0.38
+      },
+      "math_stats": {
+        "multiplier": 1.12
+      }
+    }
+  },
+  "fictional": true,
+  "provenance": "Hand-written fictional replay, deterministic scoring; not a recorded live graph run.",
+  "credit": "Done by gridiii via Codex, 2026-10-24",
+  "context": {
+    "scoring_inputs": {
+      "base_admit_rate": 0.44,
+      "major_multiplier": 0.38,
+      "pillar_weights": {
+        "academic": 0.55,
+        "extracurricular": 0.25,
+        "personal": 0.15,
+        "athletic": 0.05
+      },
+      "ratings": {
+        "academic": 2.33,
+        "extracurricular": 2.67,
+        "personal": 3.67,
+        "athletic": 4.0
+      },
+      "test_weight": 0.3,
+      "test_policy": "optional",
+      "sat": 1520,
+      "sat_25": 1350,
+      "sat_75": 1530,
+      "hooks": [],
+      "hook_effects": {},
+      "residency_effect": 0.35,
+      "early_round": "EA",
+      "ed_admit_rate": null,
+      "rd_admit_rate": null,
+      "ea_admit_rate": null,
+      "applicant_interest_weight": 0.0,
+      "demonstrated_interest": false,
+      "twin_sum_w": 33.1,
+      "twin_sum_w2": 34.8,
+      "twin_sum_w_admit": 11.9,
+      "odds_inflation": 2.4
+    },
+    "major_category": "computer_science",
+    "school": {
+      "slug": "uiuc",
+      "name": "University of Illinois Urbana-Champaign",
+      "early_plans": {
+        "ea": true
+      },
+      "major_competitiveness": {
+        "computer_science": {
+          "multiplier": 0.38
+        },
+        "math_stats": {
+          "multiplier": 1.12
+        }
+      }
+    },
+    "tiers": [
+      2,
+      3,
+      4
     ],
-    "courses": [
-     {
-      "title": "AP Calculus BC",
-      "subject_area": "math",
-      "level": "ap",
-      "grade_level": 11,
-      "term": "Full year",
-      "grade_as_shown": "A",
-      "letter_grade": "A",
-      "in_progress": false
-     },
-     {
-      "title": "AP Computer Science A",
-      "subject_area": "computer_science",
-      "level": "ap",
-      "grade_level": 10,
-      "term": "Full year",
-      "grade_as_shown": "A",
-      "letter_grade": "A",
-      "in_progress": false
-     },
-     {
-      "title": "Multivariable Calculus (DE)",
-      "subject_area": "math",
-      "level": "dual_enrollment",
-      "grade_level": 12,
-      "term": "Fall 2026",
-      "grade_as_shown": null,
-      "letter_grade": null,
-      "in_progress": true
-     }
-    ],
-    "test_scores": {
-     "sat_total": 1520,
-     "sat_math": 790,
-     "sat_ebrw": 730,
-     "act_composite": null,
-     "ap_exams": [
+    "has_recommendations": false,
+    "counterfactuals": [
       {
-       "subject": "Calculus BC",
-       "score": 5
+        "id": "cf_major_math_stats",
+        "kind": "major_switch",
+        "label": "Explore math & statistics",
+        "p_new": 0.4201,
+        "delta_pp": 8.33,
+        "confidence": "model_estimate",
+        "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+        "overrides": {
+          "major_multiplier": 1.12
+        }
       },
       {
-       "subject": "Computer Science A",
-       "score": 5
+        "id": "cf_add_tier2",
+        "kind": "add_activity",
+        "label": "Build a Tier 2 activity",
+        "p_new": 0.3837,
+        "delta_pp": 4.69,
+        "confidence": "model_estimate",
+        "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+        "overrides": {
+          "ratings": {
+            "academic": 2.33,
+            "extracurricular": 1.5700000000000003,
+            "personal": 3.67,
+            "athletic": 4.0
+          }
+        }
+      },
+      {
+        "id": "cf_essay",
+        "kind": "essay",
+        "label": "Strengthen your personal essay",
+        "p_new": 0.3633,
+        "delta_pp": 2.65,
+        "confidence": "model_estimate",
+        "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+        "overrides": {
+          "ratings": {
+            "academic": 2.33,
+            "extracurricular": 2.67,
+            "personal": 2.67,
+            "athletic": 4.0
+          }
+        }
+      },
+      {
+        "id": "cf_sat_75",
+        "kind": "test_score",
+        "label": "Raise SAT to the school reference",
+        "p_new": 0.3379,
+        "delta_pp": 0.11,
+        "confidence": "model_estimate",
+        "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+        "overrides": {
+          "sat": 1530
+        }
       }
-     ],
-     "other": []
-    },
-    "activities": [
-     {
-      "name": "Competitive programming",
-      "role": "Team captain",
-      "organization": "School CS club",
-      "description": "USACO Gold; leads weekly practice for 14 members.",
-      "category": "academic_competition",
-      "grades": [
-       10,
-       11,
-       12
-      ],
-      "hours_per_week": 6.0,
-      "weeks_per_year": 40
-     },
-     {
-      "name": "Crop-disease classifier",
-      "role": "Independent researcher",
-      "organization": null,
-      "description": "Trained a small CNN on leaf images; presented at a regional science fair.",
-      "category": "research",
-      "grades": [
-       11,
-       12
-      ],
-      "hours_per_week": 5.0,
-      "weeks_per_year": 30
-     },
-     {
-      "name": "Library coding workshops",
-      "role": "Volunteer teacher",
-      "organization": "Public library",
-      "description": "Teaches Scratch to middle schoolers on Saturdays.",
-      "category": "community_service",
-      "grades": [
-       11,
-       12
-      ],
-      "hours_per_week": 2.0,
-      "weeks_per_year": 35
-     }
-    ],
-    "awards": [
-     {
-      "name": "USACO Gold",
-      "level": "national",
-      "grade": 11
-     },
-     {
-      "name": "Regional science fair, 2nd place",
-      "level": "regional",
-      "grade": 11
-     }
-    ],
-    "essay_text": null,
-    "additional_info": null,
-    "pii_strings": [],
-    "extraction_warnings": []
-   },
-   "metrics": {
-    "gpa_uw_4": 3.94,
-    "gpa_w_5": 4.52,
-    "core_course_count": 22,
-    "advanced_course_count": 11,
-    "rigor_index": 0.62,
-    "grade_trend": "upward",
-    "sat_equivalent": 1520,
-    "proxy_academic_rating": 2.6,
-    "tier_derived_ec_rating": 2.9,
-    "ec_score": 0.58
-   }
-  },
-  {
-   "seq": 4,
-   "run_id": "fake",
-   "ts": 1793912347.4,
-   "event": "progress",
-   "node": "dossier_parser",
-   "message": "Grading 3 activities and four Harvard pillars\u2026",
-   "pct": 0.5
-  },
-  {
-   "seq": 5,
-   "run_id": "fake",
-   "ts": 1793912349.4,
-   "event": "scorecard",
-   "grade": {
-    "major_category": "computer_science",
-    "rigor_label": "most_demanding",
-    "activity_grades": [
-     {
-      "activity_index": 0,
-      "rationale": "National-level qualifier with sustained leadership.",
-      "tier": 2,
-      "spike_role": "core"
-     },
-     {
-      "activity_index": 1,
-      "rationale": "Self-directed project with a regional showing.",
-      "tier": 3,
-      "spike_role": "supporting"
-     },
-     {
-      "activity_index": 2,
-      "rationale": "Consistent local service.",
-      "tier": 4,
-      "spike_role": "peripheral"
-     }
-    ],
-    "spike": {
-     "label": "Competitive programming \u2192 applied ML",
-     "description": "Algorithms depth that is starting to turn into applied projects.",
-     "strength": "moderate"
-    },
-    "essay": {
-     "themes": [
-      "teaching",
-      "curiosity"
-     ],
-     "voice": "competent",
-     "strengths": [
-      "clear structure"
-     ],
-     "weaknesses": [
-      "ending summarizes instead of reflecting"
-     ],
-     "red_flags": [],
-     "strongest_line": null
-    },
-    "harvard": {
-     "academic": {
-      "rationale": "Top rigor and near-perfect grades; SAT at the school's 75th percentile.",
-      "evidence": [
-       "metrics.gpa_uw_4",
-       "courses",
-       "test_scores"
-      ],
-      "rating": 2,
-      "modifier": "-"
-     },
-     "extracurricular": {
-      "rationale": "One national-level activity with leadership.",
-      "evidence": [
-       "activities.0",
-       "awards.0"
-      ],
-      "rating": 3,
-      "modifier": "+"
-     },
-     "personal": {
-      "rationale": "Warm but conventional essay; no recommendation provided.",
-      "evidence": [
-       "essay"
-      ],
-      "rating": 3,
-      "modifier": ""
-     },
-     "athletic": {
-      "rationale": "No athletics listed.",
-      "evidence": [],
-      "rating": 4,
-      "modifier": ""
-     }
-    },
-    "reader_comments": "Strong academic CS applicant with a moderate spike. Needs more evidence of impact beyond competitions to stand out in Grainger.",
-    "grader_warnings": []
-   },
-   "metrics": {
-    "gpa_uw_4": 3.94,
-    "gpa_w_5": 4.52,
-    "core_course_count": 22,
-    "advanced_course_count": 11,
-    "rigor_index": 0.62,
-    "grade_trend": "upward",
-    "sat_equivalent": 1520,
-    "proxy_academic_rating": 2.6,
-    "tier_derived_ec_rating": 2.9,
-    "ec_score": 0.58
-   },
-   "warnings": []
-  },
-  {
-   "seq": 6,
-   "run_id": "fake",
-   "ts": 1793912349.7,
-   "event": "progress",
-   "node": "dossier_parser",
-   "message": "Embedding profile for twin search\u2026",
-   "pct": 0.9
-  },
-  {
-   "seq": 7,
-   "run_id": "fake",
-   "ts": 1793912350.0,
-   "event": "node_end",
-   "node": "dossier_parser",
-   "elapsed_ms": 4100
-  },
-  {
-   "seq": 8,
-   "run_id": "fake",
-   "ts": 1793912350.05,
-   "event": "node_complete",
-   "node": "dossier_parser"
-  },
-  {
-   "seq": 9,
-   "run_id": "fake",
-   "ts": 1793912350.35,
-   "event": "node_start",
-   "node": "institutional",
-   "label": "Institutional Rubric & Fact-Checker"
-  },
-  {
-   "seq": 10,
-   "run_id": "fake",
-   "ts": 1793912350.65,
-   "event": "tool_call",
-   "node": "institutional",
-   "tool": "zetaris.profile",
-   "status": "started",
-   "slug": "uiuc",
-   "table": "ADCOM_LAKE.gold.school_profile"
-  },
-  {
-   "seq": 11,
-   "run_id": "fake",
-   "ts": 1793912351.45,
-   "event": "tool_call",
-   "node": "institutional",
-   "tool": "zetaris.profile",
-   "status": "done",
-   "source": "zetaris",
-   "cds_year": "2025-2026",
-   "c7_source": "cds"
-  },
-  {
-   "seq": 12,
-   "run_id": "fake",
-   "ts": 1793912351.75,
-   "event": "school_rubric",
-   "stage": "cds",
-   "rubric": {
-    "slug": "uiuc",
-    "name": "University of Illinois Urbana-Champaign",
-    "base_admit_rate": 0.44,
-    "ed_admit_rate": null,
-    "rd_admit_rate": null,
-    "pillar_weights": {
-     "academic": 0.55,
-     "extracurricular": 0.25,
-     "personal": 0.15,
-     "athletic": 0.05
-    },
-    "factor_levels": {
-     "rigor": "very_important",
-     "academic_gpa": "very_important",
-     "test_scores": "considered",
-     "essay": "important",
-     "extracurriculars": "important"
-    },
-    "test_weight": 0.3,
-    "test_policy": "optional",
-    "sat_25": 1350,
-    "sat_75": 1530,
-    "hook_effects": {
-     "first_gen": 0.15
-    },
-    "residency_effect": 0.35,
-    "major_category": "computer_science",
-    "major_multiplier": 0.38,
-    "major_multiplier_source": "override",
-    "major_n": 0,
-    "major_college": "Grainger College of Engineering",
-    "direct_admit": true,
-    "notes": [
-     "Fictional fixture values for UI development."
     ]
-   }
   },
-  {
-   "seq": 13,
-   "run_id": "fake",
-   "ts": 1793912352.05,
-   "event": "tool_call",
-   "node": "institutional",
-   "tool": "tavily.search",
-   "status": "started",
-   "query": "UIUC computer science admission direct admit"
-  },
-  {
-   "seq": 14,
-   "run_id": "fake",
-   "ts": 1793912353.25,
-   "event": "tool_call",
-   "node": "institutional",
-   "tool": "tavily.search",
-   "status": "done",
-   "query": "UIUC computer science admission direct admit",
-   "result_count": 1
-  },
-  {
-   "seq": 15,
-   "run_id": "fake",
-   "ts": 1793912353.55,
-   "event": "fact_checks",
-   "brief": {
-    "fact_checks": [
-     {
-      "field": "test_policy",
-      "db_value": "optional",
-      "web_value": "optional",
-      "verdict": "confirmed",
-      "source_ids": [
-       "W1"
+  "events": [
+    {
+      "seq": 0,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800000.0,
+      "event": "run_started",
+      "school_slug": "uiuc",
+      "target_schools": [
+        "uiuc"
       ],
-      "note": "Unchanged for this cycle."
-     }
-    ],
-    "strategic_priorities": [
-     {
-      "claim": "Growing interdisciplinary CS + X programs.",
-      "source_ids": [
-       "W1"
+      "cached_dossier": false,
+      "fictional": true
+    },
+    {
+      "seq": 1,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800000.13,
+      "event": "node_start",
+      "node": "dossier_parser"
+    },
+    {
+      "seq": 2,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800000.26,
+      "event": "progress",
+      "node": "dossier_parser",
+      "message": "Reading the fictional applicant pack",
+      "pct": 0.2
+    },
+    {
+      "seq": 3,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800000.39,
+      "event": "dossier_parsed",
+      "dossier": {
+        "high_school": {
+          "name": null,
+          "state": "IL",
+          "country": "US",
+          "school_type": "public",
+          "class_rank_text": null
+        },
+        "reported_gpas": [
+          {
+            "value": 3.94,
+            "scale": 4.0,
+            "weighted": false
+          }
+        ],
+        "courses": [
+          {
+            "title": "English 9",
+            "subject_area": "english",
+            "level": "honors",
+            "grade_level": 9,
+            "term": "Full year",
+            "grade_as_shown": "A-",
+            "letter_grade": "A-",
+            "in_progress": false
+          },
+          {
+            "title": "Geometry",
+            "subject_area": "math",
+            "level": "honors",
+            "grade_level": 9,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "Algebra II",
+            "subject_area": "math",
+            "level": "honors",
+            "grade_level": 9,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "Biology",
+            "subject_area": "science",
+            "level": "honors",
+            "grade_level": 9,
+            "term": "Full year",
+            "grade_as_shown": "A-",
+            "letter_grade": "A-",
+            "in_progress": false
+          },
+          {
+            "title": "World History",
+            "subject_area": "social_studies",
+            "level": "regular",
+            "grade_level": 9,
+            "term": "Full year",
+            "grade_as_shown": "A-",
+            "letter_grade": "A-",
+            "in_progress": false
+          },
+          {
+            "title": "Spanish I",
+            "subject_area": "world_language",
+            "level": "regular",
+            "grade_level": 9,
+            "term": "Full year",
+            "grade_as_shown": "A-",
+            "letter_grade": "A-",
+            "in_progress": false
+          },
+          {
+            "title": "Introduction to Computer Science",
+            "subject_area": "computer_science",
+            "level": "regular",
+            "grade_level": 9,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "Earth Science",
+            "subject_area": "science",
+            "level": "regular",
+            "grade_level": 9,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "English 10",
+            "subject_area": "english",
+            "level": "honors",
+            "grade_level": 10,
+            "term": "Full year",
+            "grade_as_shown": "A-",
+            "letter_grade": "A-",
+            "in_progress": false
+          },
+          {
+            "title": "Precalculus",
+            "subject_area": "math",
+            "level": "honors",
+            "grade_level": 10,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "Chemistry",
+            "subject_area": "science",
+            "level": "honors",
+            "grade_level": 10,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP World History",
+            "subject_area": "social_studies",
+            "level": "ap",
+            "grade_level": 10,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "Spanish II",
+            "subject_area": "world_language",
+            "level": "regular",
+            "grade_level": 10,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP Computer Science A",
+            "subject_area": "computer_science",
+            "level": "ap",
+            "grade_level": 10,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP Physics 1",
+            "subject_area": "science",
+            "level": "ap",
+            "grade_level": 10,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP Microeconomics",
+            "subject_area": "social_studies",
+            "level": "ap",
+            "grade_level": 10,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP English Language",
+            "subject_area": "english",
+            "level": "ap",
+            "grade_level": 11,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP Calculus BC",
+            "subject_area": "math",
+            "level": "ap",
+            "grade_level": 11,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP Biology",
+            "subject_area": "science",
+            "level": "ap",
+            "grade_level": 11,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP US History",
+            "subject_area": "social_studies",
+            "level": "ap",
+            "grade_level": 11,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "Spanish III",
+            "subject_area": "world_language",
+            "level": "honors",
+            "grade_level": 11,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP Statistics",
+            "subject_area": "math",
+            "level": "ap",
+            "grade_level": 11,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP Environmental Science",
+            "subject_area": "science",
+            "level": "ap",
+            "grade_level": 11,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "Introduction to Political Science",
+            "subject_area": "social_studies",
+            "level": "regular",
+            "grade_level": 11,
+            "term": "Full year",
+            "grade_as_shown": "A",
+            "letter_grade": "A",
+            "in_progress": false
+          },
+          {
+            "title": "AP English Literature",
+            "subject_area": "english",
+            "level": "ap",
+            "grade_level": 12,
+            "term": "Fall 2026",
+            "grade_as_shown": null,
+            "letter_grade": null,
+            "in_progress": true
+          },
+          {
+            "title": "Multivariable Calculus (DE)",
+            "subject_area": "math",
+            "level": "dual_enrollment",
+            "grade_level": 12,
+            "term": "Fall 2026",
+            "grade_as_shown": null,
+            "letter_grade": null,
+            "in_progress": true
+          },
+          {
+            "title": "Civics",
+            "subject_area": "social_studies",
+            "level": "regular",
+            "grade_level": 12,
+            "term": "Fall 2026",
+            "grade_as_shown": null,
+            "letter_grade": null,
+            "in_progress": true
+          },
+          {
+            "title": "Physics: Electricity and Magnetism",
+            "subject_area": "science",
+            "level": "honors",
+            "grade_level": 12,
+            "term": "Fall 2026",
+            "grade_as_shown": null,
+            "letter_grade": null,
+            "in_progress": true
+          },
+          {
+            "title": "Spanish IV",
+            "subject_area": "world_language",
+            "level": "honors",
+            "grade_level": 12,
+            "term": "Fall 2026",
+            "grade_as_shown": null,
+            "letter_grade": null,
+            "in_progress": true
+          },
+          {
+            "title": "Independent Study: Applied Computing",
+            "subject_area": "computer_science",
+            "level": "regular",
+            "grade_level": 12,
+            "term": "Fall 2026",
+            "grade_as_shown": null,
+            "letter_grade": null,
+            "in_progress": true
+          }
+        ],
+        "test_scores": {
+          "sat_total": 1520,
+          "sat_math": 790,
+          "sat_ebrw": 730,
+          "act_composite": null,
+          "ap_exams": [
+            {
+              "subject": "Calculus BC",
+              "score": 5
+            },
+            {
+              "subject": "Computer Science A",
+              "score": 5
+            }
+          ],
+          "other": []
+        },
+        "activities": [
+          {
+            "name": "Competitive programming",
+            "role": "Team captain",
+            "organization": "School CS club",
+            "description": "USACO Gold; leads weekly practice for 14 members.",
+            "category": "academic_competition",
+            "grades": [
+              10,
+              11,
+              12
+            ],
+            "hours_per_week": 6.0,
+            "weeks_per_year": 40
+          },
+          {
+            "name": "Crop-disease classifier",
+            "role": "Independent researcher",
+            "organization": null,
+            "description": "Trained a small CNN on leaf images; presented at a regional science fair.",
+            "category": "research",
+            "grades": [
+              11,
+              12
+            ],
+            "hours_per_week": 5.0,
+            "weeks_per_year": 30
+          },
+          {
+            "name": "Library coding workshops",
+            "role": "Volunteer teacher",
+            "organization": "Public library",
+            "description": "Teaches Scratch to middle schoolers on Saturdays.",
+            "category": "community_service",
+            "grades": [
+              11,
+              12
+            ],
+            "hours_per_week": 2.0,
+            "weeks_per_year": 35
+          }
+        ],
+        "awards": [
+          {
+            "name": "USACO Gold",
+            "level": "national",
+            "grade": 11
+          },
+          {
+            "name": "Regional science fair, 2nd place",
+            "level": "regional",
+            "grade": 11
+          }
+        ],
+        "additional_info": null,
+        "pii_strings": [],
+        "extraction_warnings": [
+          "Hand-written fictional extraction fixture; not produced by a live model."
+        ]
+      },
+      "metrics": {
+        "gpa_uw_4": 3.94,
+        "gpa_w_5": 4.52,
+        "core_course_count": 30,
+        "advanced_course_count": 12,
+        "rigor_index": 0.545,
+        "grade_trend": "flat",
+        "sat_equivalent": 1520,
+        "proxy_academic_rating": 2.5999999999999996,
+        "tier_derived_ec_rating": 3.5774999999999997,
+        "ec_score": 2.95
+      }
+    },
+    {
+      "seq": 4,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800000.52,
+      "event": "scorecard",
+      "grade": {
+        "major_category": "computer_science",
+        "rigor_label": "most_demanding",
+        "activity_grades": [
+          {
+            "activity_index": 0,
+            "rationale": "National-level qualifier with sustained leadership.",
+            "tier": 2,
+            "spike_role": "core"
+          },
+          {
+            "activity_index": 1,
+            "rationale": "Self-directed project with a regional showing.",
+            "tier": 3,
+            "spike_role": "supporting"
+          },
+          {
+            "activity_index": 2,
+            "rationale": "Consistent local service.",
+            "tier": 4,
+            "spike_role": "peripheral"
+          }
+        ],
+        "spike": {
+          "label": "Competitive programming → applied ML",
+          "description": "Algorithms depth that is starting to turn into applied projects.",
+          "strength": "moderate"
+        },
+        "essay": {
+          "themes": [
+            "teaching",
+            "curiosity"
+          ],
+          "voice": "competent",
+          "strengths": [
+            "clear structure"
+          ],
+          "weaknesses": [
+            "ending summarizes instead of reflecting"
+          ],
+          "red_flags": [],
+          "strongest_line": null
+        },
+        "harvard": {
+          "academic": {
+            "rationale": "Top rigor and near-perfect grades; SAT at the school's 75th percentile.",
+            "evidence": [
+              "metrics.gpa_uw_4",
+              "courses",
+              "test_scores"
+            ],
+            "rating": 2,
+            "modifier": "-"
+          },
+          "extracurricular": {
+            "rationale": "One national-level activity with leadership.",
+            "evidence": [
+              "activities.0",
+              "awards.0"
+            ],
+            "rating": 3,
+            "modifier": "+"
+          },
+          "personal": {
+            "rationale": "Warm but conventional essay; no recommendation provided.",
+            "evidence": [
+              "essay"
+            ],
+            "rating": 4,
+            "modifier": "+"
+          },
+          "athletic": {
+            "rationale": "No athletics listed.",
+            "evidence": [],
+            "rating": 4,
+            "modifier": ""
+          }
+        },
+        "reader_comments": "Strong academic CS applicant with a moderate spike. Needs more evidence of impact beyond competitions to stand out in Grainger.",
+        "grader_warnings": []
+      },
+      "metrics": {
+        "gpa_uw_4": 3.94,
+        "gpa_w_5": 4.52,
+        "core_course_count": 30,
+        "advanced_course_count": 12,
+        "rigor_index": 0.545,
+        "grade_trend": "flat",
+        "sat_equivalent": 1520,
+        "proxy_academic_rating": 2.5999999999999996,
+        "tier_derived_ec_rating": 3.5774999999999997,
+        "ec_score": 2.95
+      },
+      "warnings": []
+    },
+    {
+      "seq": 5,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800000.65,
+      "event": "node_complete",
+      "node": "dossier_parser"
+    },
+    {
+      "seq": 6,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800000.78,
+      "event": "node_start",
+      "node": "institutional"
+    },
+    {
+      "seq": 7,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800000.91,
+      "event": "progress",
+      "node": "institutional",
+      "message": "Preparing illustrative evidence",
+      "pct": 0.3
+    },
+    {
+      "seq": 8,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800001.04,
+      "event": "node_start",
+      "node": "twins"
+    },
+    {
+      "seq": 9,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800001.17,
+      "event": "progress",
+      "node": "twins",
+      "message": "Preparing illustrative evidence",
+      "pct": 0.3
+    },
+    {
+      "seq": 10,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800001.3,
+      "event": "school_rubric",
+      "stage": "fact_checked",
+      "rubric": {
+        "slug": "uiuc",
+        "name": "University of Illinois Urbana-Champaign",
+        "base_admit_rate": 0.44,
+        "ed_admit_rate": null,
+        "rd_admit_rate": null,
+        "pillar_weights": {
+          "academic": 0.55,
+          "extracurricular": 0.25,
+          "personal": 0.15,
+          "athletic": 0.05
+        },
+        "factor_levels": {
+          "rigor": "very_important",
+          "academic_gpa": "very_important",
+          "test_scores": "considered",
+          "essay": "important",
+          "extracurriculars": "important",
+          "applicant_interest": "not_considered"
+        },
+        "test_weight": 0.3,
+        "test_policy": "optional",
+        "sat_25": 1350,
+        "sat_75": 1530,
+        "hook_effects": {
+          "first_gen": 0.15
+        },
+        "residency_effect": 0.35,
+        "major_category": "computer_science",
+        "major_multiplier": 0.38,
+        "major_multiplier_source": "override",
+        "major_n": 0,
+        "major_college": "Grainger College of Engineering",
+        "direct_admit": true,
+        "notes": [
+          "Fictional fixture values for UI development."
+        ]
+      }
+    },
+    {
+      "seq": 11,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800001.43,
+      "event": "tool_call",
+      "node": "institutional",
+      "tool": "fixture.school_profile",
+      "status": "done",
+      "source": "fictional"
+    },
+    {
+      "seq": 12,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800001.56,
+      "event": "fact_checks",
+      "brief": {
+        "fact_checks": [
+          {
+            "field": "test_policy",
+            "db_value": "optional",
+            "web_value": "optional",
+            "verdict": "confirmed",
+            "source_ids": [
+              "W1"
+            ],
+            "note": "Fictional fixture, not a verified current-cycle policy."
+          }
+        ],
+        "strategic_priorities": [
+          {
+            "claim": "Growing interdisciplinary CS + X programs.",
+            "source_ids": [
+              "W1"
+            ],
+            "relevance_to_applicant": "some"
+          }
+        ],
+        "current_test_policy": "optional",
+        "major_admission_model": "direct_admit_capped",
+        "major_notes": "CS is capacity-capped; CS + X and math/stats are less constrained.",
+        "fit_signals": [
+          "Applied ML project aligns with CS + X"
+        ],
+        "misalignment_signals": [],
+        "analyst_summary": "Test-optional, direct admit to a capped major. The major multiplier dominates."
+      },
+      "snippets": [],
+      "zetaris_queries": []
+    },
+    {
+      "seq": 13,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800001.69,
+      "event": "node_complete",
+      "node": "institutional"
+    },
+    {
+      "seq": 14,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800001.82,
+      "event": "twins",
+      "twins": [
+        {
+          "index": 1,
+          "id": "00000000-0000-4000-8000-000000000001",
+          "source_url": "",
+          "cycle_year": 2025,
+          "matched_school": "uiuc",
+          "outcome": "rejected",
+          "gpa_uw": 3.9,
+          "sat_score": 1500,
+          "act_score": null,
+          "ap_count": 10,
+          "intended_major": "Computer Science",
+          "major_category": "computer_science",
+          "hooks": [],
+          "ec_tier_summary": {
+            "t1": 0,
+            "t2": 1,
+            "t3": 2
+          },
+          "top_activities": [
+            {
+              "description": "Led school programming practice and local workshops.",
+              "role": "Club organizer",
+              "tier": 2
+            }
+          ],
+          "awards": [],
+          "spike_summary": "Fictional programming and community project profile.",
+          "headline": "3.90 UW · 1500 SAT · computer science (fixture)",
+          "semantic_similarity": 0.9,
+          "stat_proximity": 0.88,
+          "hybrid_score": 0.89
+        },
+        {
+          "index": 2,
+          "id": "00000000-0000-4000-8000-000000000002",
+          "source_url": "",
+          "cycle_year": 2025,
+          "matched_school": "uiuc",
+          "outcome": "accepted",
+          "gpa_uw": 3.92,
+          "sat_score": 1510,
+          "act_score": null,
+          "ap_count": 11,
+          "intended_major": "Computer Science",
+          "major_category": "computer_science",
+          "hooks": [],
+          "ec_tier_summary": {
+            "t1": 0,
+            "t2": 1,
+            "t3": 2
+          },
+          "top_activities": [
+            {
+              "description": "Developed a community coding project with documented usage.",
+              "role": "Project lead",
+              "tier": 2
+            }
+          ],
+          "awards": [],
+          "spike_summary": "Fictional programming and community project profile.",
+          "headline": "3.92 UW · 1510 SAT · computer science (fixture)",
+          "semantic_similarity": 0.87,
+          "stat_proximity": 0.86,
+          "hybrid_score": 0.86
+        },
+        {
+          "index": 3,
+          "id": "00000000-0000-4000-8000-000000000003",
+          "source_url": "",
+          "cycle_year": 2025,
+          "matched_school": "uiuc",
+          "outcome": "accepted",
+          "gpa_uw": 3.94,
+          "sat_score": 1520,
+          "act_score": null,
+          "ap_count": 12,
+          "intended_major": "Computer Science",
+          "major_category": "computer_science",
+          "hooks": [],
+          "ec_tier_summary": {
+            "t1": 0,
+            "t2": 1,
+            "t3": 2
+          },
+          "top_activities": [
+            {
+              "description": "Developed a community coding project with documented usage.",
+              "role": "Project lead",
+              "tier": 2
+            }
+          ],
+          "awards": [],
+          "spike_summary": "Fictional programming and community project profile.",
+          "headline": "3.94 UW · 1520 SAT · computer science (fixture)",
+          "semantic_similarity": 0.8400000000000001,
+          "stat_proximity": 0.84,
+          "hybrid_score": 0.8300000000000001
+        },
+        {
+          "index": 4,
+          "id": "00000000-0000-4000-8000-000000000004",
+          "source_url": "",
+          "cycle_year": 2025,
+          "matched_school": "uiuc",
+          "outcome": "waitlisted",
+          "gpa_uw": 3.96,
+          "sat_score": 1530,
+          "act_score": null,
+          "ap_count": 13,
+          "intended_major": "Computer Science",
+          "major_category": "computer_science",
+          "hooks": [],
+          "ec_tier_summary": {
+            "t1": 0,
+            "t2": 1,
+            "t3": 2
+          },
+          "top_activities": [
+            {
+              "description": "Led school programming practice and local workshops.",
+              "role": "Club organizer",
+              "tier": 2
+            }
+          ],
+          "awards": [],
+          "spike_summary": "Fictional programming and community project profile.",
+          "headline": "3.96 UW · 1530 SAT · computer science (fixture)",
+          "semantic_similarity": 0.81,
+          "stat_proximity": 0.8200000000000001,
+          "hybrid_score": 0.8
+        },
+        {
+          "index": 5,
+          "id": "00000000-0000-4000-8000-000000000005",
+          "source_url": "",
+          "cycle_year": 2025,
+          "matched_school": "uiuc",
+          "outcome": "rejected",
+          "gpa_uw": 3.98,
+          "sat_score": 1540,
+          "act_score": null,
+          "ap_count": 14,
+          "intended_major": "Computer Science",
+          "major_category": "computer_science",
+          "hooks": [],
+          "ec_tier_summary": {
+            "t1": 0,
+            "t2": 1,
+            "t3": 2
+          },
+          "top_activities": [
+            {
+              "description": "Led school programming practice and local workshops.",
+              "role": "Club organizer",
+              "tier": 2
+            }
+          ],
+          "awards": [],
+          "spike_summary": "Fictional programming and community project profile.",
+          "headline": "3.98 UW · 1540 SAT · computer science (fixture)",
+          "semantic_similarity": 0.78,
+          "stat_proximity": 0.8,
+          "hybrid_score": 0.77
+        }
       ],
-      "relevance_to_applicant": "some"
-     }
-    ],
-    "current_test_policy": "optional",
-    "major_admission_model": "direct_admit_capped",
-    "major_notes": "CS is capacity-capped; CS + X and math/stats are less constrained.",
-    "fit_signals": [
-     "Applied ML project aligns with CS + X"
-    ],
-    "misalignment_signals": [],
-    "analyst_summary": "Test-optional, direct admit to a capped major. The major multiplier dominates."
-   },
-   "snippets": [
-    {
-     "id": "W1",
-     "url": "https://example.edu/admissions/cs",
-     "title": "CS admission (fixture)",
-     "content": "Computer science admits directly into the major; capacity is limited.",
-     "published": null
-    }
-   ],
-   "zetaris_queries": []
-  },
-  {
-   "seq": 16,
-   "run_id": "fake",
-   "ts": 1793912353.85,
-   "event": "school_rubric",
-   "stage": "fact_checked",
-   "rubric": {
-    "slug": "uiuc",
-    "name": "University of Illinois Urbana-Champaign",
-    "base_admit_rate": 0.44,
-    "ed_admit_rate": null,
-    "rd_admit_rate": null,
-    "pillar_weights": {
-     "academic": 0.55,
-     "extracurricular": 0.25,
-     "personal": 0.15,
-     "athletic": 0.05
-    },
-    "factor_levels": {
-     "rigor": "very_important",
-     "academic_gpa": "very_important",
-     "test_scores": "considered",
-     "essay": "important",
-     "extracurriculars": "important"
-    },
-    "test_weight": 0.3,
-    "test_policy": "optional",
-    "sat_25": 1350,
-    "sat_75": 1530,
-    "hook_effects": {
-     "first_gen": 0.15
-    },
-    "residency_effect": 0.35,
-    "major_category": "computer_science",
-    "major_multiplier": 0.38,
-    "major_multiplier_source": "override",
-    "major_n": 0,
-    "major_college": "Grainger College of Engineering",
-    "direct_admit": true,
-    "notes": [
-     "Fictional fixture values for UI development."
-    ]
-   }
-  },
-  {
-   "seq": 17,
-   "run_id": "fake",
-   "ts": 1793912354.15,
-   "event": "node_end",
-   "node": "institutional",
-   "elapsed_ms": 3600
-  },
-  {
-   "seq": 18,
-   "run_id": "fake",
-   "ts": 1793912354.2,
-   "event": "node_complete",
-   "node": "institutional"
-  },
-  {
-   "seq": 19,
-   "run_id": "fake",
-   "ts": 1793912354.5,
-   "event": "node_start",
-   "node": "twins",
-   "label": "Applicant Twins (Hybrid RAG)"
-  },
-  {
-   "seq": 20,
-   "run_id": "fake",
-   "ts": 1793912354.8,
-   "event": "tool_call",
-   "node": "twins",
-   "tool": "rpc.match_applicant_twins",
-   "status": "started",
-   "k": 5
-  },
-  {
-   "seq": 21,
-   "run_id": "fake",
-   "ts": 1793912355.8,
-   "event": "tool_call",
-   "node": "twins",
-   "tool": "rpc.match_applicant_twins",
-   "status": "done",
-   "result_count": 5
-  },
-  {
-   "seq": 22,
-   "run_id": "fake",
-   "ts": 1793912356.1,
-   "event": "twins",
-   "twins": [
-    {
-     "index": 1,
-     "id": "00000000-0000-4000-8000-000000000001",
-     "source_url": "https://www.reddit.com/r/collegeresults/",
-     "cycle_year": 2025,
-     "matched_school": "uiuc",
-     "outcome": "rejected",
-     "gpa_uw": 3.9,
-     "sat_score": 1500,
-     "act_score": null,
-     "ap_count": 10,
-     "intended_major": "Computer Science",
-     "major_category": "computer_science",
-     "hooks": [],
-     "ec_tier_summary": {
-      "t1": 0,
-      "t2": 1,
-      "t3": 2
-     },
-     "top_activities": [],
-     "awards": [],
-     "spike_summary": null,
-     "headline": "3.90 UW \u00b7 1500 SAT \u00b7 computer science (fixture)",
-     "semantic_similarity": 0.9,
-     "stat_proximity": 0.88,
-     "hybrid_score": 0.89
+      "widened_to_peers": false,
+      "peer_schools": []
     },
     {
-     "index": 2,
-     "id": "00000000-0000-4000-8000-000000000002",
-     "source_url": "https://www.reddit.com/r/collegeresults/",
-     "cycle_year": 2025,
-     "matched_school": "uiuc",
-     "outcome": "accepted",
-     "gpa_uw": 3.92,
-     "sat_score": 1510,
-     "act_score": null,
-     "ap_count": 11,
-     "intended_major": "Computer Science",
-     "major_category": "computer_science",
-     "hooks": [],
-     "ec_tier_summary": {
-      "t1": 0,
-      "t2": 1,
-      "t3": 2
-     },
-     "top_activities": [],
-     "awards": [],
-     "spike_summary": null,
-     "headline": "3.92 UW \u00b7 1510 SAT \u00b7 computer science (fixture)",
-     "semantic_similarity": 0.87,
-     "stat_proximity": 0.86,
-     "hybrid_score": 0.86
+      "seq": 15,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800001.95,
+      "event": "baseline",
+      "baseline": {
+        "n_neighbors": 40,
+        "n_accepted": 14,
+        "n_waitlisted": 4,
+        "n_rejected": 22,
+        "n_effective": 31.5,
+        "weighted_admit_rate": 0.36,
+        "wilson_low": 0.23,
+        "wilson_high": 0.51,
+        "odds_inflation": 2.4,
+        "deflated_admit_rate": 0.19,
+        "widened_to_peers": false,
+        "peer_schools": [],
+        "sum_w": 33.1,
+        "sum_w2": 34.8,
+        "sum_w_admit": 11.9
+      }
     },
     {
-     "index": 3,
-     "id": "00000000-0000-4000-8000-000000000003",
-     "source_url": "https://www.reddit.com/r/collegeresults/",
-     "cycle_year": 2025,
-     "matched_school": "uiuc",
-     "outcome": "accepted",
-     "gpa_uw": 3.94,
-     "sat_score": 1520,
-     "act_score": null,
-     "ap_count": 12,
-     "intended_major": "Computer Science",
-     "major_category": "computer_science",
-     "hooks": [],
-     "ec_tier_summary": {
-      "t1": 0,
-      "t2": 1,
-      "t3": 2
-     },
-     "top_activities": [],
-     "awards": [],
-     "spike_summary": null,
-     "headline": "3.94 UW \u00b7 1520 SAT \u00b7 computer science (fixture)",
-     "semantic_similarity": 0.8400000000000001,
-     "stat_proximity": 0.84,
-     "hybrid_score": 0.8300000000000001
+      "seq": 16,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800002.08,
+      "event": "radar",
+      "radar": {
+        "n_admitted": 2,
+        "axes": [
+          {
+            "key": "gpa",
+            "label": "GPA",
+            "you_raw": 3.94,
+            "admitted_raw": 3.9299999999999997,
+            "you": 88.0,
+            "admitted_median": 86.0,
+            "assumed": false
+          },
+          {
+            "key": "test",
+            "label": "Testing",
+            "you_raw": 1520,
+            "admitted_raw": 1515.0,
+            "you": 73.3,
+            "admitted_median": 71.7,
+            "assumed": false
+          },
+          {
+            "key": "rigor",
+            "label": "Rigor",
+            "you_raw": 12,
+            "admitted_raw": 11.5,
+            "you": 85.7,
+            "admitted_median": 82.1,
+            "assumed": false
+          },
+          {
+            "key": "activities",
+            "label": "Activities",
+            "you_raw": 3.5774999999999997,
+            "admitted_raw": 3.275,
+            "you": 42.7,
+            "admitted_median": 49.4,
+            "assumed": false
+          },
+          {
+            "key": "spike",
+            "label": "Spike (T1/T2)",
+            "you_raw": 1,
+            "admitted_raw": 1,
+            "you": 25.0,
+            "admitted_median": 25.0,
+            "assumed": false
+          },
+          {
+            "key": "personal",
+            "label": "Essay & Personal",
+            "you_raw": 3.67,
+            "admitted_raw": 3,
+            "you": 46.6,
+            "admitted_median": 60.0,
+            "assumed": true
+          }
+        ]
+      }
     },
     {
-     "index": 4,
-     "id": "00000000-0000-4000-8000-000000000004",
-     "source_url": "https://www.reddit.com/r/collegeresults/",
-     "cycle_year": 2025,
-     "matched_school": "uiuc",
-     "outcome": "waitlisted",
-     "gpa_uw": 3.96,
-     "sat_score": 1530,
-     "act_score": null,
-     "ap_count": 13,
-     "intended_major": "Computer Science",
-     "major_category": "computer_science",
-     "hooks": [],
-     "ec_tier_summary": {
-      "t1": 0,
-      "t2": 1,
-      "t3": 2
-     },
-     "top_activities": [],
-     "awards": [],
-     "spike_summary": null,
-     "headline": "3.96 UW \u00b7 1530 SAT \u00b7 computer science (fixture)",
-     "semantic_similarity": 0.81,
-     "stat_proximity": 0.8200000000000001,
-     "hybrid_score": 0.8
+      "seq": 17,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800002.21,
+      "event": "twin_analysis",
+      "analysis": {
+        "comparisons": [
+          {
+            "twin_index": 1,
+            "key_similarity": "Same GPA band and CS spike.",
+            "key_difference": "Twin had no research.",
+            "plausible_deciding_factor": "An illustrative comparison, not a proven reason for an admission decision."
+          }
+        ],
+        "pattern_summary": "Admitted twins paired competitions with a shipped project.",
+        "pattern_strength": "moderate",
+        "applicant_gaps": [
+          "Impact evidence beyond competitions"
+        ],
+        "applicant_edges": [
+          "Applied ML project"
+        ]
+      }
     },
     {
-     "index": 5,
-     "id": "00000000-0000-4000-8000-000000000005",
-     "source_url": "https://www.reddit.com/r/collegeresults/",
-     "cycle_year": 2025,
-     "matched_school": "uiuc",
-     "outcome": "rejected",
-     "gpa_uw": 3.98,
-     "sat_score": 1540,
-     "act_score": null,
-     "ap_count": 14,
-     "intended_major": "Computer Science",
-     "major_category": "computer_science",
-     "hooks": [],
-     "ec_tier_summary": {
-      "t1": 0,
-      "t2": 1,
-      "t3": 2
-     },
-     "top_activities": [],
-     "awards": [],
-     "spike_summary": null,
-     "headline": "3.98 UW \u00b7 1540 SAT \u00b7 computer science (fixture)",
-     "semantic_similarity": 0.78,
-     "stat_proximity": 0.8,
-     "hybrid_score": 0.77
-    }
-   ],
-   "widened_to_peers": false,
-   "peer_schools": []
-  },
-  {
-   "seq": 23,
-   "run_id": "fake",
-   "ts": 1793912356.4,
-   "event": "baseline",
-   "baseline": {
-    "n_neighbors": 40,
-    "n_accepted": 14,
-    "n_waitlisted": 4,
-    "n_rejected": 22,
-    "n_effective": 31.5,
-    "weighted_admit_rate": 0.36,
-    "wilson_low": 0.23,
-    "wilson_high": 0.51,
-    "odds_inflation": 2.4,
-    "deflated_admit_rate": 0.19,
-    "widened_to_peers": false,
-    "peer_schools": [],
-    "sum_w": 33.1,
-    "sum_w2": 34.8,
-    "sum_w_admit": 11.9
-   }
-  },
-  {
-   "seq": 24,
-   "run_id": "fake",
-   "ts": 1793912357.9,
-   "event": "twin_analysis",
-   "analysis": {
-    "comparisons": [
-     {
-      "twin_index": 1,
-      "key_similarity": "Same GPA band and CS spike.",
-      "key_difference": "Twin had no research.",
-      "plausible_deciding_factor": "Major cap rather than profile strength."
-     }
-    ],
-    "pattern_summary": "Admitted twins paired competitions with a shipped project.",
-    "pattern_strength": "moderate",
-    "applicant_gaps": [
-     "Impact evidence beyond competitions"
-    ],
-    "applicant_edges": [
-     "Applied ML project"
-    ]
-   }
-  },
-  {
-   "seq": 25,
-   "run_id": "fake",
-   "ts": 1793912358.2,
-   "event": "node_end",
-   "node": "twins",
-   "elapsed_ms": 4200
-  },
-  {
-   "seq": 26,
-   "run_id": "fake",
-   "ts": 1793912358.25,
-   "event": "node_complete",
-   "node": "twins"
-  },
-  {
-   "seq": 27,
-   "run_id": "fake",
-   "ts": 1793912358.75,
-   "event": "probability",
-   "probability": {
-    "p_final": 0.214,
-    "p_low": 0.129,
-    "p_high": 0.315,
-    "p_model": 0.239,
-    "base_admit_rate": 0.44,
-    "components": [
-     {
-      "key": "base",
-      "label": "School admit rate",
-      "delta_logit": 0.0,
-      "delta_pp": 44.0,
-      "detail": "CDS"
-     },
-     {
-      "key": "major",
-      "label": "Major competitiveness",
-      "delta_logit": -1.05,
-      "delta_pp": -22.4,
-      "detail": "Grainger CS \u00d70.38"
-     },
-     {
-      "key": "academic",
-      "label": "Academic rating",
-      "delta_logit": 0.2,
-      "delta_pp": 4.1,
-      "detail": "Academic 2-"
-     },
-     {
-      "key": "twins",
-      "label": "Applicant-twin evidence",
-      "delta_logit": -0.15,
-      "delta_pp": -2.5,
-      "detail": "n_eff 31.5"
-     }
-    ],
-    "disposition": "WAITLIST"
-   },
-   "scoring_inputs": {}
-  },
-  {
-   "seq": 28,
-   "run_id": "fake",
-   "ts": 1793912358.8,
-   "event": "node_complete",
-   "node": "committee_docket"
-  },
-  {
-   "seq": 29,
-   "run_id": "fake",
-   "ts": 1793912359.4,
-   "event": "debate_turn_start",
-   "turn": 1,
-   "speaker": "advocate"
-  },
-  {
-   "seq": 30,
-   "run_id": "fake",
-   "ts": 1793912359.46,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": "Her"
-  },
-  {
-   "seq": 31,
-   "run_id": "fake",
-   "ts": 1793912359.52,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " competitive"
-  },
-  {
-   "seq": 32,
-   "run_id": "fake",
-   "ts": 1793912359.58,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " programming"
-  },
-  {
-   "seq": 33,
-   "run_id": "fake",
-   "ts": 1793912359.64,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " is"
-  },
-  {
-   "seq": 34,
-   "run_id": "fake",
-   "ts": 1793912359.84,
-   "event": "debate_reset",
-   "turn": 1,
-   "speaker": "advocate"
-  },
-  {
-   "seq": 35,
-   "run_id": "fake",
-   "ts": 1793912359.9,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": "Her"
-  },
-  {
-   "seq": 36,
-   "run_id": "fake",
-   "ts": 1793912359.96,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " competitive"
-  },
-  {
-   "seq": 37,
-   "run_id": "fake",
-   "ts": 1793912360.02,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " programming"
-  },
-  {
-   "seq": 38,
-   "run_id": "fake",
-   "ts": 1793912360.08,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " is"
-  },
-  {
-   "seq": 39,
-   "run_id": "fake",
-   "ts": 1793912360.14,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " national-level"
-  },
-  {
-   "seq": 40,
-   "run_id": "fake",
-   "ts": 1793912360.2,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " [[dossier:activities.0]]"
-  },
-  {
-   "seq": 41,
-   "run_id": "fake",
-   "ts": 1793912360.26,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " and"
-  },
-  {
-   "seq": 42,
-   "run_id": "fake",
-   "ts": 1793912360.32,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " admitted"
-  },
-  {
-   "seq": 43,
-   "run_id": "fake",
-   "ts": 1793912360.38,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " twins"
-  },
-  {
-   "seq": 44,
-   "run_id": "fake",
-   "ts": 1793912360.44,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " look"
-  },
-  {
-   "seq": 45,
-   "run_id": "fake",
-   "ts": 1793912360.5,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " like"
-  },
-  {
-   "seq": 46,
-   "run_id": "fake",
-   "ts": 1793912360.56,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " her"
-  },
-  {
-   "seq": 47,
-   "run_id": "fake",
-   "ts": 1793912360.62,
-   "event": "debate_token",
-   "turn": 1,
-   "speaker": "advocate",
-   "delta": " [[twin:2]]."
-  },
-  {
-   "seq": 48,
-   "run_id": "fake",
-   "ts": 1793912360.72,
-   "event": "debate_turn_end",
-   "turn": 1,
-   "speaker": "advocate",
-   "content": "Her competitive programming is national-level [[dossier:activities.0]] and admitted twins look like her [[twin:2]].",
-   "citations": [
-    {
-     "kind": "dossier",
-     "ref": "activities.0",
-     "valid": true,
-     "span": [
-      46,
-      70
-     ]
+      "seq": 18,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800002.34,
+      "event": "node_complete",
+      "node": "twins"
     },
     {
-     "kind": "twin",
-     "ref": "2",
-     "valid": true,
-     "span": [
-      104,
-      114
-     ]
-    }
-   ],
-   "recommendation": null,
-   "degraded": false
-  },
-  {
-   "seq": 49,
-   "run_id": "fake",
-   "ts": 1793912360.77,
-   "event": "node_complete",
-   "node": "advocate"
-  },
-  {
-   "seq": 50,
-   "run_id": "fake",
-   "ts": 1793912361.37,
-   "event": "debate_turn_start",
-   "turn": 2,
-   "speaker": "chair"
-  },
-  {
-   "seq": 51,
-   "run_id": "fake",
-   "ts": 1793912361.43,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": "Grainger"
-  },
-  {
-   "seq": 52,
-   "run_id": "fake",
-   "ts": 1793912361.49,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " CS"
-  },
-  {
-   "seq": 53,
-   "run_id": "fake",
-   "ts": 1793912361.55,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " runs"
-  },
-  {
-   "seq": 54,
-   "run_id": "fake",
-   "ts": 1793912361.61,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " at"
-  },
-  {
-   "seq": 55,
-   "run_id": "fake",
-   "ts": 1793912361.67,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " a"
-  },
-  {
-   "seq": 56,
-   "run_id": "fake",
-   "ts": 1793912361.73,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " \u00d70.38"
-  },
-  {
-   "seq": 57,
-   "run_id": "fake",
-   "ts": 1793912361.79,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " multiplier"
-  },
-  {
-   "seq": 58,
-   "run_id": "fake",
-   "ts": 1793912361.85,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " [[cds:major.computer_science]],"
-  },
-  {
-   "seq": 59,
-   "run_id": "fake",
-   "ts": 1793912361.91,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " so"
-  },
-  {
-   "seq": 60,
-   "run_id": "fake",
-   "ts": 1793912361.97,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " I"
-  },
-  {
-   "seq": 61,
-   "run_id": "fake",
-   "ts": 1793912362.03,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " land"
-  },
-  {
-   "seq": 62,
-   "run_id": "fake",
-   "ts": 1793912362.09,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " on"
-  },
-  {
-   "seq": 63,
-   "run_id": "fake",
-   "ts": 1793912362.15,
-   "event": "debate_token",
-   "turn": 2,
-   "speaker": "chair",
-   "delta": " waitlist."
-  },
-  {
-   "seq": 64,
-   "run_id": "fake",
-   "ts": 1793912362.25,
-   "event": "debate_turn_end",
-   "turn": 2,
-   "speaker": "chair",
-   "content": "Grainger CS runs at a \u00d70.38 multiplier [[cds:major.computer_science]], so I land on waitlist.",
-   "citations": [
+      "seq": 19,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800002.47,
+      "event": "node_start",
+      "node": "committee_docket"
+    },
     {
-     "kind": "cds",
-     "ref": "major.computer_science",
-     "valid": true,
-     "span": [
-      39,
-      69
-     ]
-    }
-   ],
-   "recommendation": "WAITLIST",
-   "degraded": false
-  },
-  {
-   "seq": 65,
-   "run_id": "fake",
-   "ts": 1793912362.3,
-   "event": "node_complete",
-   "node": "chair"
-  },
-  {
-   "seq": 66,
-   "run_id": "fake",
-   "ts": 1793912362.6,
-   "event": "node_start",
-   "node": "delta_engine",
-   "label": "Actionable Delta & Major Arbitrage"
-  },
-  {
-   "seq": 67,
-   "run_id": "fake",
-   "ts": 1793912363.6,
-   "event": "counterfactuals",
-   "counterfactuals": [
+      "seq": 20,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800002.6,
+      "event": "probability",
+      "probability": {
+        "p_final": 0.3368,
+        "p_low": 0.2328,
+        "p_high": 0.4454,
+        "p_model": 0.5823,
+        "base_admit_rate": 0.44,
+        "components": [
+          {
+            "key": "base",
+            "label": "School admit rate",
+            "delta_logit": 0.0,
+            "delta_pp": 44.0,
+            "detail": "Overall admit rate 44.0%"
+          },
+          {
+            "key": "major",
+            "label": "Major competitiveness",
+            "delta_logit": -0.9676,
+            "delta_pp": -21.01,
+            "detail": "multiplier ×0.38"
+          },
+          {
+            "key": "academic",
+            "label": "Academic rating",
+            "delta_logit": 0.737,
+            "delta_pp": 15.43,
+            "detail": "rating 2.33 vs pool 3.0, school weight 0.55"
+          },
+          {
+            "key": "extracurricular",
+            "label": "Extracurricular rating",
+            "delta_logit": 0.415,
+            "delta_pp": 10.16,
+            "detail": "rating 2.67 vs pool 3.5, school weight 0.25"
+          },
+          {
+            "key": "personal",
+            "label": "Personal rating",
+            "delta_logit": -0.051,
+            "delta_pp": -1.27,
+            "detail": "rating 3.67 vs pool 3.5, school weight 0.15"
+          },
+          {
+            "key": "athletic",
+            "label": "Athletic rating",
+            "delta_logit": 0.0,
+            "delta_pp": 0.0,
+            "detail": "rating 4.00 vs pool 4.0, school weight 0.05"
+          },
+          {
+            "key": "test",
+            "label": "Test score position",
+            "delta_logit": 0.0899,
+            "delta_pp": 2.25,
+            "detail": "z=+0.60 in school's 25–75 band"
+          },
+          {
+            "key": "hooks",
+            "label": "Hooks (C7-gated)",
+            "delta_logit": 0.0,
+            "delta_pp": 0.0,
+            "detail": "none"
+          },
+          {
+            "key": "residency",
+            "label": "Residency",
+            "delta_logit": 0.35,
+            "delta_pp": 8.67,
+            "detail": "public-university residency effect"
+          },
+          {
+            "key": "early",
+            "label": "Application round",
+            "delta_logit": 0.0,
+            "delta_pp": 0.0,
+            "detail": "EA"
+          },
+          {
+            "key": "interest",
+            "label": "Demonstrated interest",
+            "delta_logit": 0.0,
+            "delta_pp": 0.0,
+            "detail": "counts only where C7 considers applicant interest"
+          },
+          {
+            "key": "twins",
+            "label": "Applicant-twin evidence",
+            "delta_logit": -1.0096,
+            "delta_pp": -24.55,
+            "detail": "20.0 effective twins; raw Reddit admit rate 36% deflated ×2.4 odds → 19%"
+          }
+        ],
+        "disposition": "WAITLIST"
+      },
+      "scoring_inputs": {
+        "base_admit_rate": 0.44,
+        "major_multiplier": 0.38,
+        "pillar_weights": {
+          "academic": 0.55,
+          "extracurricular": 0.25,
+          "personal": 0.15,
+          "athletic": 0.05
+        },
+        "ratings": {
+          "academic": 2.33,
+          "extracurricular": 2.67,
+          "personal": 3.67,
+          "athletic": 4.0
+        },
+        "test_weight": 0.3,
+        "test_policy": "optional",
+        "sat": 1520,
+        "sat_25": 1350,
+        "sat_75": 1530,
+        "hooks": [],
+        "hook_effects": {},
+        "residency_effect": 0.35,
+        "early_round": "EA",
+        "ed_admit_rate": null,
+        "rd_admit_rate": null,
+        "ea_admit_rate": null,
+        "applicant_interest_weight": 0.0,
+        "demonstrated_interest": false,
+        "twin_sum_w": 33.1,
+        "twin_sum_w2": 34.8,
+        "twin_sum_w_admit": 11.9,
+        "odds_inflation": 2.4
+      }
+    },
     {
-     "id": "cf_major_math_stats",
-     "kind": "major_switch",
-     "label": "Apply as math & statistics (LAS)",
-     "p_new": 0.431,
-     "delta_pp": 21.7,
-     "confidence": "data_backed",
-     "evidence": "Fixture: academically similar applicants in math_stats were admitted more often.",
-     "overrides": {
-      "major_multiplier": 1.12
-     }
-    }
-   ]
-  },
-  {
-   "seq": 68,
-   "run_id": "fake",
-   "ts": 1793912365.1,
-   "event": "final_report",
-   "report": {
-    "headline_verdict": "A strong CS applicant held back by the major cap, not by her profile.",
-    "committee_disposition": "WAITLIST",
-    "ranked_pivots": [
-     {
-      "counterfactual_id": "cf_major_math_stats",
-      "title": "Apply through math & statistics",
-      "why_it_works": "Same academic bar, far less capacity pressure.",
-      "concrete_steps": [
-       "Check transfer-into-CS rules",
-       "Reframe the essay around modeling"
+      "seq": 21,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800002.73,
+      "event": "node_complete",
+      "node": "committee_docket"
+    },
+    {
+      "seq": 22,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800002.86,
+      "event": "debate_turn_start",
+      "turn": 1,
+      "speaker": "advocate"
+    },
+    {
+      "seq": 23,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800002.99,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "Her sustained programming "
+    },
+    {
+      "seq": 24,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800003.12,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "work gives this "
+    },
+    {
+      "seq": 25,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800003.25,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "application a coherent "
+    },
+    {
+      "seq": 26,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800003.38,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "story [[dossier:activities.0]]. Twin "
+    },
+    {
+      "seq": 27,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800003.51,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "2 also connects "
+    },
+    {
+      "seq": 28,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800003.64,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "technical work with "
+    },
+    {
+      "seq": 29,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800003.77,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "a delivered community "
+    },
+    {
+      "seq": 30,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800003.9,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "project [[twin:2]]. These "
+    },
+    {
+      "seq": 31,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800004.03,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "fictional comparisons give "
+    },
+    {
+      "seq": 32,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800004.16,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "us useful questions "
+    },
+    {
+      "seq": 33,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800004.29,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "to ask about "
+    },
+    {
+      "seq": 34,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800004.42,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "impact, not a "
+    },
+    {
+      "seq": 35,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800004.55,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "reason to promise "
+    },
+    {
+      "seq": 36,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800004.68,
+      "event": "debate_token",
+      "turn": 1,
+      "speaker": "advocate",
+      "delta": "an outcome."
+    },
+    {
+      "seq": 37,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800004.81,
+      "event": "debate_turn_end",
+      "turn": 1,
+      "speaker": "advocate",
+      "content": "Her sustained programming work gives this application a coherent story [[dossier:activities.0]]. Twin 2 also connects technical work with a delivered community project [[twin:2]]. These fictional comparisons give us useful questions to ask about impact, not a reason to promise an outcome.",
+      "citations": [
+        {
+          "kind": "dossier",
+          "ref": "activities.0",
+          "valid": true,
+          "span": [
+            71,
+            95
+          ]
+        },
+        {
+          "kind": "twin",
+          "ref": "2",
+          "valid": true,
+          "span": [
+            168,
+            178
+          ]
+        }
       ],
-      "effort": "days",
-      "tradeoffs": "Moving into CS later is not guaranteed."
-     }
-    ],
-    "major_arbitrage_note": "Math & statistics shares most of the CS core in year one.",
-    "essay_adjustments": [
-     {
-      "issue": "Generic ending",
-      "current_excerpt": "In the end, I learned a lot.",
-      "direction": "End on what she will build next.",
-      "example_rewrite": "Next I want to make the classifier run on a $30 phone."
-     }
-    ],
-    "risks_to_watch": [
-     "Major cap can change year to year"
-    ],
-    "disclaimer": "An estimate from public data, not a prediction of any admissions decision."
-   }
-  },
-  {
-   "seq": 69,
-   "run_id": "fake",
-   "ts": 1793912365.4,
-   "event": "node_end",
-   "node": "delta_engine",
-   "elapsed_ms": 2900
-  },
-  {
-   "seq": 70,
-   "run_id": "fake",
-   "ts": 1793912365.45,
-   "event": "node_complete",
-   "node": "delta_engine"
-  },
-  {
-   "seq": 71,
-   "run_id": "fake",
-   "ts": 1793912365.55,
-   "event": "done",
-   "status": "complete",
-   "elapsed_ms": 20449
-  }
- ]
+      "recommendation": null,
+      "degraded": false
+    },
+    {
+      "seq": 38,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800004.94,
+      "event": "debate_turn_start",
+      "turn": 2,
+      "speaker": "chair"
+    },
+    {
+      "seq": 39,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800005.07,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "The major constraint "
+    },
+    {
+      "seq": 40,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800005.2,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "deserves equal attention "
+    },
+    {
+      "seq": 41,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800005.33,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "[[model:major]]. Similar grades "
+    },
+    {
+      "seq": 42,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800005.46,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "did not produce "
+    },
+    {
+      "seq": 43,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800005.59,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "identical outcomes among "
+    },
+    {
+      "seq": 44,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800005.72,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "these examples [[twin:1]]. "
+    },
+    {
+      "seq": 45,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800005.85,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "We should distinguish "
+    },
+    {
+      "seq": 46,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800005.98,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "the strength of "
+    },
+    {
+      "seq": 47,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800006.11,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "her file from "
+    },
+    {
+      "seq": 48,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800006.24,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "capacity pressure, keep "
+    },
+    {
+      "seq": 49,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800006.37,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "the model range "
+    },
+    {
+      "seq": 50,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800006.5,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "visible, and avoid "
+    },
+    {
+      "seq": 51,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800006.63,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "turning a small "
+    },
+    {
+      "seq": 52,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800006.76,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "illustrative cohort into "
+    },
+    {
+      "seq": 53,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800006.89,
+      "event": "debate_token",
+      "turn": 2,
+      "speaker": "chair",
+      "delta": "certainty."
+    },
+    {
+      "seq": 54,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800007.02,
+      "event": "debate_turn_end",
+      "turn": 2,
+      "speaker": "chair",
+      "content": "The major constraint deserves equal attention [[model:major]]. Similar grades did not produce identical outcomes among these examples [[twin:1]]. We should distinguish the strength of her file from capacity pressure, keep the model range visible, and avoid turning a small illustrative cohort into certainty.",
+      "citations": [
+        {
+          "kind": "model",
+          "ref": "major",
+          "valid": true,
+          "span": [
+            46,
+            61
+          ]
+        },
+        {
+          "kind": "twin",
+          "ref": "1",
+          "valid": true,
+          "span": [
+            134,
+            144
+          ]
+        }
+      ],
+      "recommendation": null,
+      "degraded": false
+    },
+    {
+      "seq": 55,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800007.15,
+      "event": "debate_turn_start",
+      "turn": 3,
+      "speaker": "advocate"
+    },
+    {
+      "seq": 56,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800007.28,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "Her independent classifier "
+    },
+    {
+      "seq": 57,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800007.41,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "points toward a "
+    },
+    {
+      "seq": 58,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800007.54,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "way to make "
+    },
+    {
+      "seq": 59,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800007.67,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "that impact tangible "
+    },
+    {
+      "seq": 60,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800007.8,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "[[dossier:activities.1]]. I would "
+    },
+    {
+      "seq": 61,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800007.93,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "ask for evidence "
+    },
+    {
+      "seq": 62,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800008.06,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "of who used "
+    },
+    {
+      "seq": 63,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800008.19,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "it, what changed, "
+    },
+    {
+      "seq": 64,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800008.32,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "and what she "
+    },
+    {
+      "seq": 65,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800008.45,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "learned from failure. "
+    },
+    {
+      "seq": 66,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800008.58,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "The activity rating "
+    },
+    {
+      "seq": 67,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800008.71,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "is a starting "
+    },
+    {
+      "seq": 68,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800008.84,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "point for that "
+    },
+    {
+      "seq": 69,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800008.97,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "conversation [[model:extracurricular]], not "
+    },
+    {
+      "seq": 70,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800009.1,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "a substitute for "
+    },
+    {
+      "seq": 71,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800009.23,
+      "event": "debate_token",
+      "turn": 3,
+      "speaker": "advocate",
+      "delta": "reading her work."
+    },
+    {
+      "seq": 72,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800009.36,
+      "event": "debate_turn_end",
+      "turn": 3,
+      "speaker": "advocate",
+      "content": "Her independent classifier points toward a way to make that impact tangible [[dossier:activities.1]]. I would ask for evidence of who used it, what changed, and what she learned from failure. The activity rating is a starting point for that conversation [[model:extracurricular]], not a substitute for reading her work.",
+      "citations": [
+        {
+          "kind": "dossier",
+          "ref": "activities.1",
+          "valid": true,
+          "span": [
+            76,
+            100
+          ]
+        },
+        {
+          "kind": "model",
+          "ref": "extracurricular",
+          "valid": true,
+          "span": [
+            254,
+            279
+          ]
+        }
+      ],
+      "recommendation": null,
+      "degraded": false
+    },
+    {
+      "seq": 73,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800009.49,
+      "event": "debate_turn_start",
+      "turn": 4,
+      "speaker": "chair"
+    },
+    {
+      "seq": 74,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800009.62,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "I agree that "
+    },
+    {
+      "seq": 75,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800009.75,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "a clearer account "
+    },
+    {
+      "seq": 76,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800009.88,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "of learning would "
+    },
+    {
+      "seq": 77,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800010.01,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "strengthen the essay "
+    },
+    {
+      "seq": 78,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800010.14,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "[[dossier:essay]]. The simulated "
+    },
+    {
+      "seq": 79,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800010.27,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "alternatives should help "
+    },
+    {
+      "seq": 80,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800010.4,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "her explore a "
+    },
+    {
+      "seq": 81,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800010.53,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "major she actually "
+    },
+    {
+      "seq": 82,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800010.66,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "wants to study, "
+    },
+    {
+      "seq": 83,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800010.79,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "with curriculum and "
+    },
+    {
+      "seq": 84,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800010.92,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "transfer restrictions checked "
+    },
+    {
+      "seq": 85,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800011.05,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "separately. My recommendation "
+    },
+    {
+      "seq": 86,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800011.18,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "follows the computed "
+    },
+    {
+      "seq": 87,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800011.31,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "model disposition, with "
+    },
+    {
+      "seq": 88,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800011.44,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "its uncertainty and "
+    },
+    {
+      "seq": 89,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800011.57,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "the fictional status "
+    },
+    {
+      "seq": 90,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800011.7,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "of this replay "
+    },
+    {
+      "seq": 91,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800011.83,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "clearly stated [[model:twins]]."
+    },
+    {
+      "seq": 92,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800011.96,
+      "event": "debate_turn_end",
+      "turn": 4,
+      "speaker": "chair",
+      "content": "I agree that a clearer account of learning would strengthen the essay [[dossier:essay]]. The simulated alternatives should help her explore a major she actually wants to study, with curriculum and transfer restrictions checked separately. My recommendation follows the computed model disposition, with its uncertainty and the fictional status of this replay clearly stated [[model:twins]].",
+      "citations": [
+        {
+          "kind": "dossier",
+          "ref": "essay",
+          "valid": true,
+          "span": [
+            70,
+            87
+          ]
+        },
+        {
+          "kind": "model",
+          "ref": "twins",
+          "valid": true,
+          "span": [
+            373,
+            388
+          ]
+        }
+      ],
+      "recommendation": "WAITLIST",
+      "degraded": false
+    },
+    {
+      "seq": 93,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800012.09,
+      "event": "node_complete",
+      "node": "advocate"
+    },
+    {
+      "seq": 94,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800012.22,
+      "event": "node_complete",
+      "node": "chair"
+    },
+    {
+      "seq": 95,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800012.35,
+      "event": "node_start",
+      "node": "delta_engine"
+    },
+    {
+      "seq": 96,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800012.48,
+      "event": "counterfactuals",
+      "counterfactuals": [
+        {
+          "id": "cf_major_math_stats",
+          "kind": "major_switch",
+          "label": "Explore math & statistics",
+          "p_new": 0.4201,
+          "delta_pp": 8.33,
+          "confidence": "model_estimate",
+          "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+          "overrides": {
+            "major_multiplier": 1.12
+          }
+        },
+        {
+          "id": "cf_add_tier2",
+          "kind": "add_activity",
+          "label": "Build a Tier 2 activity",
+          "p_new": 0.3837,
+          "delta_pp": 4.69,
+          "confidence": "model_estimate",
+          "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+          "overrides": {
+            "ratings": {
+              "academic": 2.33,
+              "extracurricular": 1.5700000000000003,
+              "personal": 3.67,
+              "athletic": 4.0
+            }
+          }
+        },
+        {
+          "id": "cf_essay",
+          "kind": "essay",
+          "label": "Strengthen your personal essay",
+          "p_new": 0.3633,
+          "delta_pp": 2.65,
+          "confidence": "model_estimate",
+          "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+          "overrides": {
+            "ratings": {
+              "academic": 2.33,
+              "extracurricular": 2.67,
+              "personal": 2.67,
+              "athletic": 4.0
+            }
+          }
+        },
+        {
+          "id": "cf_sat_75",
+          "kind": "test_score",
+          "label": "Raise SAT to the school reference",
+          "p_new": 0.3379,
+          "delta_pp": 0.11,
+          "confidence": "model_estimate",
+          "evidence": "Fictional scenario calculated by app/scoring; no real cohort evidence.",
+          "overrides": {
+            "sat": 1530
+          }
+        }
+      ]
+    },
+    {
+      "seq": 97,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800012.61,
+      "event": "final_report",
+      "report": {
+        "headline_verdict": "A strong CS applicant held back by the major cap, not by her profile.",
+        "committee_disposition": "WAITLIST",
+        "ranked_pivots": [
+          {
+            "counterfactual_id": "cf_major_math_stats",
+            "title": "Apply through math & statistics",
+            "why_it_works": "The fictional scenario uses a less restrictive major multiplier; it does not establish a real admission advantage.",
+            "concrete_steps": [
+              "Check transfer-into-CS rules",
+              "Reframe the essay around modeling"
+            ],
+            "effort": "days",
+            "tradeoffs": "Moving into CS later is not guaranteed."
+          }
+        ],
+        "major_arbitrage_note": "Choose an alternative major only if it fits your interests. Verify curriculum and internal-transfer rules with the university.",
+        "essay_adjustments": [
+          {
+            "issue": "Generic ending",
+            "current_excerpt": "In the end, I learned a lot.",
+            "direction": "End on what she will build next.",
+            "example_rewrite": "Next I want to make the classifier run on a $30 phone."
+          }
+        ],
+        "risks_to_watch": [
+          "Major cap can change year to year"
+        ],
+        "disclaimer": "An estimate from public data, not a prediction of any admissions decision."
+      }
+    },
+    {
+      "seq": 98,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800012.74,
+      "event": "node_complete",
+      "node": "delta_engine"
+    },
+    {
+      "seq": 99,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800012.87,
+      "event": "done",
+      "status": "complete",
+      "elapsed_ms": 12870
+    }
+  ]
 }

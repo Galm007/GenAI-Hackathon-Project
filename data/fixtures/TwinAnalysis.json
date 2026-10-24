@@ -1,0 +1,18 @@
+{
+  "comparisons": [
+    {
+      "twin_index": 1,
+      "key_similarity": "Same GPA band and CS spike.",
+      "key_difference": "Twin had no research.",
+      "plausible_deciding_factor": "An illustrative comparison, not a proven reason for an admission decision."
+    }
+  ],
+  "pattern_summary": "Admitted twins paired competitions with a shipped project.",
+  "pattern_strength": "moderate",
+  "applicant_gaps": [
+    "Impact evidence beyond competitions"
+  ],
+  "applicant_edges": [
+    "Applied ML project"
+  ]
+}

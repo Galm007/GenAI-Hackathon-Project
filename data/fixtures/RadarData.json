@@ -1,0 +1,59 @@
+{
+  "n_admitted": 2,
+  "axes": [
+    {
+      "key": "gpa",
+      "label": "GPA",
+      "you_raw": 3.94,
+      "admitted_raw": 3.9299999999999997,
+      "you": 88.0,
+      "admitted_median": 86.0,
+      "assumed": false
+    },
+    {
+      "key": "test",
+      "label": "Testing",
+      "you_raw": 1520,
+      "admitted_raw": 1515.0,
+      "you": 73.3,
+      "admitted_median": 71.7,
+      "assumed": false
+    },
+    {
+      "key": "rigor",
+      "label": "Rigor",
+      "you_raw": 12,
+      "admitted_raw": 11.5,
+      "you": 85.7,
+      "admitted_median": 82.1,
+      "assumed": false
+    },
+    {
+      "key": "activities",
+      "label": "Activities",
+      "you_raw": 3.5774999999999997,
+      "admitted_raw": 3.275,
+      "you": 42.7,
+      "admitted_median": 49.4,
+      "assumed": false
+    },
+    {
+      "key": "spike",
+      "label": "Spike (T1/T2)",
+      "you_raw": 1,
+      "admitted_raw": 1,
+      "you": 25.0,
+      "admitted_median": 25.0,
+      "assumed": false
+    },
+    {
+      "key": "personal",
+      "label": "Essay & Personal",
+      "you_raw": 3.67,
+      "admitted_raw": 3,
+      "you": 46.6,
+      "admitted_median": 60.0,
+      "assumed": true
+    }
+  ]
+}

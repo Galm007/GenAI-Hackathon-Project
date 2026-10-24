@@ -144,9 +144,10 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Controls and per-run draft/request handling implemented by gridiii via Codex, 2026-10-24; five lifecycle tests pass. Replay/API acceptance remains pending in this commit.
 - [ ] **D05 — Pivots, essay edits, arbitrage hero, `AnalyticsPanel`** · §5.6.6 · Deps: D02–D04
   *Done when:* "Try it" maps a counterfactual into the what-if draft and the gauge moves.
-- [ ] **D06 — Realistic fixtures** · §4.9, §6.3 · Deps: B08 (fallback: hand-written)
+- [x] **D06 — Realistic fixtures** · §4.9, §6.3 · Deps: B08 (fallback: hand-written) — done by gridiii via Codex, 2026-10-24 (explicit hand-written fallback)
   Real per-node fixtures in `data/fixtures/` + a realistic `fake_stream.json` recorded from a real run.
   *Done when:* the UI runs end to end on `FAKE_LLM=1` with no keys.
+  Per-schema fixtures, a four-turn offline stream, six-axis radar and reproducible what-if inputs are verified. All percentages use the actual scoring code. This is a fictional authored replay; replacing it with a live graph recording remains pending B13/B14.
 - [ ] **D07 — Demo route, `Shift+R`, recorded replays** · §4.8, §5.3 · Deps: B14, C04
   *Done when:* `/room/demo/maya-uiuc` plays like live; `Shift+R` swaps a live room to its replay.
 - [ ] **D08 — Deploy** · §4.10 · Deps: B16, C06

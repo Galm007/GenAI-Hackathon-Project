@@ -1,0 +1,22 @@
+# Fictional offline fixtures
+
+Done by gridiii via Codex, 2026-10-24.
+
+All applicants, school inputs, outcomes and reference cohorts here are fictional.
+They are not admissions evidence, current university policies, calibration results
+or proof that Zetaris/Nightshift answered a request. Missing original-post URLs
+are intentional. `profile_embedding.json` is a zero-vector shape fixture, not a
+semantic embedding for use against a real database.
+
+The per-schema JSON inputs support the plan's hand-written fallback. From
+`services/api`, run `uv run python -m scripts.build_demo_fixtures` to rebuild the
+four-turn stream and portable `data/demo_runs/maya-uiuc.json` replay. All displayed
+probabilities and counterfactual deltas are calculated by `app/scoring/`; tests
+check that the waterfall conserves and each what-if reproduces its pivot exactly.
+The six-axis radar follows plan section 4.7; Personal remains an assumed reference.
+
+`FAKE_LLM=1 ZETARIS_ENABLED=false` installs the offline parse/debate/embedding
+fixtures. The existing B08 parser is tested through this path. The complete live
+graph remains B13's responsibility. This replay was authored and generated, not
+recorded from a live graph, so replacing it with a real fictional-persona recording
+remains a release gate.
