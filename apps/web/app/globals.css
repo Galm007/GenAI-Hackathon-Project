@@ -25,6 +25,42 @@
   --font-hand: var(--font-caveat);
 }
 
-body { background: var(--color-room); color: var(--color-ink); }
-.projector body, body.projector { font-size: 18px; }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+body {
+  background: var(--color-room);
+  color: var(--color-ink);
+}
+
+/* Projector mode: higher contrast, pure whites, thicker strokes, 18px base */
+.projector,
+body.projector {
+  font-size: 18px;
+  --color-room: #040711;
+  --color-panel: #0a0f1d;
+  --color-panel-2: #10172c;
+  --color-line: #3b4b6e;
+  --color-ink: #ffffff;
+  --color-muted: #a6b2cc;
+  --color-advocate: #5c8aff;
+  --color-chair: #ff6b61;
+  --color-admit: #34d399;
+  --color-waitlist: #fbbf24;
+  --color-deny: #f87171;
+}
+
+body.projector svg path,
+body.projector svg line,
+body.projector svg polyline {
+  stroke-width: 2.25px !important;
+}
+
+/* Reduced motion preference per plan §5.10 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

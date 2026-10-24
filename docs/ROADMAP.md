@@ -123,7 +123,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* the 4-step wizard posts multipart to `/api/evaluate` and routes to the room; the 413/415/429 errors show toasts.
 - [x] **C07 — School tabs, child runs, degraded states, data-fabric drawer** · §5.8, §5.9 · Deps: C04, B13 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* switching tabs starts a child run (Node 1 skipped); degraded nodes show amber rings; the drawer lists Zetaris queries.
-- [ ] **C08 — Responsive, projector mode, accessibility, performance** · §5.2, §5.10 · Deps: C04–C07
+- [x] **C08 — Responsive, projector mode, accessibility, performance** · §5.2, §5.10 · Deps: C04–C07 — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* the tabs layout works below 1440 px; `?projector=1` works; reduced motion is honored; Lighthouse accessibility ≥ 90 on the room page.
 
 ## D: Viz, Demo & Integration
