@@ -28,7 +28,7 @@ def load_demo(name: str) -> dict:
     path = DEMO_DIR / f"{name}.json"
     if not path.is_file():
         raise HTTPException(404, "Replay not found")
-    return json.loads(path.read_text())
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def scoring_context(bundle: dict):

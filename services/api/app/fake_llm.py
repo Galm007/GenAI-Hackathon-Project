@@ -19,12 +19,12 @@ def install():
 
     async def parse(schema, **_):
         await asyncio.sleep(0)
-        return schema.model_validate_json((FIXTURES / f"{schema.__name__}.json").read_text())
+        return schema.model_validate_json((FIXTURES / f"{schema.__name__}.json").read_text(encoding="utf-8"))
 
     async def stream_text(*, messages, on_text, **_):
         text = json.dumps(messages[-1]["content"])
         turn = min(4, text.count("[Turn ") + 1)
-        content = json.loads((FIXTURES / "debate.json").read_text())[str(turn)]
+        content = json.loads((FIXTURES / "debate.json").read_text(encoding="utf-8"))[str(turn)]
         for piece in re.findall(r"\S+\s*", content):
             on_text(piece)
             await asyncio.sleep(0)
@@ -32,7 +32,7 @@ def install():
 
     async def embed_one(_):
         # Shape fixture only: this zero vector is not a semantic embedding or retrieval evidence.
-        return json.loads((FIXTURES / "profile_embedding.json").read_text())
+        return json.loads((FIXTURES / "profile_embedding.json").read_text(encoding="utf-8"))
 
     llm.parse, llm.stream_text, dossier_parser.embed_one = parse, stream_text, embed_one
 
