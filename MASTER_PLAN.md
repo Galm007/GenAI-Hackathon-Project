@@ -460,7 +460,7 @@ How AdCom uses it:
 | Source | What we take | Access | Target volume | Lands in |
 |---|---|---|---|---|
 | **Arctic Shift** `arctic-shift.photon-reddit.com/api/posts/search` | r/collegeresults (first-year) and r/TransferToTop25 (transfer) results posts, about 2019 to now | Free, no key. Public JSON, `limit≤100`, paginate with `before=<epoch>`; dynamic rate limit, 429 carries `X-RateLimit-Reset` | 12–18K raw posts → **10K+ clean twins** | `applicant_twins` |
-| **US College Scorecard API** `api.data.gov/ed/collegescorecard/v1/schools` | `id` (IPEDS unitid), name, city/state, ownership: seeds the curated school list | Free API key | ~250 schools with admit rate ≤ 40% | `universities_cds` (seed) |
+| **US College Scorecard API** `api.data.gov/ed/collegescorecard/v1/schools` | `id` (IPEDS unitid), name, city/state, ownership: seeds the curated school list | Free API key | ~265 schools with admit rate ≤ 60% (D-025) | `universities_cds` (seed) |
 | **US College Scorecard bulk CSV** ("Most Recent Institution-Level Data" from collegescorecard.ed.gov/data) | `UNITID, INSTNM, CITY, STABBR, CONTROL, ADM_RATE, SATVR25/75, SATMT25/75, ACTCM25/75, UGDS, ADMCON7` for every institution | Download once → copied into Zetaris | ~6,500 institutions | **Zetaris** filestore table `ADCOM_PUBLIC.scorecard_institutions` (read in place) |
 | **Common Data Set PDFs** | C1 (apps/admits/enrolled), **C7 factor weights**, C9 test percentiles, C11–C12 GPA, C21 ED/EA, **Section D transfers** | PDF links collected by hand from each school's Institutional Research page → Claude PDF extraction | 40–60 schools (all demo schools + top targets) | `universities_cds.c7_weights`, etc. |
 | **IPEDS** (via Scorecard IDs) | unitid as the canonical school key | Implicit (Scorecard `id` = IPEDS unitid) | — | `universities_cds.unitid` |
@@ -1927,7 +1927,7 @@ async def load_scorecard() -> None:
     async with httpx.AsyncClient(timeout=60) as http:
         base = {"api_key": settings.scorecard_api_key, "fields": fields}
         selective = await _fetch(http, base | {
-            "latest.admissions.admission_rate.overall__range": "0..0.40",
+            "latest.admissions.admission_rate.overall__range": "0..0.60",
             "latest.student.size__range": "1000..",
         })
         seeded = await _fetch(http, base | {"id": ",".join(map(str, seed))})

@@ -73,7 +73,7 @@ async def load_scorecard() -> None:
     async with httpx.AsyncClient(timeout=60) as http:
         base = {"api_key": settings.scorecard_api_key, "fields": fields}
         selective = await _fetch(http, base | {
-            "latest.admissions.admission_rate.overall__range": "0..0.40",
+            "latest.admissions.admission_rate.overall__range": "0..0.60",
             "latest.student.size__range": "1000..",
         })
         seeded = await _fetch(http, base | {"id": ",".join(map(str, seed))})

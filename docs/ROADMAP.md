@@ -45,7 +45,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* `--limit 20` on local `gemma4:e2b` with the short schema (cap 3,000 posts, Zetaris auto-paused by `etl/resources.py::zetaris_paused`, already built) (free, but it loads the GPU and RAM: tell your human first so they can close their browser) produces rows in `data/processed/twins.jsonl` and `rejects.jsonl` with reasons; quality gates are unit-tested on two synthetic records.
 - [ ] **A08 — Embeddings + twin loader** · §2.9.7 (`load_twins.py`) · Deps: A07, A03
   *Done when:* the 20 smoke rows are upserted with 768-d vectors, and `match_applicant_twins` returns them for a school they applied to.
-- [ ] **A09 — College Scorecard API loader** · §2.9.8 · Deps: A01, A06
+- [x] **A09 — College Scorecard API loader** · §2.9.8 · Deps: A01, A06 — done by Jmar L. Pineda via Claude Code, 2026-10-24 (live load: 265 schools; filter widened, D-025)
   *Done when:* ≥200 schools and their aliases are in Supabase; `resolve_school('michigan')` returns `umich`.
 - [ ] **A10 — CDS PDF loader (5 demo schools)** · §2.9.9 · Deps: A09 (B01 no longer needed: local Gemma, D-010; swap the local `C7Level` for `app.schemas.common.C7Level` once B02 lands). Code and tests exist; needs real `data/cds_sources.yaml` URLs and a model run (tell your human first).
   *Done when:* the 5 demo schools have `c7_weights` populated; a human has spot-checked C7 against the PDFs (note it in the commit body); `data/cds_sources.yaml` has real URLs only.

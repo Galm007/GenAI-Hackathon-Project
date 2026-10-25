@@ -199,6 +199,12 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Final checks: 171 API tests and ruff pass; 43 web tests, lint, TypeScript and production build pass; fixture rebuilds are byte-for-byte deterministic. Browser checks cover the integrated replay, pivot/reset, restart, keyboard cards, copy feedback, data disclosure and responsive layouts.
 - D08–D10 stay unchecked until actual hosted live acceptance, verified A15/A16 metrics and real Nightshift/Nemotron plus World Model evidence exist. No paid calls, model loads, public tunnel or cloud account setup was performed. B13/B14/B16/B17/B18 are not claimed complete by Track D.
 
+## D-025 — Scorecard school filter widened from admit rate ≤ 40% to ≤ 60%
+- Step: A09 · Date: 2026-10-24 · By: Jmar L. Pineda via Claude Code
+- Plan said: `latest.admissions.admission_rate.overall__range` of `0..0.40` and "~250 schools" (§2.9.8, §2.9.1 table). Measured against the live API (enrollment ≥ 1,000) that matches only 125 schools, plus the seeded ones: 126 loaded, under the step's ≥200 target.
+- We did: raised the cap to `0..0.60` (about 265 schools; 0.50 gives 183, still short) and fixed both plan lines. Also silenced the `httpx` INFO logger in `etl/common.py`, because request URLs print the Scorecard `api_key`.
+- Impact on other tracks: more schools and aliases in `universities_cds` and `school_aliases`. Mid-selectivity schools will have fewer Reddit twins.
+
 ### D-021 production breakpoint follow-up
 - Production browser testing at exactly 1440px exposed overlapping desktop/laptop layout variants. The laptop grid now applies only within its explicit 1024–1439px range. A rebuilt production page verifies one visible dossier, one analytics sidebar and no horizontal body overflow at 1440px. Lint, types and production build pass after the correction.
 - The final narrow-sidebar radar review exposed a clipped Personal label and crowded raw values. Long axis labels now wrap onto two lines and numeric columns have fixed, right-aligned widths. The rebuilt production chart was visually checked with the complete assumed label visible and separate comparison columns.

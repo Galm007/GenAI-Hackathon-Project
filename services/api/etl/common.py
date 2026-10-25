@@ -16,6 +16,7 @@ for d in (RAW_DIR, PROCESSED_DIR):
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("etl")
+logging.getLogger("httpx").setLevel(logging.WARNING)    # request URLs carry the Scorecard api_key
 
 
 def read_jsonl(path: Path) -> Iterator[dict]:
