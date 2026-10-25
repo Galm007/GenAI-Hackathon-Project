@@ -2,11 +2,9 @@ import re
 
 import pytest
 
+from app.agents.docket import CITATION_RE
 from app.agents.prompts import committee, delta, dossier, institutional, twins
 
-# Pinned copy of CITATION_RE from plan §3.8.1 (app/agents/docket.py, step B11). docket.py imports the scoring
-# modules (B05/B06), so it can't be imported yet; switch to `from app.agents.docket import CITATION_RE` in B11.
-CITATION_RE = re.compile(r"\[\[(dossier|cds|twin|web|model|sql):([^\]\s]+)\]\]")
 ANY_CITATION = re.compile(r"\[\[.*?\]\]")
 KINDS = {"dossier", "cds", "twin", "web", "model", "sql"}
 

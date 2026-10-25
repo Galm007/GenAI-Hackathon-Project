@@ -90,7 +90,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* the tool loop is tested with a mocked client (budget of 3, `is_error` on rejected SQL); a real run emits `zetaris_queries`.
 - [ ] **B10 — Node 3: twins + radar** · §3.7.3, §4.7 (`radar.py` + node addition) · Deps: B05, B06, B07, A13 (fallback: Supabase)
   *Done when:* `select_contrastive` and `compute_baseline` are unit-tested; a real run returns 5 cards with ≥1 accepted and ≥1 rejected.
-- [ ] **B11 — Committee docket + debate nodes** · §3.8.1–3.8.3 · Deps: B04, B06
+- [x] **B11 — Committee docket + debate nodes** · §3.8.1–3.8.3 · Deps: B04, B06 — done by Aron via Claude Code, 2026-10-25
   *Done when:* citation-validator tests pass (incl. `sql:` refs); the fallback turn path is tested; docket bytes are identical across turns.
 - [ ] **B12 — Node 5: delta engine** · §3.8.4 · Deps: B06, B11
   *Done when:* `bind_report` tests pass (unknown counterfactual IDs nulled, percentages scrubbed, disposition taken from the chair).
