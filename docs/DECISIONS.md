@@ -235,6 +235,12 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Verified: `refresh-stats` ran against the 13 smoke twins (0 schools updated: no major reaches n ≥ 15). The five data-quality queries were run through the REST API with aggregation in Python, since no direct SQL connection is configured; run the original SQL in the dashboard for the Hour-8 and Hour-14 checks.
 - Impact on other tracks: none.
 
+## D-030 — Migration 0010: read policies on zetaris_export for zetaris_reader
+- Step: A12 · Date: 2026-10-25 · By: Jmar L. Pineda via Claude Code
+- Plan said: grant `select` on the `zetaris_export` tables to `zetaris_reader` (§2.10.3, migration 0009). On this Supabase project RLS is enabled on new tables automatically, so with no policy the reader saw 0 rows although `refresh_twin_stats()` filled the tables (confirmed: `relrowsecurity = t`, no policies, 0 rows via the pooler login).
+- We did: `supabase/migrations/0010_zetaris_export_rls.sql` adds a `for select to zetaris_reader using (true)` policy per export table. RLS stays on for every other role.
+- Impact on other tracks: none. Anyone rebuilding the database applies 0010 after 0009.
+
 ### D-021 production breakpoint follow-up
 - Production browser testing at exactly 1440px exposed overlapping desktop/laptop layout variants. The laptop grid now applies only within its explicit 1024–1439px range. A rebuilt production page verifies one visible dossier, one analytics sidebar and no horizontal body overflow at 1440px. Lint, types and production build pass after the correction.
 - The final narrow-sidebar radar review exposed a clipped Personal label and crowded raw values. Long axis labels now wrap onto two lines and numeric columns have fixed, right-aligned widths. The rebuilt production chart was visually checked with the complete assumed label visible and separate comparison columns.
