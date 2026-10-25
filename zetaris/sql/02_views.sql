@@ -3,7 +3,7 @@ CREATE SCHEMASTORE CONTAINER ADCOM;
 
 -- IPEDS admission considerations → coarse C7-style levels for schools without a parsed CDS.
 -- IPEDS codes: 1 required, 2 recommended, 3 neither required nor recommended, 5 considered but not required.
--- (verify at Hour 1) the ADMCON column list in your file year's data dictionary.
+-- ADMCON1..ADMCON12 confirmed present in ADM2023 (the 2023-24 file); check the data dictionary if you load another year.
 CREATE SCHEMASTORE VIEW v_ipeds_c7 WITH CONTAINER ADCOM AS (
   SELECT TRY_CAST(UNITID AS INT) AS unitid,
          to_json(named_struct(
@@ -29,7 +29,8 @@ CREATE SCHEMASTORE VIEW v_school_profile WITH CONTAINER ADCOM AS (
                                          WHEN '3' THEN 'private_forprofit' END) AS control,
     u.peer_group,
     COALESCE(u.admit_rate, TRY_CAST(sc.ADM_RATE AS DOUBLE), ip.admits / NULLIF(ip.applicants, 0)) AS admit_rate,
-    CASE WHEN u.admit_rate IS NOT NULL THEN 'cds'
+    CASE WHEN u.admit_rate IS NOT NULL AND u.cds_year IS NOT NULL THEN 'cds'
+         WHEN u.admit_rate IS NOT NULL THEN 'scorecard'
          WHEN sc.ADM_RATE IS NOT NULL AND sc.ADM_RATE NOT IN ('NULL', 'PrivacySuppressed') THEN 'scorecard'
          ELSE 'ipeds' END                                                   AS admit_rate_source,
     u.ed_admit_rate, u.ea_admit_rate, u.rd_admit_rate, u.in_state_admit_rate, u.out_state_admit_rate,
@@ -90,12 +91,10 @@ CREATE SCHEMASTORE VIEW v_admitted_medians WITH CONTAINER ADCOM AS (
 
 -- How a school compares with its peer group (the fact-checker's favorite query)
 CREATE SCHEMASTORE VIEW v_peer_benchmarks WITH CONTAINER ADCOM AS (
-  SELECT p.slug, p.name, p.peer_group, p.admit_rate, p.sat_composite_25, p.sat_composite_75,
-         g.peer_n, g.peer_median_admit_rate, g.peer_median_sat_75
-  FROM ADCOM.v_school_profile p
-  JOIN (SELECT peer_group, COUNT(*) AS peer_n,
-               percentile_approx(admit_rate, 0.5)       AS peer_median_admit_rate,
-               percentile_approx(sat_composite_75, 0.5) AS peer_median_sat_75
-        FROM ADCOM.v_school_profile GROUP BY peer_group) g
-    ON g.peer_group = p.peer_group
+  -- Window functions, not a self-join of v_school_profile: Spark rejects that self-join (missing attributes).
+  SELECT slug, name, peer_group, admit_rate, sat_composite_25, sat_composite_75,
+         COUNT(*)                         OVER (PARTITION BY peer_group) AS peer_n,
+         percentile_approx(admit_rate, 0.5)       OVER (PARTITION BY peer_group) AS peer_median_admit_rate,
+         percentile_approx(sat_composite_75, 0.5) OVER (PARTITION BY peer_group) AS peer_median_sat_75
+  FROM ADCOM.v_school_profile
 );

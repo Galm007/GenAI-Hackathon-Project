@@ -5,14 +5,15 @@ ADD USER WITH (
   level 'general',
   password '${ZETARIS_AGENT_PASSWORD}'
 );
-CREATE ROLE adcom_agent_role DESCRIBE BY "AdCom agents: read-only semantic layer";
-ASSIGN USER ${ZETARIS_AGENT_EMAIL} TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_school_profile     TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_school_c7_long     TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_major_stats        TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_reddit_calibration TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_admitted_medians   TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_peer_benchmarks    TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM_LAKE.gold.school_profile TO ROLE adcom_agent_role;
--- (verify at Hour 1) principal_spec form ("ROLE x" vs "x") and whether ASSIGN USER takes the email or the
--- name. SHOW ROLE ASSIGNED TO USER confirms it. The agent never sees ADCOM_PG or the raw files directly.
+CREATE ROLE 'adcom_agent_role' DESCRIBE BY "AdCom agents, read-only semantic layer";
+ASSIGN USER '${ZETARIS_AGENT_EMAIL}' TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_school_profile TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_school_c7_long TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_major_stats TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_reddit_calibration TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_admitted_medians TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_peer_benchmarks TO ROLE 'adcom_agent_role';
+GRANT SELECT ON DATALAKE TABLE ADCOM_LAKE.gold.school_profile TO ROLE 'adcom_agent_role';
+-- Confirmed against the running stack: role and user names are quoted, the user is assigned by email, and an
+-- object-type keyword follows ON. The agent password must have a lowercase letter, an uppercase letter, a digit and
+-- one of $@!%*? &, at least 8 characters. Views are granted one by one, never as a namespace: v_ipeds_c7 stays internal.

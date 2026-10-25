@@ -30,23 +30,24 @@ Steps only. No secrets in this file; the bundle's `.env` and every password stay
 
 ## 3. Apply the SQL
 
-Apply `zetaris/sql/` in order, either with `run_etl zetaris-setup` (step A14) or by pasting each file into the Zetaris UI's SQL editor with the placeholders filled in:
+Apply `zetaris/sql/` in order, with `run_etl zetaris-setup` (step A14) or by pasting each file into the Zetaris UI's SQL editor with the placeholders filled in. Create the lake folder first: `docker compose exec driver mkdir -p /home/zetaris/customer-data/shared/adcom/lake`.
 
-1. `01_sources.sql`: Supabase datasource, public-file filestore tables, Iceberg lake.
+1. `01_sources.sql`: Supabase datasource (with `schema "zetaris_export"`), public-file filestore tables, Iceberg lake.
 2. `02_views.sql`: the `ADCOM` semantic layer.
 3. `03_gold.sql`: `gold.school_profile`. The `INSERT OVERWRITE` line is the refresh statement and is run after each data refresh.
-4. `04_security.sql`: `adcom_agent` user and role.
+4. `04_security.sql`: `adcom_agent` user and role. The agent password needs a lowercase letter, an uppercase letter, a digit and one of `$@!%*?&`.
+
+Programmatic DDL goes to `POST /api/proxy/sql-editor/sqls/run` (the query route used by `app/zetaris.py` accepts only `SELECT`).
 
 ## 4. Check
 
 - `SELECT * FROM ADCOM.v_school_profile WHERE slug = 'uiuc'` returns a row.
-- Signed in as `adcom_agent`, `SELECT * FROM ADCOM_PG.universities` is denied.
-- `SHOW ROLE ASSIGNED TO USER` lists `adcom_agent_role` for the agent.
+- Signed in as `adcom_agent`, `SELECT * FROM ADCOM_PG.universities` is denied, and so are `ADCOM.v_ipeds_c7` and `ADCOM_PUBLIC.*`.
+- `./verify.sh` shows nine PASS lines.
 
-## Open "(verify at Hour 1)" items
+## Supabase side (once)
 
-Still marked in the SQL files and the plan until each is confirmed against a stack that has the data loaded:
+- Migrations 0009 and 0010 (0010 adds the read policies the reader needs: RLS is on by default).
+- `zetaris_reader` password set; the datasource connects through the **session** pooler.
 
-- Local-path syntax for the filestore tables (`file:///...`) in `01_sources.sql`.
-- The ADMCON column list for your IPEDS file year in `02_views.sql`.
-- The `GRANT` principal form and whether `ASSIGN USER` takes the email or the name in `04_security.sql`.
+Everything that was marked "(verify at Hour 1)" is now confirmed (see D-031).

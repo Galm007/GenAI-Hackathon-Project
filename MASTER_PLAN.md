@@ -2392,7 +2392,7 @@ select count(*) filter (where c7_weights <> '{}') as with_c7, count(*) as total 
 
 Zetaris Lightning is the hackathon's partner platform. It is a federated query engine (Spark-based) with a catalog, a semantic layer of "schema store" views, an Iceberg lakehouse, role-based access control and an audit log. In AdCom it is the **single governed SQL plane** between the raw data and the agents. Every institutional fact the committee cites, and every cross-source statistic, is computed by a Zetaris query and shown in the UI as a clickable `[[sql:Z#]]` citation.
 
-> **Provenance of the details below.** The DDL syntax was confirmed against the Zetaris knowledge base: `CREATE DATASOURCE … OPTIONS (jdbcdriver, jdbcurl, username, password)` + `REGISTER DATASOURCE TABLES FROM …`, `CREATE LIGHTNING DATABASE`, `CREATE LIGHTNING FILESTORE TABLE … FORMAT csv OPTIONS (path, header, inferSchema)`, `CREATE DATALAKE … storageType 'Local'`, `CREATE TABLE … USING iceberg AS SELECT`, `CREATE SCHEMASTORE CONTAINER/VIEW`, `ADD USER`, `CREATE ROLE`, `ASSIGN USER … TO ROLE`, `GRANT SELECT ON …`. The REST query route and its headers come from the bundle's own `verify.sh` (`POST /api/proxy/query/sql/start` with a Bearer JWT, `X-Org-ID` and `X-Request-ID`; rows come back as JSON objects with string values). Anything not confirmed either way is marked **(verify at Hour 1)**.
+> **Provenance of the details below.** The DDL syntax was confirmed against the Zetaris knowledge base: `CREATE DATASOURCE … OPTIONS (jdbcdriver, jdbcurl, username, password)` + `REGISTER DATASOURCE TABLES FROM …`, `CREATE LIGHTNING DATABASE`, `CREATE LIGHTNING FILESTORE TABLE … FORMAT csv OPTIONS (path, header, inferSchema)`, `CREATE DATALAKE … storageType 'Local'`, `CREATE TABLE … USING iceberg AS SELECT`, `CREATE SCHEMASTORE CONTAINER/VIEW`, `ADD USER`, `CREATE ROLE`, `ASSIGN USER … TO ROLE`, `GRANT SELECT ON …`. The REST query route and its headers come from the bundle's own `verify.sh` (`POST /api/proxy/query/sql/start` with a Bearer JWT, `X-Org-ID` and `X-Request-ID`; rows come back as JSON objects with string values). **Confirmed against the running stack at A12 (2026-10-25), all marks removed:** `file:///` filestore paths work; `ADD USER` needs a password with a lowercase letter, an uppercase letter, a digit and one of `$@!%*?&`; `CREATE ROLE`/`ASSIGN USER` take quoted names and the user is assigned by email; grants are `GRANT SELECT ON VIEW TABLE ADCOM.<view>` and `GRANT SELECT ON DATALAKE TABLE <table>`; descriptions allow only letters, digits and `_ . - ,` and spaces; and **`REGISTER DATASOURCE TABLES` lists the connection's `public` schema unless the datasource has the option `schema "zetaris_export"`** (the pooler drops `currentSchema` and role-level `search_path`). The query route above accepts only `SELECT`; **DDL goes to `POST /api/proxy/sql-editor/sqls/run`** with `{queryId, sql, source: "SqlEditor"}` and the same headers (this is what A14's `zetaris_setup.py` must use). See D-031.
 
 #### 2.10.1 Who owns what
 
@@ -2529,18 +2529,19 @@ end $$;
 -- (a) Supabase, federated over JDBC (Postgres driver 42.7 ships in the Zetaris driver image)
 CREATE DATASOURCE ADCOM_PG DESCRIBE BY "AdCom Supabase export schema" OPTIONS (
   jdbcdriver "org.postgresql.Driver",
-  jdbcurl "jdbc:postgresql://${SUPABASE_POOLER_HOST}:5432/postgres?sslmode=require&currentSchema=zetaris_export",
+  jdbcurl "jdbc:postgresql://${SUPABASE_POOLER_HOST}:5432/postgres?sslmode=require",
   username "${ZETARIS_PG_USER}",
-  password "${ZETARIS_PG_PASSWORD}"
+  password "${ZETARIS_PG_PASSWORD}",
+  schema "zetaris_export"
 );
 REGISTER DATASOURCE TABLES FROM ADCOM_PG;
 
 -- (b) Federal files, read in place. Copy them into the driver's shared volume first:
 --   docker compose cp data/public/scorecard/. driver:/home/zetaris/customer-data/shared/adcom/scorecard/
 --   docker compose cp data/public/ipeds_adm/. driver:/home/zetaris/customer-data/shared/adcom/ipeds_adm/
--- (verify at Hour 1) local-path syntax. If the filestore table rejects a file:// path, upload through the
--- UI's Files page and paste the path it shows.
-CREATE LIGHTNING DATABASE ADCOM_PUBLIC DESCRIBE BY "College Scorecard + IPEDS public files" OPTIONS ();
+-- Confirmed: file:/// paths work. The `schema` option is what selects zetaris_export (the pooler ignores
+-- currentSchema and role-level search_path); without it, REGISTER lists the public tables instead.
+CREATE LIGHTNING DATABASE ADCOM_PUBLIC DESCRIBE BY "College Scorecard and IPEDS public files" OPTIONS ();
 
 CREATE LIGHTNING FILESTORE TABLE scorecard_institutions FROM ADCOM_PUBLIC
 FORMAT csv
@@ -2558,7 +2559,8 @@ OPTIONS (
   inferSchema "false"
 );
 
--- (c) Local Iceberg lakehouse for the gold tables on the hot path
+-- (c) Local Iceberg lakehouse for the gold tables on the hot path. Create the folder first:
+--   docker compose exec driver mkdir -p /home/zetaris/customer-data/shared/adcom/lake
 CREATE DATALAKE ADCOM_LAKE OPTIONS (
   storageType 'Local',
   storagePath '/home/zetaris/customer-data/shared/adcom/lake'
@@ -2573,7 +2575,7 @@ CREATE SCHEMASTORE CONTAINER ADCOM;
 
 -- IPEDS admission considerations → coarse C7-style levels for schools without a parsed CDS.
 -- IPEDS codes: 1 required, 2 recommended, 3 neither required nor recommended, 5 considered but not required.
--- (verify at Hour 1) the ADMCON column list in your file year's data dictionary.
+-- ADMCON1..ADMCON12 confirmed present in ADM2023 (the 2023-24 file); check the data dictionary if you load another year.
 CREATE SCHEMASTORE VIEW v_ipeds_c7 WITH CONTAINER ADCOM AS (
   SELECT TRY_CAST(UNITID AS INT) AS unitid,
          to_json(named_struct(
@@ -2599,7 +2601,8 @@ CREATE SCHEMASTORE VIEW v_school_profile WITH CONTAINER ADCOM AS (
                                          WHEN '3' THEN 'private_forprofit' END) AS control,
     u.peer_group,
     COALESCE(u.admit_rate, TRY_CAST(sc.ADM_RATE AS DOUBLE), ip.admits / NULLIF(ip.applicants, 0)) AS admit_rate,
-    CASE WHEN u.admit_rate IS NOT NULL THEN 'cds'
+    CASE WHEN u.admit_rate IS NOT NULL AND u.cds_year IS NOT NULL THEN 'cds'
+         WHEN u.admit_rate IS NOT NULL THEN 'scorecard'
          WHEN sc.ADM_RATE IS NOT NULL AND sc.ADM_RATE NOT IN ('NULL', 'PrivacySuppressed') THEN 'scorecard'
          ELSE 'ipeds' END                                                   AS admit_rate_source,
     u.ed_admit_rate, u.ea_admit_rate, u.rd_admit_rate, u.in_state_admit_rate, u.out_state_admit_rate,
@@ -2660,14 +2663,12 @@ CREATE SCHEMASTORE VIEW v_admitted_medians WITH CONTAINER ADCOM AS (
 
 -- How a school compares with its peer group (the fact-checker's favorite query)
 CREATE SCHEMASTORE VIEW v_peer_benchmarks WITH CONTAINER ADCOM AS (
-  SELECT p.slug, p.name, p.peer_group, p.admit_rate, p.sat_composite_25, p.sat_composite_75,
-         g.peer_n, g.peer_median_admit_rate, g.peer_median_sat_75
-  FROM ADCOM.v_school_profile p
-  JOIN (SELECT peer_group, COUNT(*) AS peer_n,
-               percentile_approx(admit_rate, 0.5)       AS peer_median_admit_rate,
-               percentile_approx(sat_composite_75, 0.5) AS peer_median_sat_75
-        FROM ADCOM.v_school_profile GROUP BY peer_group) g
-    ON g.peer_group = p.peer_group
+  -- Window functions, not a self-join of v_school_profile: Spark rejects that self-join (missing attributes).
+  SELECT slug, name, peer_group, admit_rate, sat_composite_25, sat_composite_75,
+         COUNT(*)                         OVER (PARTITION BY peer_group) AS peer_n,
+         percentile_approx(admit_rate, 0.5)       OVER (PARTITION BY peer_group) AS peer_median_admit_rate,
+         percentile_approx(sat_composite_75, 0.5) OVER (PARTITION BY peer_group) AS peer_median_sat_75
+  FROM ADCOM.v_school_profile
 );
 ```
 
@@ -2686,17 +2687,18 @@ ADD USER WITH (
   level 'general',
   password '${ZETARIS_AGENT_PASSWORD}'
 );
-CREATE ROLE adcom_agent_role DESCRIBE BY "AdCom agents: read-only semantic layer";
-ASSIGN USER ${ZETARIS_AGENT_EMAIL} TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_school_profile     TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_school_c7_long     TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_major_stats        TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_reddit_calibration TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_admitted_medians   TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM.v_peer_benchmarks    TO ROLE adcom_agent_role;
-GRANT SELECT ON ADCOM_LAKE.gold.school_profile TO ROLE adcom_agent_role;
--- (verify at Hour 1) principal_spec form ("ROLE x" vs "x") and whether ASSIGN USER takes the email or the
--- name. SHOW ROLE ASSIGNED TO USER confirms it. The agent never sees ADCOM_PG or the raw files directly.
+CREATE ROLE 'adcom_agent_role' DESCRIBE BY "AdCom agents, read-only semantic layer";
+ASSIGN USER '${ZETARIS_AGENT_EMAIL}' TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_school_profile TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_school_c7_long TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_major_stats TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_reddit_calibration TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_admitted_medians TO ROLE 'adcom_agent_role';
+GRANT SELECT ON VIEW TABLE ADCOM.v_peer_benchmarks TO ROLE 'adcom_agent_role';
+GRANT SELECT ON DATALAKE TABLE ADCOM_LAKE.gold.school_profile TO ROLE 'adcom_agent_role';
+-- Confirmed against the running stack: role and user names are quoted, the user is assigned by email, and an
+-- object-type keyword follows ON. The agent password must have a lowercase letter, an uppercase letter, a digit and
+-- one of $@!%*? &, at least 8 characters. Views are granted one by one, never as a namespace: v_ipeds_c7 stays internal.
 ```
 
 #### 2.10.5 `app/zetaris.py`: async client for the Lightning query API
@@ -8431,7 +8433,7 @@ export function WarRoom({ source }: { source: RunSource }) {
 | Risk | Likelihood | Impact | Mitigation | Owner |
 |---|---|---|---|---|
 | Zetaris driver won't start (memory) or first queries are slow | Med | High | Docker ≥ 8 GB, `ZSPARK_DRIVER_MEM=4g` on 16 GB laptops; `shuffle.partitions 4`; pre-warm at API startup; gold Iceberg table on the hot path; TTL cache | A |
-| A Zetaris DDL detail differs from the docs (filestore local path, GRANT principal form, DDL over REST) | Med | Med | Every such line is marked "(verify at Hour 1)"; fall back to the UI SQL editor / Files upload; the views only depend on the confirmed statements | A |
+| A Zetaris DDL detail differs from the docs (filestore local path, GRANT principal form, DDL over REST) | Med | Med | All confirmed at A12 (D-031); if a new Zetaris version changes one, fall back to the UI SQL editor | A |
 | Nightshift has no Linux edition, or is not running on the demo machine (eligibility and the Power rule) | High | High | Run it on a teammate's Windows/Mac laptop or a DGX; ask the organizers early (§1.7.5); `LLM_PROVIDER=anthropic` keeps the app working meanwhile | B |
 | Nemotron lane slow, rate-limited (free tier) or routed wrong by `meterless/auto` | Med | Med | Pin a Nemotron lane; keep the replayed demo run (§4.8) as backup; show Nightshift's run details as evidence | B |
 | World Model conformance fails or the sidecar is down | Med | Med | Diff against the upstream `reference/` implementation; `docket.py` falls back to the in-state docket (§1.7.3) | B |

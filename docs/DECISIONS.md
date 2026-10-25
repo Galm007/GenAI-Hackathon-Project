@@ -241,6 +241,14 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - We did: `supabase/migrations/0010_zetaris_export_rls.sql` adds a `for select to zetaris_reader using (true)` policy per export table. RLS stays on for every other role.
 - Impact on other tracks: none. Anyone rebuilding the database applies 0010 after 0009.
 
+## D-031 — Zetaris DDL confirmed against the running stack; plan SQL corrected
+- Step: A12 · Date: 2026-10-25 · By: Jmar L. Pineda via Claude Code
+- Plan said: `currentSchema=zetaris_export` in the JDBC URL selects the export schema; `CREATE ROLE x`, `ASSIGN USER email`, `GRANT SELECT ON ADCOM.view`; DDL via the query route (§2.10.4, §2.10.5).
+- Found and fixed: (1) `REGISTER DATASOURCE TABLES` ignored `currentSchema` (and the pooler ignores role-level `search_path`) and listed `public` tables; the datasource option `schema "zetaris_export"` selects the right ones. (2) The query route accepts only `SELECT`; DDL goes to `/api/proxy/sql-editor/sqls/run`. (3) Descriptions cannot contain `+` or `:`. (4) `CREATE ROLE`/`ASSIGN USER` take quoted names; grants are `ON VIEW TABLE ADCOM.<view>` and `ON DATALAKE TABLE ...`. (5) The agent password needs a special character from `$@!%*?&`. (6) `v_peer_benchmarks` self-joined `v_school_profile`, which Spark rejects; rewritten with window functions, same output. (7) `v_school_profile.admit_rate_source` said `cds` for Scorecard values; it now says `cds` only when a CDS year exists, else `scorecard`.
+- Removed every "(verify at Hour 1)" marker; plan SQL blocks, `zetaris/sql/*.sql` and `docs/zetaris-setup.md` now match what ran. Views are granted one by one; `v_ipeds_c7` stays internal.
+- Verified live: as `adcom_agent`, `ADCOM.v_school_profile` (uiuc), `ADCOM_LAKE.gold.school_profile` and `v_peer_benchmarks` read fine; `ADCOM_PG.universities`, `ADCOM.v_ipeds_c7` and `ADCOM_PUBLIC.scorecard_institutions` are denied; `zetaris_repo.school_profile('uiuc')` returns `data_source: zetaris`; `./verify.sh` 9 PASS.
+- Impact on other tracks: A14's `zetaris_setup.py` must use the DDL route above. Track B's Zetaris tool needs nothing new.
+
 ### D-021 production breakpoint follow-up
 - Production browser testing at exactly 1440px exposed overlapping desktop/laptop layout variants. The laptop grid now applies only within its explicit 1024–1439px range. A rebuilt production page verifies one visible dossier, one analytics sidebar and no horizontal body overflow at 1440px. Lint, types and production build pass after the correction.
 - The final narrow-sidebar radar review exposed a clipped Personal label and crowded raw values. Long axis labels now wrap onto two lines and numeric columns have fixed, right-aligned widths. The rebuilt production chart was visually checked with the complete assumed label visible and separate comparison columns.
