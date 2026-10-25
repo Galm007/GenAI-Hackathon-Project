@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 import uuid
@@ -14,15 +15,19 @@ from typing import Any
 import orjson
 from fastapi import Request
 
+from . import db, zetaris_repo
+from .agents.graph import graph
 from .config import settings
+from .schemas.delta import Counterfactual
 from .schemas.inputs import RawApplicantInputs
+from .scoring.probability import ScoringInputs
 
 log = logging.getLogger("runs")
 CAPTURED = {"scorecard", "probability", "counterfactuals", "final_report"}
+PREFILL_KEYS = ("dossier", "grade", "metrics", "profile_text", "profile_embedding")
 
-# Until B13 wires graph.astream into _drive, every run replays this hand-written script (plan §6.3; D06 replaces it).
+# `/api/dev/fake-stream` still replays this hand-written script for Tracks C/D (plan §6.3; D06 replaces it).
 FAKE_STREAM = Path(__file__).resolve().parents[3] / "data" / "fixtures" / "fake_stream.json"
-ENVELOPE = ("seq", "run_id", "ts", "event")
 MAX_GAP_S = 1.2          # compress long pauses in the script; keep token cadence natural
 
 
@@ -47,6 +52,21 @@ class Run:
     last_seen: float = field(default_factory=time.monotonic)
     started: float = field(default_factory=time.monotonic)
     school: dict | None = None                     # set for demo replays (works with the DB offline)
+
+
+@dataclass(frozen=True)
+class ScoringContext:
+    run_id: str
+    school_slug: str
+    major_category: str
+    scoring_inputs: ScoringInputs
+    tiers: list[int]
+    has_recommendations: bool
+    school: dict
+    counterfactuals: list[Counterfactual]
+    embedding: list[float] | None
+    gpa: float | None
+    sat: int | None
 
 
 @cache
@@ -81,14 +101,22 @@ class RunManager:
             raise RateLimited("All committee rooms are busy. Retry in a minute.")
         self._day = (today, self._day[1] + 1)
 
-    async def start(self, *, session_id: str, inputs: RawApplicantInputs, school_slug: str) -> Run:
+    async def start(self, *, session_id: str, inputs: RawApplicantInputs, school_slug: str,
+                    prefill: dict[str, Any] | None = None) -> Run:
         self._admit(session_id)
         run = Run(run_id=str(uuid.uuid4()), session_id=session_id, school_slug=school_slug,
                   has_recommendations=bool(inputs.recommendation_text))
         self._runs[run.run_id] = run
         self._active_sessions.add(session_id)      # before the task runs, so a double submit is refused
-        run.task = asyncio.create_task(self._drive(run))
+        state = {"run_id": run.run_id, "session_id": session_id, "inputs": inputs,
+                 "school_slug": school_slug, **(prefill or {})}
+        run.task = asyncio.create_task(self._drive(run, state))
         return run
+
+    async def start_child(self, parent: Run, slug: str) -> Run:
+        f = parent.final
+        return await self.start(session_id=parent.session_id, inputs=f["inputs"], school_slug=slug,
+                                prefill={k: f[k] for k in PREFILL_KEYS})
 
     async def shutdown(self) -> None:
         for run in self._runs.values():
@@ -104,18 +132,28 @@ class RunManager:
                 run.captured[event] = env
             run.cond.notify_all()
 
-    async def _drive(self, run: Run) -> None:
+    async def _drive(self, run: Run, state: dict) -> None:
+        config = {"configurable": {"thread_id": run.run_id}, "recursion_limit": 40}
         watchdog = asyncio.create_task(self._watchdog(run))
         try:
             async with self._sem:
-                await self.publish(run, "run_started", school_slug=run.school_slug, cached_dossier=False)
-                prev = None
-                for ev in load_script():                # B13 replaces this loop with graph.astream (plan §4.4)
-                    if ev["event"] in ("run_started", "done"):
-                        continue                        # the driver owns the run's first and last frames
-                    await asyncio.sleep(_gap(prev, ev, 1.0))
-                    prev = ev
-                    await self.publish(run, ev["event"], **{k: v for k, v in ev.items() if k not in ENVELOPE})
+                await self.publish(run, "run_started", school_slug=run.school_slug,
+                                   cached_dossier="dossier" in state)
+                if "dossier" in state:      # child run / cached upload: replay Node 1's outputs so the panel fills
+                    await self.publish(run, "dossier_parsed", metrics=state["metrics"].model_dump(),
+                                       dossier=state["dossier"].model_dump(exclude={"essay_text"}))
+                    await self.publish(run, "scorecard", grade=state["grade"].model_dump(),
+                                       metrics=state["metrics"].model_dump(), warnings=[])
+                async for mode, chunk in graph.astream(state, config, stream_mode=["updates", "custom"]):
+                    if mode == "custom":
+                        payload = dict(chunk)
+                        event = payload.pop("event")
+                        payload.pop("ts", None)
+                        await self.publish(run, event, **payload)
+                    else:
+                        for node in chunk:              # {node_name: partial_state}; never send state itself
+                            await self.publish(run, "node_complete", node=node)
+                run.final = (await graph.aget_state(config)).values
                 run.status = "complete"
         except asyncio.CancelledError:
             run.status = "failed"
@@ -133,7 +171,10 @@ class RunManager:
                 run.done = True
                 run.cond.notify_all()
             self._active_sessions.discard(run.session_id)
-            # B13: persist run.events with db.append_event_log (needs db.py from B07).
+            try:
+                await db.append_event_log(run.run_id, run.events, run.status)
+            except Exception:
+                log.warning("could not persist event log for %s", run.run_id)
 
     async def _watchdog(self, run: Run) -> None:
         """Don't burn tokens on a run nobody is watching (closed tab, abandoned demo)."""
@@ -151,7 +192,45 @@ class RunManager:
             return {"run_id": run_id, "status": run.status, "school_slug": run.school_slug,
                     "last_seq": len(run.events) - 1,
                     "captured": {k: v for k, v in run.captured.items()}}
-        return None                                     # B13: fall back to db.load_run after a restart
+        row = await db.load_run(run_id)
+        if not row:
+            return None
+        return {"run_id": run_id, "status": row["status"], "school_slug": row["school_slug"],
+                **{k: row.get(k) for k in ("grade", "metrics", "school_rubric", "twins", "baseline", "probability",
+                                           "debate", "counterfactuals", "delta_report")}}
+
+    async def scoring_context(self, run_id: str) -> ScoringContext | None:
+        run = self._runs.get(run_id)
+        if run and "probability" in run.captured and "scorecard" in run.captured:
+            cap, f = run.captured, run.final or {}
+            grade = cap["scorecard"]["grade"]
+            return ScoringContext(
+                run_id=run_id, school_slug=run.school_slug, major_category=grade["major_category"],
+                scoring_inputs=ScoringInputs.model_validate(cap["probability"]["scoring_inputs"]),
+                tiers=[ag["tier"] for ag in grade["activity_grades"]],
+                has_recommendations=run.has_recommendations,
+                school=run.school or await zetaris_repo.school_profile(run.school_slug),
+                counterfactuals=[Counterfactual.model_validate(c)
+                                 for c in cap.get("counterfactuals", {}).get("counterfactuals", [])],
+                embedding=f.get("profile_embedding"),
+                gpa=f["metrics"].gpa_uw_4 if f.get("metrics") else None,
+                sat=cap["scorecard"]["metrics"]["sat_equivalent"],
+            )
+        row = await db.load_run(run_id)                 # after a restart: rebuild from Postgres
+        if not row or not row.get("scoring_inputs"):
+            return None
+        emb = row.get("profile_embedding")
+        return ScoringContext(
+            run_id=run_id, school_slug=row["school_slug"], major_category=row["major_category"],
+            scoring_inputs=ScoringInputs.model_validate(row["scoring_inputs"]),
+            tiers=[ag["tier"] for ag in row["grade"]["activity_grades"]],
+            has_recommendations=bool((row.get("intake") or {}).get("has_recommendations")),
+            school=await zetaris_repo.school_profile(row["school_slug"]),
+            counterfactuals=[Counterfactual.model_validate(c) for c in row.get("counterfactuals") or []],
+            embedding=json.loads(emb) if isinstance(emb, str) else emb,   # PostgREST returns vector as text
+            gpa=(row.get("metrics") or {}).get("gpa_uw_4"),
+            sat=(row.get("metrics") or {}).get("sat_equivalent"),
+        )
 
 
 async def sse_frames(run: Run, after: int, request: Request) -> AsyncIterator[dict]:

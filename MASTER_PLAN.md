@@ -5756,6 +5756,7 @@ import argparse
 import asyncio
 import base64
 import json
+import sys
 import uuid
 from pathlib import Path
 
@@ -5764,10 +5765,22 @@ from app.schemas.inputs import RawApplicantInputs
 
 
 def _read(path: str | None) -> str | None:
-    return Path(path).read_text() if path else None
+    return Path(path).read_text(encoding="utf-8") if path else None
+
+
+def _inputs(a: argparse.Namespace) -> RawApplicantInputs:
+    """Sync file reads, kept out of the async main (ruff ASYNC240)."""
+    return RawApplicantInputs(
+        transcript_pdf_b64=base64.standard_b64encode(Path(a.transcript).read_bytes()).decode()
+        if a.transcript else None,
+        activities_text=_read(a.activities), essay_text=_read(a.essay),
+        intended_major=a.major, target_schools=[a.school],
+        early_round={a.school: a.round} if a.round else {},
+    )
 
 
 async def main() -> None:
+    sys.stdout.reconfigure(encoding="utf-8")      # ✔/━/⚙ glyphs on a Windows console (see DECISIONS D-030)
     p = argparse.ArgumentParser()
     p.add_argument("--transcript", help="transcript PDF")
     p.add_argument("--activities", help="activities list .txt")
@@ -5777,12 +5790,7 @@ async def main() -> None:
     p.add_argument("--round", default=None, choices=["ED", "ED2", "EA", "REA", "RD"])
     a = p.parse_args()
 
-    inputs = RawApplicantInputs(
-        transcript_pdf_b64=base64.standard_b64encode(Path(a.transcript).read_bytes()).decode() if a.transcript else None,
-        activities_text=_read(a.activities), essay_text=_read(a.essay),
-        intended_major=a.major, target_schools=[a.school],
-        early_round={a.school: a.round} if a.round else {},
-    )
+    inputs = _inputs(a)
     run_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": run_id}}
     state = {"run_id": run_id, "session_id": "cli", "inputs": inputs, "school_slug": a.school}

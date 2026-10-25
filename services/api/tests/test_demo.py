@@ -40,9 +40,14 @@ async def test_demo_what_if_reproduces_pivot_and_reset_without_external_services
     assert reset["baseline"] == reset["simulated"] and reset["delta_pp"] == 0
 
 
-async def test_unavailable_live_context_is_never_substituted_with_maya(client):
+async def test_unavailable_live_context_is_never_substituted_with_maya(client, monkeypatch):
+    # Since B13 the live provider exists; an unknown run (not in memory, not in Postgres) is a 404, never Maya.
+    async def load_run(run_id):
+        return None
+
+    monkeypatch.setattr("app.runs.db.load_run", load_run)
     response = await client.post("/api/what-if", json={"run_id": "a-real-student-run", "sat": 1500})
-    assert response.status_code == 503
+    assert response.status_code == 404
 
 
 async def test_route_delegates_to_the_live_context_provider_when_track_b_supplies_it(client, monkeypatch):

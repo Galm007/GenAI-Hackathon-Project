@@ -238,3 +238,10 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 ### D-021 production breakpoint follow-up
 - Production browser testing at exactly 1440px exposed overlapping desktop/laptop layout variants. The laptop grid now applies only within its explicit 1024–1439px range. A rebuilt production page verifies one visible dossier, one analytics sidebar and no horizontal body overflow at 1440px. Lint, types and production build pass after the correction.
 - The final narrow-sidebar radar review exposed a clipped Personal label and crowded raw values. Long axis labels now wrap onto two lines and numeric columns have fixed, right-aligned widths. The rebuilt production chart was visually checked with the complete assumed label visible and separate comparison columns.
+
+## D-030 — CLI runner reads and prints UTF-8; file reads moved out of the async main
+- Step: B13 · Date: 2026-10-25 · By: Aron via Claude Code
+- Plan said: `scripts/run_graph_cli.py` reads dossier files with `Path.read_text()` and prints ✔ ━ · ⚙ ◆ ⚠ (§3.9.2).
+- We did: files are read with `encoding="utf-8"`, and `main()` calls `sys.stdout.reconfigure(encoding="utf-8")`. On a Windows console the default cp1252 codec raises `UnicodeEncodeError` on the first ✔ and can mis-read essays (the same failure as the earlier `[fix]` commit for fixture JSON). The input building moved into a sync `_inputs()` helper because ruff `ASYNC240` rejects blocking `Path` reads inside an async function. Behaviour is otherwise identical; the plan text is updated.
+- Also in B13: `tests/test_demo.py::test_unavailable_live_context_is_never_substituted_with_maya` (Track D) asserted the pre-B13 503 "not integrated yet". With `RunManager.scoring_context` in place an unknown run is a 404; the test now mocks `db.load_run` and asserts 404, keeping its never-substitute-Maya intent.
+- Impact on other tracks: Track D's test above changed expectation (503 → 404).

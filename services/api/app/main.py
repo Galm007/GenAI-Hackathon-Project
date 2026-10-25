@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import time
+import uuid
 from contextlib import asynccontextmanager
 from typing import Annotated
 
@@ -9,6 +10,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFi
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
+from . import db, zetaris_repo
 from .api_models import IntakeForm
 from .config import settings
 from .demo import register_demo_runs
@@ -23,8 +25,7 @@ runs = RunManager()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Later steps add: fake_llm.install() (B14), register_demo_runs (B14), Supabase warm-up (B07),
-    # Zetaris prewarm (B15) — plan §4.3.
+    # B15 adds the Supabase warm-up and the Zetaris prewarm (plan §4.3).
     restore = None
     register_demo_runs(runs)
     if settings.fake_llm:
@@ -94,12 +95,56 @@ async def stream_evaluation(run_id: str, request: Request, after: int = Query(-1
                                headers=SSE_HEADERS)
 
 
+@app.post("/api/evaluate/{run_id}/schools/{slug}", status_code=202)
+async def evaluate_another_school(run_id: str, slug: str):
+    parent = runs.get(run_id)
+    if parent is None or parent.final is None:
+        raise HTTPException(409, "parent run must be complete before evaluating another school")
+    try:
+        child = await runs.start_child(parent, slug)
+    except RateLimited as exc:
+        raise HTTPException(429, str(exc)) from exc
+    return {"run_id": child.run_id, "school_slug": slug, "stream_url": f"/api/evaluate/{child.run_id}/stream"}
+
+
 @app.get("/api/evaluate/{run_id}")
 async def get_snapshot(run_id: str):
     snap = await runs.snapshot(run_id)
     if snap is None:
         raise HTTPException(404, "unknown or expired run")
     return snap
+
+
+# /api/what-if lives in demo.py (Track D) and calls runs.scoring_context for live runs.
+@app.get("/api/twins")
+async def list_twins(run_id: str, outcome: str = "any", major: str | None = None, k: int = Query(10, le=50)):
+    ctx = await runs.scoring_context(run_id)
+    if ctx is None:
+        raise HTTPException(404, "run not found")
+    rows = await db.match_twins(ctx.embedding, [ctx.school_slug], k=k, gpa=ctx.gpa, sat=ctx.sat, outcome=outcome)
+    if major:
+        rows = [r for r in rows if r["major_category"] == major]
+    from .agents.nodes.twins import _to_card
+    return [_to_card(i + 1, r).model_dump() for i, r in enumerate(rows)]
+
+
+@app.get("/api/twins/{twin_id}")
+async def twin_detail(twin_id: uuid.UUID):
+    return await db.twin_detail(str(twin_id))
+
+
+@app.get("/api/schools")
+async def search_schools(q: str = Query(min_length=2)):
+    return await db.resolve_school(q)
+
+
+@app.get("/api/schools/{slug}")
+async def school_summary(slug: str):
+    s = await zetaris_repo.school_profile(slug)
+    keep = ("slug", "name", "city", "state", "control", "admit_rate", "ed_admit_rate", "rd_admit_rate", "test_policy",
+            "sat_composite_25", "sat_composite_75", "act_composite_25", "act_composite_75", "c7_weights",
+            "early_plans", "major_competitiveness", "cds_year", "source_urls")
+    return {k: s.get(k) for k in keep}
 
 
 @app.get("/api/dev/fake-stream")                   # scripted SSE for Tracks C/D (plan §6.3); delete before H33

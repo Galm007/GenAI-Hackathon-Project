@@ -94,7 +94,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* citation-validator tests pass (incl. `sql:` refs); the fallback turn path is tested; docket bytes are identical across turns.
 - [x] **B12 — Node 5: delta engine** · §3.8.4 · Deps: B06, B11 — done by Aron via Claude Code, 2026-10-25
   *Done when:* `bind_report` tests pass (unknown counterfactual IDs nulled, percentages scrubbed, disposition taken from the chair).
-- [ ] **B13 — Graph assembly + CLI + real `/api/evaluate`** · §3.9.1–3.9.2, §4.3–4.4 · Deps: B03, B08–B12
+- [x] **B13 — Graph assembly + CLI + real `/api/evaluate`** · §3.9.1–3.9.2, §4.3–4.4 · Deps: B03, B08–B12 — done by Aron via Claude Code, 2026-10-25 (CLI live run pending keys + Supabase twins)
   *Done when:* `get_graph().draw_mermaid()` matches §3.1; the CLI completes for Maya at UIUC; the browser stream from `/api/evaluate` comes from the real graph. **H12 milestone.**
 - [ ] **B14 — Demo replay + `FAKE_LLM` mode** · §4.8–4.9 · Deps: B13
   *Done when:* `FAKE_LLM=1 ZETARIS_ENABLED=false` runs the whole graph offline; `/api/demo/<name>/stream` replays a recording; `/api/what-if` works on `demo-<name>`.
