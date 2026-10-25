@@ -57,7 +57,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [x] **A13 — Zetaris client + repository** · §2.10.5 (incl. config additions) · Deps: B01, B07 — done by Jmar L. Pineda via Claude Code, 2026-10-24 (live: `SELECT 7` via admin login; the agent-user path verified in A12)
   `app/zetaris.py`, `app/zetaris_repo.py`, and `tests/test_zetaris_guard.py` (cases from §3.10).
   *Done when:* the guard tests pass; `zetaris.query("SELECT 7 AS seven")` works against local Zetaris; with `ZETARIS_ENABLED=false`, `school_profile` falls back to Supabase.
-- [ ] **A14 — `zetaris_setup.py` + CLI stages** · §2.10.6 · Deps: A11, A12, A13
+- [x] **A14 — `zetaris_setup.py` + CLI stages** · §2.10.6 · Deps: A11, A12, A13 — done by Jmar L. Pineda via Claude Code, 2026-10-25 (live: two setup runs, 24 "exists"; refresh OK)
   *Done when:* `run_etl zetaris-setup` is idempotent (a second run logs "exists"); `run_etl zetaris-refresh` rewrites the gold table.
 - [ ] **A15 — Full data run → `docs/data-report.md`** · §2.9.10–2.9.11, §7.5 · Deps: A08–A14 · **needs your human's spend approval**
   *Done when:* ≥10K twins are loaded, the stats and Zetaris gold are refreshed, and the report has corpus size, demo-school coverage (≥80 each), calibration and tier distribution. Updated aliases are committed.
