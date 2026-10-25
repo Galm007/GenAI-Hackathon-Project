@@ -29,7 +29,7 @@ async def extract_post(post: dict, sem: asyncio.Semaphore) -> tuple[dict, Reddit
     async with sem:
         try:
             rec = await chat_structured(
-                RedditApplicantRecord, REDDIT_EXTRACTOR_SYSTEM, render_post(post), num_predict=900
+                RedditApplicantRecord, REDDIT_EXTRACTOR_SYSTEM, render_post(post), num_predict=2500
             )
             return post, rec, None
         except (LocalLLMError, ValidationError) as exc:      # truncated or schema-invalid output

@@ -205,6 +205,14 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - We did: raised the cap to `0..0.60` (about 265 schools; 0.50 gives 183, still short) and fixed both plan lines. Also silenced the `httpx` INFO logger in `etl/common.py`, because request URLs print the Scorecard `api_key`.
 - Impact on other tracks: more schools and aliases in `universities_cds` and `school_aliases`. Mid-selectivity schools will have fewer Reddit twins.
 
+## D-026 — A07 extraction token cap raised; smoke-run findings
+- Step: A07 · Date: 2026-10-24 · By: Jmar L. Pineda via Claude Code
+- Plan said: `num_predict=900` and "about 400 output tokens" per record (§2.9.6, §2.9.4). On `gemma4:e2b` Ollama pretty-prints the JSON, and one record took 1,236 tokens, so 14 of the first 20 posts were rejected as truncated.
+- We did: `num_predict=2500` in `etl/extract_reddit.py` and the plan's code block. Re-run: 13 kept, 7 rejected (5 not a results post, 1 no resolved school, 1 still truncated).
+- Measured speed: ~9 s per post on an RTX 4070 Laptop (7.7 GiB), so 3,000 posts is about 7.5 h. `CAPS` unchanged.
+- Open quality issues found reading the 13 rows against their posts (not fixed here, awaiting a human decision): (1) `applicant_type` was "transfer" for 11 of 13 r/collegeresults posts that never mention transferring; (2) `demographics.residency_state` is a region or free text ("Northeast", "bay area") in 12 of 13 rows, not a two-letter code. Numbers (GPA, SAT, ACT) all appeared verbatim in the posts.
+- Impact on other tracks: none yet. A08 will embed whatever is in `twins.jsonl`, so settle (1) and (2) first.
+
 ### D-021 production breakpoint follow-up
 - Production browser testing at exactly 1440px exposed overlapping desktop/laptop layout variants. The laptop grid now applies only within its explicit 1024–1439px range. A rebuilt production page verifies one visible dossier, one analytics sidebar and no horizontal body overflow at 1440px. Lint, types and production build pass after the correction.
 - The final narrow-sidebar radar review exposed a clipped Personal label and crowded raw values. Long axis labels now wrap onto two lines and numeric columns have fixed, right-aligned widths. The rebuilt production chart was visually checked with the complete assumed label visible and separate comparison columns.
