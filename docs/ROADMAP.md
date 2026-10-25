@@ -49,7 +49,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* ≥200 schools and their aliases are in Supabase; `resolve_school('michigan')` returns `umich`.
 - [ ] **A10 — CDS PDF loader (5 demo schools)** · §2.9.9 · Deps: A09 (B01 no longer needed: local Gemma, D-010; swap the local `C7Level` for `app.schemas.common.C7Level` once B02 lands). Code and tests exist; needs real `data/cds_sources.yaml` URLs and a model run (tell your human first).
   *Done when:* the 5 demo schools have `c7_weights` populated; a human has spot-checked C7 against the PDFs (note it in the commit body); `data/cds_sources.yaml` has real URLs only.
-- [ ] **A11 — Stats refresh, major overrides, `run_etl` CLI** · §2.9.10 · Deps: A02, A08
+- [x] **A11 — Stats refresh, major overrides, `run_etl` CLI** · §2.9.10 · Deps: A02, A08 — done by Jmar L. Pineda via Claude Code, 2026-10-24 (live on 13 smoke twins; zetaris stages wait for A14)
   *Done when:* `python -m etl.run_etl refresh-stats` updates `major_competitiveness`; the data-quality SQL from §2.9.10 runs.
 - [ ] **A12 — Zetaris bring-up + Lightning SQL files** · §2.10.2, §2.10.4 · Deps: A04 — files committed, DDL not applied yet (see commit)
   Commits `zetaris/sql/01_sources.sql` through `04_security.sql` and `docs/zetaris-setup.md` (steps only, no secrets). Resolve every "(verify at Hour 1)" marker against the running stack and correct the plan text.

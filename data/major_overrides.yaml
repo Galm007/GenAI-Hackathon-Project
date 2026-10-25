@@ -1,0 +1,11 @@
+# Verified per-major facts for a school, from an official source only. Never guess.
+# Leave `multiplier: null` to fall back to the Reddit-smoothed estimate. Shape:
+#
+# uiuc:
+#   computer_science:
+#     multiplier: null
+#     direct_admit: true
+#     college: "Grainger College of Engineering"
+#     source_url: "<official admissions page>"
+#
+# No entries yet: add one only after checking the school's official admissions page.

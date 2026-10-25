@@ -228,6 +228,13 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Re-extracted the 20 smoke posts (13 kept, 7 rejected) and loaded them: `match_applicant_twins` returns UCLA neighbors, the query's own row first.
 - Impact on other tracks: none.
 
+## D-029 — `run_etl` imports the Zetaris stages lazily; no override entries yet
+- Step: A11 · Date: 2026-10-24 · By: Jmar L. Pineda via Claude Code
+- Plan said: `run_etl.py` imports `setup`/`refresh_gold` from `.zetaris_setup` at module top (§2.9.10). That module is A14, so the whole CLI would fail to import until then.
+- We did: `zetaris-setup` and `zetaris-refresh` import `etl.zetaris_setup` when run; all other stages work now. `data/major_overrides.yaml` contains only comments and the shape, because overrides must come from an official admissions page and none has been checked.
+- Verified: `refresh-stats` ran against the 13 smoke twins (0 schools updated: no major reaches n ≥ 15). The five data-quality queries were run through the REST API with aggregation in Python, since no direct SQL connection is configured; run the original SQL in the dashboard for the Hour-8 and Hour-14 checks.
+- Impact on other tracks: none.
+
 ### D-021 production breakpoint follow-up
 - Production browser testing at exactly 1440px exposed overlapping desktop/laptop layout variants. The laptop grid now applies only within its explicit 1024–1439px range. A rebuilt production page verifies one visible dossier, one analytics sidebar and no horizontal body overflow at 1440px. Lint, types and production build pass after the correction.
 - The final narrow-sidebar radar review exposed a clipped Personal label and crowded raw values. Long axis labels now wrap onto two lines and numeric columns have fixed, right-aligned widths. The rebuilt production chart was visually checked with the complete assumed label visible and separate comparison columns.
