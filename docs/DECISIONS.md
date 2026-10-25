@@ -235,7 +235,8 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Verified: `refresh-stats` ran against the 13 smoke twins (0 schools updated: no major reaches n ≥ 15). The five data-quality queries were run through the REST API with aggregation in Python, since no direct SQL connection is configured; run the original SQL in the dashboard for the Hour-8 and Hour-14 checks.
 - Impact on other tracks: none.
 
-## D-030 — Migration 0010: read policies on zetaris_export for zetaris_reader
+## D-032 — Migration 0010: read policies on zetaris_export for zetaris_reader
+- Renumbered from D-030, which B13 (`8909f16`) had already taken; commit `ce5de69` still cites it as D-030.
 - Step: A12 · Date: 2026-10-25 · By: Jmar L. Pineda via Claude Code
 - Plan said: grant `select` on the `zetaris_export` tables to `zetaris_reader` (§2.10.3, migration 0009). On this Supabase project RLS is enabled on new tables automatically, so with no policy the reader saw 0 rows although `refresh_twin_stats()` filled the tables (confirmed: `relrowsecurity = t`, no policies, 0 rows via the pooler login).
 - We did: `supabase/migrations/0010_zetaris_export_rls.sql` adds a `for select to zetaris_reader using (true)` policy per export table. RLS stays on for every other role.
