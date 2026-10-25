@@ -5,6 +5,7 @@ import re
 from typing import Literal
 
 import httpx
+import openpyxl
 import yaml
 from pydantic import BaseModel, ValidationError
 from pypdf import PdfReader
@@ -141,9 +142,207 @@ Level of applicant's interest → applicant_interest. Ignore racial/ethnic statu
 a clear mark is null.
 """
 
+# The official Excel CDS template (UIUC, Berkeley publish this instead of a PDF): one sheet per lettered section,
+# column A holds the item code, B the question, C onward the answers.
+XLSX_SECTION_CODES = {
+    "counts": re.compile(r"^(C11[789]|C2[12]\d\d|D[12]\d\d)$"),         # C1 totals only; skip the per-gender rows
+    "tests": re.compile(r"^(C8\w*|C9\d\d|C11\d\d|C12\d\d)$"),
+    "c7": re.compile(r"^C7\d\d$"),
+}
+# C701..C718 in the template's order = the C7Factors field order.
+C7_KEYS = list(C7Factors.model_fields)
+C7_LEVELS: dict[str, C7Level] = {"very important": "very_important", "important": "important",
+                                 "considered": "considered", "not considered": "not_considered"}
+XLSX_CELL_CHARS = 90
+# C802 ("SAT or ACT") answers → CDSTests.test_policy
+TEST_POLICY_BY_C802 = {
+    "required to be considered for admission": "required", "required for some": "required",
+    "recommended": "optional", "not required for admission, but considered if submitted": "optional",
+    "not considered for admission, even if submitted": "blind",
+}
+
+
+def is_xlsx(data: bytes) -> bool:
+    return data[:2] == b"PK"                      # an .xlsx is a zip; a PDF starts with %PDF
+
+
+def download_url(url: str) -> str:
+    """A Google Sheets share link becomes its .xlsx export; every other URL is fetched as is."""
+    m = re.match(r"https://docs\.google\.com/spreadsheets/d/([\w-]+)", url)
+    return f"https://docs.google.com/spreadsheets/d/{m.group(1)}/export?format=xlsx" if m else url
+
+
+def _cell(v: object) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, float) and v.is_integer():
+        v = int(v)
+    return " ".join(str(v).split())[:XLSX_CELL_CHARS]
+
+
+def _xlsx_rows(data: bytes) -> list[list[str]]:
+    wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)
+    rows = []
+    for ws in wb.worksheets:
+        if ws.title.startswith(("CDS Definitions", "Answer")):
+            continue
+        rows += [[_cell(c) for c in r] for r in ws.iter_rows(values_only=True)]
+    return rows
+
+
+def xlsx_section_texts(data: bytes) -> dict[str, str]:
+    """Rows of each section as `code | question | answers`, with the uncoded header row above a hit for context."""
+    rows = _xlsx_rows(data)
+    out: dict[str, str] = {}
+    for name, pattern in XLSX_SECTION_CODES.items():
+        lines: list[str] = []
+        header = ""
+        for r in rows:
+            cells = [c for c in r if c]
+            if r and pattern.match(r[0]):
+                if header:
+                    lines.append(header)
+                    header = ""
+                if len(cells) > 2:                          # drop template rows nobody filled in
+                    lines.append(" | ".join(cells))
+            elif cells and not re.match(r"^[A-Z]\d", r[0] or ""):
+                header = " | ".join(cells)
+        out[name] = "\n".join(lines)[:MAX_SECTION_CHARS]
+    return out
+
+
+C7_ROW_LABELS = {"rigor": ("rigor",), "class_rank": ("class rank",),
+                 "academic_gpa": ("academic gpa", "grade point average"), "test_scores": ("standardized test",),
+                 "essay": ("essay",), "recommendations": ("recommendation",), "interview": ("interview",),
+                 "extracurriculars": ("extracurricul",), "talent_ability": ("talent",),
+                 "character": ("character",), "first_generation": ("first generation", "first-generation"),
+                 "alumni_relation": ("alumni",), "geographic_residence": ("geographic",),
+                 "state_residency": ("state residency",), "religious_affiliation": ("religious",),
+                 "volunteer_work": ("volunteer",), "work_experience": ("work experience",),
+                 "applicant_interest": ("interest",)}
+C7_HEADERS = (("very important", "very_important"), ("important", "important"),
+              ("considered", "considered"), ("not considered", "not_considered"))
+C7_LEVEL_AT_END = re.compile(r"(very important|not considered|important|considered)\s*$", re.IGNORECASE)
+MIN_PDF_C7_ROWS = 14                  # fewer parsed rows than this = unusual layout; ask the model instead
+
+
+def pdf_c7(layout_text: str) -> C7Factors | None:
+    """Read C7 without a model: either the column each X sits in (layout text keeps the page's columns) or the
+    level printed at the end of the row (form-field PDFs). None if too few rows parse; the model takes over."""
+    levels: dict[str, C7Level | None] = dict.fromkeys(C7_KEYS)
+    cols: list[tuple[float, C7Level]] = []
+
+    def row_key(text: str) -> str | None:
+        return next((k for k, labels in C7_ROW_LABELS.items() if any(lb in text for lb in labels)), None)
+
+    for line in layout_text.splitlines():
+        low = line.lower()
+        if "very important" in low and "not considered" in low:                 # header row: where each column sits
+            cols = []
+            for phrase, level in C7_HEADERS:
+                pattern = rf"(?<!not )(?<!very ){phrase}" if phrase in ("important", "considered") else phrase
+                if at := re.search(pattern, low):
+                    cols.append((at.start() + len(phrase) / 2, level))
+            continue
+        marks = [m.start() for m in re.finditer(r"\bX\b", line, re.IGNORECASE)]
+        if len(cols) == 4 and len(marks) == 1:
+            key, level = row_key(low[:marks[0]]), min(cols, key=lambda c: abs(c[0] - marks[0]))[1]
+        elif (end := C7_LEVEL_AT_END.search(line)) and not marks:
+            key, level = row_key(low[:end.start()]), C7_LEVELS[end.group(1).lower()]
+        else:
+            continue
+        if key and levels[key] is None:
+            levels[key] = level
+    return C7Factors(**levels) if sum(v is not None for v in levels.values()) >= MIN_PDF_C7_ROWS else None
+
+
+def pdf_c1_totals(text: str) -> tuple[int, int, int] | None:
+    """First-year applied/admitted/enrolled totals, read from the first unsplit C1 rows. The total is the largest
+    number on its row in every layout seen (total first, total last, or a single column); a model took a men-only
+    figure for Georgia Tech. None unless all three rows are found and admits <= applicants."""
+    found: dict[str, int] = {}
+    for line in text.splitlines():
+        low = line.lower()
+        if "first-time" not in low or any(w in low for w in ("men", "women", "gender", "part-time", "transfer")):
+            continue
+        kind = next((k for k in ("applied", "admitted", "enrolled") if k in low), None)
+        nums = [int(n.replace(",", "")) for n in re.findall(r"\b\d{1,3}(?:,\d{3})+\b|\b\d+\b", line.split(":")[-1])]
+        if kind and nums and kind not in found:
+            found[kind] = max(nums)
+    if len(found) == 3 and found["admitted"] <= found["applied"] and found["enrolled"] <= found["admitted"]:
+        return found["applied"], found["admitted"], found["enrolled"]
+    return None
+
+
+PERCENTILE_FIELDS = {"SAT Composite": "sat_composite", "SAT Evidence-Based Reading and Writing": "sat_ebrw",
+                     "SAT Math": "sat_math", "ACT Composite": "act_composite"}
+PERCENTILE_COLUMNS = {"25": "_25", "50": "_50", "75": "_75"}
+XLSX_TEST_FIELDS = [f + c for f in PERCENTILE_FIELDS.values() for c in PERCENTILE_COLUMNS.values()
+                    if f + c in CDSTests.model_fields] + ["pct_submitting_sat", "pct_submitting_act",
+                                                          "pct_top10_class", "avg_hs_gpa"]
+
+
+def _number(v: str) -> float | None:
+    try:
+        return float(v.replace(",", "").rstrip("%"))
+    except ValueError:
+        return None
+
+
+def xlsx_tests(data: bytes) -> dict[str, float | None]:
+    """C9 percentiles and submission rates, C10 top-tenth and C12 GPA, read by row label. Blank or 0 means the school
+    did not report it, so the field is None (not whatever a model guessed)."""
+    out: dict[str, float | None] = {}
+    for r in _xlsx_rows(data):
+        if len(r) < 3 or not re.match(r"^C(9|10|12)\d*", r[0]):
+            continue
+        label, value = r[1], _number(r[2]) or None                           # 0 and blank both mean "not reported"
+        if m := re.match(r"^(.+): (25|50|75)th Percentile$", label):
+            if field := PERCENTILE_FIELDS.get(m.group(1)):
+                out.setdefault(field + PERCENTILE_COLUMNS[m.group(2)], value)
+        elif label in ("Submitting SAT Scores", "Submitting ACT Scores") and value is not None and value <= 1:
+            out.setdefault("pct_submitting_" + label.split()[1].lower(), value)
+        elif label.startswith("Percent in top tenth"):
+            out.setdefault("pct_top10_class", value)
+        elif label.startswith("Average high school GPA"):
+            out.setdefault("avg_hs_gpa", value)
+    return out
+
+
+def pdf_percentiles(text: str) -> dict[str, int]:
+    """C9 percentile rows: `SAT Composite   1510   1540   1560` (25th / 50th / 75th). First table in the text wins."""
+    out: dict[str, int] = {}
+    for line in text.splitlines():
+        for label, field in PERCENTILE_FIELDS.items():
+            row = rf"^\s*{re.escape(label)}(?:\s*\([^)]*\))?" + r"\s+(\d{2,4})\s+(\d{2,4})\s+(\d{2,4})\s*$"
+            m = re.match(row, line, re.IGNORECASE)
+            if m and field + "_25" not in out:
+                out.update(zip((field + c for c in PERCENTILE_COLUMNS.values()), map(int, m.groups()), strict=True))
+    return out
+
+
+def xlsx_test_policy(data: bytes) -> str | None:
+    """C802 is a fixed list of answers, so read it directly; None when the sheet leaves it blank."""
+    for r in _xlsx_rows(data):
+        if r and r[0] == "C802":
+            return TEST_POLICY_BY_C802.get(r[2].lower() if len(r) > 2 else "")
+    return None
+
+
+def xlsx_c7(data: bytes) -> C7Factors:
+    """C7 is a column of answers keyed by item code, so read it directly instead of asking a model."""
+    levels: dict[str, C7Level | None] = dict.fromkeys(C7_KEYS)
+    for r in _xlsx_rows(data):
+        m = re.fullmatch(r"C7(\d\d)", r[0]) if r else None
+        if m and 1 <= int(m.group(1)) <= len(C7_KEYS):
+            levels[C7_KEYS[int(m.group(1)) - 1]] = C7_LEVELS.get(r[2].lower() if len(r) > 2 else "")
+    return C7Factors(**levels)
+
 
 def section_texts(pdf: bytes) -> dict[str, str]:
     """Layout-preserving text of the pages that mention each section (+ the next page for grids that spill over)."""
+    if is_xlsx(pdf):
+        return xlsx_section_texts(pdf)
     reader = PdfReader(io.BytesIO(pdf))
     pages = [p.extract_text(extraction_mode="layout") or "" for p in reader.pages]
     out: dict[str, str] = {}
@@ -244,7 +443,7 @@ def to_update(x: CDSExtract, url: str) -> dict:
 
 
 async def extract_cds(pdf: bytes, slug: str) -> CDSExtract | None:
-    """Three narrow calls to the local model. None when the PDF has no usable text layer (hand-enter those)."""
+    """Counts and tests via the local model; C7 is parsed from the grid (model only if it will not parse)."""
     texts = section_texts(pdf)
     if not all(texts.values()):
         log.warning("%s: no text found for %s; scanned PDF? enter by hand",
@@ -255,10 +454,25 @@ async def extract_cds(pdf: bytes, slug: str) -> CDSExtract | None:
     try:
         counts = await chat_structured(CDSCounts, COUNTS_SYSTEM, ask.format(texts["counts"]), **kw)
         tests = await chat_structured(CDSTests, TESTS_SYSTEM, ask.format(texts["tests"]), **kw)
-        c7 = await chat_structured(C7Factors, C7_SYSTEM, ask.format(texts["c7"]), **kw)
+        c7 = xlsx_c7(pdf) if is_xlsx(pdf) else pdf_c7(texts["c7"])
+        if c7 is None:
+            c7 = await chat_structured(C7Factors, C7_SYSTEM, ask.format(texts["c7"]), **kw)
     except (LocalLLMError, ValidationError, httpx.HTTPError) as exc:
         log.warning("%s: CDS extraction failed (%s: %s)", slug, type(exc).__name__, exc)
         return None
+    if not is_xlsx(pdf) and (totals := pdf_c1_totals(texts["counts"])):
+        counts.applicants_total, counts.admits_total, counts.enrolled_total = totals
+    if is_xlsx(pdf):
+        found = xlsx_tests(pdf)
+        for field in XLSX_TEST_FIELDS:                      # a missing row is "not reported", not a guess
+            value = found.get(field)
+            setattr(tests, field, int(value) if value is not None and field.startswith(("sat_", "act_")) else value)
+    else:
+        for field, value in pdf_percentiles(texts["tests"]).items():
+            if field in CDSTests.model_fields:
+                setattr(tests, field, value)
+    if is_xlsx(pdf) and (policy := xlsx_test_policy(pdf)):
+        tests.test_policy = policy                     # type: ignore[assignment]
     return sanity_check(CDSExtract(**counts.model_dump(), **tests.model_dump(), c7=c7, extraction_notes=[]))
 
 
@@ -268,11 +482,15 @@ async def load_cds() -> None:
     async with zetaris_paused(), httpx.AsyncClient(timeout=60, follow_redirects=True) as http:
         for src in sources:
             slug, url = src["slug"], src["cds_url"]
-            pdf = (await http.get(url)).raise_for_status().content
+            pdf = (await http.get(download_url(url))).raise_for_status().content
             extract = await extract_cds(pdf, slug)
             if extract is None:
                 continue
+            extract.cds_year = extract.cds_year or src.get("cds_year")      # a spreadsheet does not print its year
             upd = to_update(extract, url)
+            if is_xlsx(pdf):                                    # the sheet is authoritative: clear what it leaves blank
+                upd |= {f: None for f in XLSX_TEST_FIELDS if f not in upd}
+            upd |= src.get("overrides") or {}                   # hand-curated, see the yaml
             row = await sb.table("universities_cds").select("source_urls").eq("slug", slug).single().execute()
             current = row.data
             upd["source_urls"] = (current.get("source_urls") or {}) | upd["source_urls"]

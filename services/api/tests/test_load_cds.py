@@ -148,3 +148,171 @@ async def test_pdf_without_text_layer_is_skipped(monkeypatch):
 def test_c7_levels_match_the_database_enum():
     enum = re.search(r"c7_level\s+as enum \(([^)]*)\)", MIGRATION.read_text()).group(1)
     assert set(get_args(C7Level)) == set(re.findall(r"'(\w+)'", enum))
+
+
+def make_xlsx(c7_levels: list[str]) -> bytes:
+    """A miniature of the official CDS Excel template: item code | question | answer."""
+    import io
+
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    c = wb.active
+    c.title = "CDS-C"
+    c.append(["C1: First-time applicants", None, None])
+    c.append(["C117", "Total first-time, first-year students who applied", 73742.0])
+    c.append(["C118", "Total first-time, first-year students who were admitted", 31247])
+    c.append(["C102", "Total first-time, first-year women who applied", 5])           # per-gender rows are skipped
+    c.append(["C905", "SAT Composite: 25th Percentile", 1390])
+    for i, level in enumerate(c7_levels, 1):
+        c.append([f"C7{i:02d}", f"factor {i}", level])
+    c.append(["C2106", "Number of early decision applications", None])               # unanswered: dropped
+    wb.create_sheet("CDS Definitions").append(["C117", "definition text that must be ignored", "x"])
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+LEVELS = ["Very Important"] * 3 + ["Important"] * 5 + ["Considered"] * 5 + ["Not Considered"] * 5
+
+
+def test_xlsx_is_detected_and_sections_keep_only_answered_rows():
+    data = make_xlsx(LEVELS)
+    assert load_cds.is_xlsx(data) and not load_cds.is_xlsx(CDS_PDF)
+    t = section_texts(data)
+    assert "C117 | Total first-time, first-year students who applied | 73742" in t["counts"]
+    assert "C102" not in t["counts"] and "C2106" not in t["counts"] and "definition" not in t["counts"]
+    assert "C905 | SAT Composite: 25th Percentile | 1390" in t["tests"]
+
+
+def test_xlsx_c7_is_read_by_item_code_in_field_order():
+    c7 = load_cds.xlsx_c7(make_xlsx(LEVELS))
+    assert c7.rigor == "very_important" and c7.academic_gpa == "very_important"
+    assert c7.test_scores == "important" and c7.applicant_interest == "not_considered"
+    assert load_cds.xlsx_c7(make_xlsx(["Not a level"] * 18)).rigor is None
+
+
+async def test_xlsx_extraction_skips_the_c7_model_call(monkeypatch):
+    seen = []
+
+    async def fake_chat(model_cls, system, user, **kw):
+        seen.append(model_cls)
+        return {CDSCounts: mk_counts(), CDSTests: mk_tests()}[model_cls]
+
+    monkeypatch.setattr(load_cds, "chat_structured", fake_chat)
+    x = await extract_cds(make_xlsx(LEVELS), "uiuc")
+    assert seen == [CDSCounts, CDSTests] and x is not None and x.c7.rigor == "very_important"
+
+
+def test_google_sheet_links_become_xlsx_exports():
+    sheet = "https://docs.google.com/spreadsheets/d/AbC-123_x/edit?usp=sharing"
+    assert load_cds.download_url(sheet) == "https://docs.google.com/spreadsheets/d/AbC-123_x/export?format=xlsx"
+    assert load_cds.download_url("https://example.edu/cds.pdf") == "https://example.edu/cds.pdf"
+
+
+def test_xlsx_test_policy_is_read_from_c802():
+    import io
+
+    import openpyxl
+
+    def book(answer):
+        wb = openpyxl.Workbook()
+        wb.active.append(["C802", "SAT or ACT", answer])
+        buf = io.BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
+
+    assert load_cds.xlsx_test_policy(book("Not considered for admission, even if submitted")) == "blind"
+    assert load_cds.xlsx_test_policy(book("Not required for admission, but considered if submitted")) == "optional"
+    assert load_cds.xlsx_test_policy(book("Required for some")) == "required"
+    assert load_cds.xlsx_test_policy(book(None)) is None
+
+
+HEADER = "Academic" + " " * 17 + "Very important    Important    Considered    Not considered"
+COL = {"very_important": 32, "important": 47, "considered": 60, "not_considered": 75}     # header centres
+
+
+def grid_row(label: str, level: str) -> str:
+    return label + " " * (COL[level] - len(label)) + "X"
+
+
+def test_pdf_c7_reads_the_column_of_each_x():
+    rows = [HEADER, grid_row("Rigor of secondary school record"[:30], "very_important"),
+            grid_row("Class rank", "not_considered"), grid_row("Academic GPA", "important"),
+            grid_row("Standardized test scores", "considered")]
+    rows += [grid_row(lb, "very_important") for lb in (
+        "Application essay", "Recommendation(s)", "Interview", "Extracurricular activities", "Talent/ability",
+        "Character/personal qualities", "First generation", "Alumni/ae relation", "Geographical residence",
+        "State residency")]
+    rows.append(grid_row("Volunteer work", "important"))
+    c7 = load_cds.pdf_c7("\n".join(rows))
+    assert c7 is not None
+    assert (c7.rigor, c7.class_rank, c7.academic_gpa, c7.test_scores) == (
+        "very_important", "not_considered", "important", "considered")
+    assert c7.essay == "very_important" and c7.volunteer_work == "important"
+
+
+def test_pdf_c7_reads_form_field_levels_at_the_end_of_the_row():
+    labels = ["Rigor of secondary school record", "Class rank", "Academic Grade Point Average (GPA)",
+              "Recommendations", "Standardized test scores", "Application essay", "Interview",
+              "Extracurriculuar activities", "Talent/ability", "Character/personal qualities",
+              "First generation", "Alumni/ae relation", "Geographical residence", "State residency",
+              "Religious affilitation/commitment", "Volunteer work", "Work experience"]
+    text = "\n".join(f"{lb}                    {'Not Considered' if i % 2 else 'Very Important'}"
+                     for i, lb in enumerate(labels))
+    c7 = load_cds.pdf_c7(text)
+    assert c7 is not None and c7.rigor == "very_important" and c7.class_rank == "not_considered"
+    assert c7.extracurriculars == "not_considered" and c7.applicant_interest is None
+
+
+def test_pdf_c7_gives_up_on_an_unfamiliar_layout():
+    assert load_cds.pdf_c7("C7 Relative importance ...\nRigor of secondary school record X") is None
+
+
+def test_pdf_c1_totals_take_the_unsplit_row_and_its_largest_number():
+    text = """\
+Total first-time, first-year men who applied                    40,022
+Total first-time, first-year women who applied                  19,765
+Total first-time, first-year who applied      59,789   10,674   38,320   10,795   0
+Total first-time, first-year who were admitted     8,413   3,536   3,992   885   0
+Total first-time, first-year who enrolled      3,850   2,353   1,164   333   0
+"""
+    assert load_cds.pdf_c1_totals(text) == (59789, 8413, 3850)
+    impossible = "\n".join(f"Total first-time, first-year who {k}   {n}" for k, n in
+                           (("applied", 10), ("were admitted", 20), ("enrolled", 5)))
+    assert load_cds.pdf_c1_totals(impossible) is None                  # admits > applicants: leave it to the model
+
+
+def test_pdf_percentiles_read_the_first_three_number_row_per_test():
+    text = """\
+              25th Percentile   50th Percentile   75th Percentile
+SAT Composite (400 - 1600)        1360    1460    1530
+SAT Math                          680     740     780
+ACT Composite                     31      33      34
+ACT Writing                       -       -       -
+              SAT Composite
+SAT Composite                     9999    9999    9999
+"""
+    p = load_cds.pdf_percentiles(text)
+    assert (p["sat_composite_25"], p["sat_composite_75"], p["sat_math_50"], p["act_composite_75"]) == (
+        1360, 1530, 740, 34)
+    assert "act_writing_25" not in p
+
+
+def test_xlsx_tests_read_by_label_and_treat_zero_as_not_reported():
+    import io
+
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["C905", "SAT Composite: 25th Percentile", 1390])
+    ws.append(["C914", "ACT Composite: 25th Percentile", 0])
+    ws.append(["C901", "Submitting SAT Scores", 0.4128])
+    ws.append(["C1001", "Percent in top tenth of high school graduating class", 56.07])
+    ws.append(["C1201", "Average high school GPA of all degree-seeking, first-time", 0])
+    buf = io.BytesIO()
+    wb.save(buf)
+    t = load_cds.xlsx_tests(buf.getvalue())
+    assert t["sat_composite_25"] == 1390 and t["act_composite_25"] is None and t["avg_hs_gpa"] is None
+    assert t["pct_submitting_sat"] == 0.4128 and t["pct_top10_class"] == 56.07

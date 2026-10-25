@@ -1,0 +1,16 @@
+# slug → official Common Data Set link (2024-25). Real URLs only; never guess (plan §2.9.9).
+# UIUC and UC Berkeley publish the Excel template instead of a PDF (D-034); it carries no year, so cds_year is set here.
+- slug: cmu
+  cds_url: https://www.cmu.edu/ira/CDS/pdf/cds_2024-25/common-data-set-2024-2025-26jun2025.pdf
+  overrides:
+    test_policy: optional                      # C8A marks "Consider if Submitted" for SAT or ACT
+- slug: umich
+  cds_url: https://obp.umich.edu/wp-content/uploads/pubdata/cds/CDS_2024-25_UMAA.pdf
+- slug: georgia_tech
+  cds_url: https://irp.gatech.edu/sites/default/files/CDS/CDS_2024-2025_FINAL_20FEB2025.pdf
+- slug: uiuc
+  cds_url: https://uofi.box.com/shared/static/1m3p4sedkotywoec55zbnodc4oci5ctf.xlsx
+  cds_year: "2024-2025"
+- slug: uc_berkeley
+  cds_url: https://docs.google.com/spreadsheets/d/11BnFbit7JcrmFMi9iV_TMkzhUyCQ_dQHS0V8weuOHPM/edit?usp=sharing
+  cds_year: "2024-2025"

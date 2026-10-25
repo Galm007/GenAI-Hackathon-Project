@@ -1958,7 +1958,7 @@ async def load_scorecard() -> None:
 
 #### 2.9.9 `etl/load_cds.py`: Common Data Set PDFs → C7 weights and more
 
-Extraction runs on the local model (`CDS_MODEL`, default `gemma4:e2b`; D-010). Ollama has no PDF input, so the loader pulls each section's text out of the PDF with `pypdf` in layout mode (which keeps the C7 grid's columns apart), asks three narrow questions (counts, tests and GPA, C7), and runs deterministic sanity checks on the answers (admits ≤ applicants, ordered percentiles, percentages as fractions). A PDF with no text layer is skipped with a warning: hand-enter those schools. `data/cds_sources.yaml`: paste the real PDF links from each school's Institutional Research page; never guess URLs.
+Extraction runs on the local model (`CDS_MODEL`, default `gemma4:e2b`; D-010). Ollama has no PDF input, so the loader pulls each section's text out of the PDF with `pypdf` in layout mode (which keeps the C7 grid's columns apart), asks three narrow questions (counts, tests and GPA, C7), and runs deterministic sanity checks on the answers (admits ≤ applicants, ordered percentiles, percentages as fractions). A PDF with no text layer is skipped with a warning: hand-enter those schools. `data/cds_sources.yaml`: paste the real PDF links from each school's Institutional Research page; never guess URLs. Some schools (UIUC, UC Berkeley) publish the official Excel template instead of a PDF; `load_cds` also takes an `.xlsx` link or a Google Sheets share link (fetched as its `.xlsx` export), reads C7 straight from items C701–C718 with no model call, and sends the other sections to the local model as `code | question | answer` rows (D-034).
 
 ```yaml
 - slug: uiuc
