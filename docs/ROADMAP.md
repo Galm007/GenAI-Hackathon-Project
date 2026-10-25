@@ -148,10 +148,10 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [x] **D06 — Realistic fixtures** · §4.9, §6.3 · Deps: B08 (fallback: hand-written) — done by gridiii via Codex, 2026-10-24 (explicit hand-written fallback)
   Real per-node fixtures in `data/fixtures/` + a realistic `fake_stream.json` recorded from a real run.
   *Done when:* the UI runs end to end on `FAKE_LLM=1` with no keys.
-  Per-schema fixtures, a four-turn offline stream, six-axis radar and reproducible what-if inputs are verified. All percentages use the actual scoring code. This is a fictional authored replay; replacing it with a live graph recording remains pending B13/B14.
+  Per-schema fixtures, a four-turn offline stream, six-axis radar and reproducible what-if inputs are verified. All percentages use the actual scoring code. This is a fictional authored replay; replacing it with a live graph recording requires the configured database/provider and B14. Handoff fixes done by gridiii via Codex, 2026-10-25: fixture reads/writes are explicitly UTF-8, and the fake chair closes with the computed recommendation (D-033).
 - [x] **D07 — Demo route, `Shift+R`, recorded replays** · §4.8, §5.3 · Deps: B14, C04 — done by gridiii via Codex, 2026-10-24 (portable authored-replay fallback; live recordings pending B13/B14)
   *Done when:* `/room/demo/maya-uiuc` plays like live; `Shift+R` swaps a live room to its replay.
-  Resumable API replay, real scoring-based what-if, snapshot registration, restart and Shift+R are verified. A recorder for completed fictional-persona runs is included. No real provider recording is claimed.
+  Resumable API replay, real scoring-based what-if, snapshot registration, restart and Shift+R are verified. A recorder for completed fictional-persona runs is included. B13 is now implemented; a real recording still needs the shared database, provider credentials and human approval for provider usage. No real provider recording is claimed.
 - [ ] **D08 — Deploy** · §4.10 · Deps: B16, C06
   *Done when:* the web app is on Vercel, the API is co-located with Zetaris (VM or laptop + tunnel), and a live run works from a phone. **H18 milestone with X01.**
   Prepared by gridiii via Codex, 2026-10-24: Vercel web config, same-origin API proxy, frontend environment example and deployment handoff. Local proxy/replay verified. Actual Vercel/API hosting, B16 and a live phone run remain unavailable, so this gate stays open.

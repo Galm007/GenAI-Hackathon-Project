@@ -35,3 +35,23 @@ unrelated parent-lockfile warning was removed by setting the web tracing root.
   once the graph and provider are available. The recorder is supplied.
 
 No additional Track A/B implementation step is marked complete by this work.
+
+## Handoff verification — 2026-10-25
+
+Done by gridiii via Codex after syncing through `e4db91f` (Track B B01–B13 and
+Track A A12/A13). Aron's D-1 fixture-encoding blocker and D-3 chair-format note
+are addressed in D-033. All fixture reads/writes use UTF-8 explicitly, and the
+closing recommendation comes from the computed probability disposition.
+
+- Locked Python dependencies and ruff: passed; **298 API tests passed**.
+- Non-UTF-8 locale with Python UTF-8 mode disabled: **6 fixture/encoding tests
+  passed**, including byte-identical generation in a separate process.
+- **43 web tests**, lint, TypeScript and production build: passed.
+- Production web proxy: the updated **101-event** authored replay reaches a
+  successful `done` event; the chair content and recommendation agree.
+- The alternative-major what-if still computes **42.0%** from the unchanged
+  fictional scoring inputs.
+
+No live provider request or actual graph recording is included in these results.
+Track A's flag/fallback fixes and demo-school/twin data, plus Track B's B14 work,
+remain separate handoff items.

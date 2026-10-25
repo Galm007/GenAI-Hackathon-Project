@@ -27,12 +27,12 @@ FIXTURES = ROOT / "data/fixtures"
 
 
 def read(name: str):
-    return json.loads((FIXTURES / f"{name}.json").read_text())
+    return json.loads((FIXTURES / f"{name}.json").read_text(encoding="utf-8"))
 
 
 def save(path: Path, value) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def build() -> dict:
@@ -227,7 +227,7 @@ def build() -> dict:
             "The simulated alternatives should help her explore a major she actually wants to study, "
             "with curriculum and transfer restrictions checked separately. My recommendation follows "
             "the computed model disposition, with its uncertainty and the fictional status of this "
-            "replay clearly stated [[model:twins]].",
+            f"replay clearly stated [[model:twins]].\nRECOMMENDATION: {probability.disposition}",
         ),
     ]
     for number, (speaker, content) in enumerate(turns, 1):

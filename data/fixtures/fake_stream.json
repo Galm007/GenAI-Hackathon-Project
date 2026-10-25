@@ -1950,16 +1950,25 @@
       "event": "debate_token",
       "turn": 4,
       "speaker": "chair",
-      "delta": "clearly stated [[model:twins]]."
+      "delta": "clearly stated [[model:twins]].\n"
     },
     {
       "seq": 92,
       "run_id": "demo-maya-uiuc",
       "ts": 1792800011.96,
+      "event": "debate_token",
+      "turn": 4,
+      "speaker": "chair",
+      "delta": "RECOMMENDATION: WAITLIST"
+    },
+    {
+      "seq": 93,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800012.09,
       "event": "debate_turn_end",
       "turn": 4,
       "speaker": "chair",
-      "content": "I agree that a clearer account of learning would strengthen the essay [[dossier:essay]]. The simulated alternatives should help her explore a major she actually wants to study, with curriculum and transfer restrictions checked separately. My recommendation follows the computed model disposition, with its uncertainty and the fictional status of this replay clearly stated [[model:twins]].",
+      "content": "I agree that a clearer account of learning would strengthen the essay [[dossier:essay]]. The simulated alternatives should help her explore a major she actually wants to study, with curriculum and transfer restrictions checked separately. My recommendation follows the computed model disposition, with its uncertainty and the fictional status of this replay clearly stated [[model:twins]].\nRECOMMENDATION: WAITLIST",
       "citations": [
         {
           "kind": "dossier",
@@ -1984,30 +1993,30 @@
       "degraded": false
     },
     {
-      "seq": 93,
-      "run_id": "demo-maya-uiuc",
-      "ts": 1792800012.09,
-      "event": "node_complete",
-      "node": "advocate"
-    },
-    {
       "seq": 94,
       "run_id": "demo-maya-uiuc",
       "ts": 1792800012.22,
       "event": "node_complete",
-      "node": "chair"
+      "node": "advocate"
     },
     {
       "seq": 95,
       "run_id": "demo-maya-uiuc",
       "ts": 1792800012.35,
-      "event": "node_start",
-      "node": "delta_engine"
+      "event": "node_complete",
+      "node": "chair"
     },
     {
       "seq": 96,
       "run_id": "demo-maya-uiuc",
       "ts": 1792800012.48,
+      "event": "node_start",
+      "node": "delta_engine"
+    },
+    {
+      "seq": 97,
+      "run_id": "demo-maya-uiuc",
+      "ts": 1792800012.61,
       "event": "counterfactuals",
       "counterfactuals": [
         {
@@ -2071,9 +2080,9 @@
       ]
     },
     {
-      "seq": 97,
+      "seq": 98,
       "run_id": "demo-maya-uiuc",
-      "ts": 1792800012.61,
+      "ts": 1792800012.74,
       "event": "final_report",
       "report": {
         "headline_verdict": "A strong CS applicant held back by the major cap, not by her profile.",
@@ -2107,19 +2116,19 @@
       }
     },
     {
-      "seq": 98,
+      "seq": 99,
       "run_id": "demo-maya-uiuc",
-      "ts": 1792800012.74,
+      "ts": 1792800012.87,
       "event": "node_complete",
       "node": "delta_engine"
     },
     {
-      "seq": 99,
+      "seq": 100,
       "run_id": "demo-maya-uiuc",
-      "ts": 1792800012.87,
+      "ts": 1792800013.0,
       "event": "done",
       "status": "complete",
-      "elapsed_ms": 12870
+      "elapsed_ms": 13000
     }
   ]
 }
