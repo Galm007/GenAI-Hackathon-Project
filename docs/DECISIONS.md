@@ -213,6 +213,14 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Open quality issues found reading the 13 rows against their posts (not fixed here, awaiting a human decision): (1) `applicant_type` was "transfer" for 11 of 13 r/collegeresults posts that never mention transferring; (2) `demographics.residency_state` is a region or free text ("Northeast", "bay area") in 12 of 13 rows, not a two-letter code. Numbers (GPA, SAT, ACT) all appeared verbatim in the posts.
 - Impact on other tracks: none yet. A08 will embed whatever is in `twins.jsonl`, so settle (1) and (2) first.
 
+## D-027 — Applicant type from the subreddit; residency_state normalized in code
+- Step: A07 · Date: 2026-10-24 · By: Jmar L. Pineda via Claude Code
+- Plan said: the model fills `applicant_type` and `demographics.residency_state` (§2.9.3, §2.9.6). On `gemma4:e2b` it marked 11 of 13 r/collegeresults rows "transfer" with no mention in the posts, and gave a region or free text instead of a state code in 12 of 13 rows (D-026).
+- We did: in `to_row`, `applicant_type` is "transfer" for r/TransferToTop25 and "first_year" otherwise; `residency_state` keeps only a two-letter code or a full state name (mapped to the code) and is otherwise null. The schema and prompt are unchanged.
+- Known edge: a transfer applicant who posts in r/collegeresults is now labeled first_year (1 of the 13 smoke posts says "Transfer applicant"). Accepted as the cheaper error; revisit if the twin pool needs it.
+- Re-run of the 20 smoke posts: 13 kept, 7 rejected, all kept rows first_year, residency 3 codes and 10 nulls.
+- Impact on other tracks: none. A08 can embed `twins.jsonl`.
+
 ### D-021 production breakpoint follow-up
 - Production browser testing at exactly 1440px exposed overlapping desktop/laptop layout variants. The laptop grid now applies only within its explicit 1024–1439px range. A rebuilt production page verifies one visible dossier, one analytics sidebar and no horizontal body overflow at 1440px. Lint, types and production build pass after the correction.
 - The final narrow-sidebar radar review exposed a clipped Personal label and crowded raw values. Long axis labels now wrap onto two lines and numeric columns have fixed, right-aligned widths. The rebuilt production chart was visually checked with the complete assumed label visible and separate comparison columns.

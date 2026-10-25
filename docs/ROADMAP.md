@@ -41,7 +41,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [x] **A06 — School seed data + resolver** · §2.9.5, §2.9.8 (seed CSV) · Deps: S01 — done by Jmar L. Pineda via Claude Code, 2026-10-23
   Writes `data/schools_seed.csv` (verify every unitid), `data/school_aliases.yaml` and `etl/school_resolver.py`.
   *Done when:* resolver tests pass: "UMich" → `umich`, "CMU SCS" → `cmu`, "UW" → `None` (ambiguous), unknown names land in the unresolved counter.
-- [x] **A07 — Reddit structured extraction** · §2.9.3, §2.9.4, §2.9.6 · Deps: A05, A06, S02, B02, B05 (B01 no longer needed: extraction uses local Gemma, DECISIONS D-007). — done by Jmar L. Pineda via Claude Code, 2026-10-24 (smoke run 13 kept / 7 rejected of 20; known data-quality issues before A08, see D-026)
+- [x] **A07 — Reddit structured extraction** · §2.9.3, §2.9.4, §2.9.6 · Deps: A05, A06, S02, B02, B05 (B01 no longer needed: extraction uses local Gemma, DECISIONS D-007). — done by Jmar L. Pineda via Claude Code, 2026-10-24 (smoke run 13 kept / 7 rejected of 20; applicant_type and residency_state fixed in D-027)
   *Done when:* `--limit 20` on local `gemma4:e2b` with the short schema (cap 3,000 posts, Zetaris auto-paused by `etl/resources.py::zetaris_paused`, already built) (free, but it loads the GPU and RAM: tell your human first so they can close their browser) produces rows in `data/processed/twins.jsonl` and `rejects.jsonl` with reasons; quality gates are unit-tested on two synthetic records.
 - [ ] **A08 — Embeddings + twin loader** · §2.9.7 (`load_twins.py`) · Deps: A07, A03
   *Done when:* the 20 smoke rows are upserted with 768-d vectors, and `match_applicant_twins` returns them for a school they applied to.

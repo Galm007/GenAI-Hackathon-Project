@@ -23,6 +23,19 @@ CAPS = {"collegeresults": 2400, "TransferToTop25": 600}   # newest posts first; 
 DECISION_WORDS = re.compile(r"accept|admit|reject|denied|deny|waitlist|deferred", re.IGNORECASE)
 CONCURRENCY = 1          # one local GPU; Ollama serves requests one at a time at this model size
 OUTCOME_RANK = {"accepted": 3, "waitlisted": 2, "rejected": 1}
+US_STATES = {
+    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR", "california": "CA", "colorado": "CO",
+    "connecticut": "CT", "delaware": "DE", "district of columbia": "DC", "florida": "FL", "georgia": "GA",
+    "hawaii": "HI", "idaho": "ID", "illinois": "IL", "indiana": "IN", "iowa": "IA", "kansas": "KS",
+    "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD", "massachusetts": "MA",
+    "michigan": "MI", "minnesota": "MN", "mississippi": "MS", "missouri": "MO", "montana": "MT",
+    "nebraska": "NE", "nevada": "NV", "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM",
+    "new york": "NY", "north carolina": "NC", "north dakota": "ND", "ohio": "OH", "oklahoma": "OK",
+    "oregon": "OR", "pennsylvania": "PA", "rhode island": "RI", "south carolina": "SC", "south dakota": "SD",
+    "tennessee": "TN", "texas": "TX", "utah": "UT", "vermont": "VT", "virginia": "VA", "washington": "WA",
+    "west virginia": "WV", "wisconsin": "WI", "wyoming": "WY",
+}
+STATE_CODES = set(US_STATES.values())
 
 
 async def extract_post(post: dict, sem: asyncio.Semaphore) -> tuple[dict, RedditApplicantRecord | None, str | None]:
@@ -56,6 +69,21 @@ def _clean_numbers(rec: RedditApplicantRecord, issues: list[str]) -> dict:
     return {"gpa_uw": gpa_uw, "gpa_w": gpa_w, "sat_score": sat, "act_score": act, "class_rank_pct": rank}
 
 
+def _state_code(raw: str | None) -> str | None:
+    """Two-letter code or full state name → code; regions and free text ("Northeast", "bay area") → None."""
+    if not raw:
+        return None
+    v = raw.strip()
+    if v.upper() in STATE_CODES:
+        return v.upper()
+    return US_STATES.get(v.lower())
+
+
+def _applicant_type(post: dict) -> str:
+    """Set from the subreddit, not the model: it guessed "transfer" for posts that never mention it (D-027)."""
+    return "transfer" if post["subreddit"] == "TransferToTop25" else "first_year"
+
+
 def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> tuple[dict | None, str | None]:
     if not rec.is_results_post:
         return None, "not_results_post"
@@ -72,6 +100,8 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
         return None, "no_resolved_school"
 
     issues = list(rec.extraction_issues)
+    applicant_type = _applicant_type(post)
+    demographics = rec.demographics.model_dump() | {"residency_state": _state_code(rec.demographics.residency_state)}
     nums = _clean_numbers(rec, issues)
     if rec.extraction_confidence == "low" and nums["gpa_uw"] is None and nums["sat_score"] is None:
         return None, "low_signal"
@@ -86,7 +116,7 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
         "tier_derived_ec_rating": round(ec_rating_from_tiers(tiers), 2),
     }
     facts = ProfileFacts(
-        applicant_type=rec.applicant_type,
+        applicant_type=applicant_type,
         intended_major=rec.intended_major_raw,
         major_category=rec.major_category,
         gpa_uw=nums["gpa_uw"], gpa_w=nums["gpa_w"], college_gpa=rec.college_gpa,
@@ -98,7 +128,7 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
         awards=[(a.level, a.name) for a in rec.awards],
         hooks=list(rec.hooks),
         school_type=rec.demographics.school_type,
-        residency_state=rec.demographics.residency_state,
+        residency_state=demographics["residency_state"],
         income_bracket=rec.demographics.income_bracket,
         first_gen=rec.demographics.first_gen,
     )
@@ -117,7 +147,7 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
         "source_url": f"https://www.reddit.com{post['permalink']}",
         "post_created_at": created.isoformat(),
         "cycle_year": _cycle_year(rec, created),
-        "applicant_type": rec.applicant_type,
+        "applicant_type": applicant_type,
         **nums,
         "gpa_w_scale": rec.gpa_w_scale,
         "college_gpa": rec.college_gpa,
@@ -128,7 +158,7 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
         "rigor_label": rec.rigor_label,
         "intended_major": rec.intended_major_raw,
         "major_category": rec.major_category,
-        "demographics": rec.demographics.model_dump(),
+        "demographics": demographics,
         "hooks": list(rec.hooks),
         "ec_tier_summary": ec_summary,
         "activities": activities,

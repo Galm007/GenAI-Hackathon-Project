@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from etl.extract_reddit import select_posts, to_row
+from etl.extract_reddit import _state_code, select_posts, to_row
 from etl.reddit_schema import Demographics, ExtractedActivity, RedditApplicantRecord, SchoolDecision
 from etl.school_resolver import SchoolResolver
 
@@ -68,3 +68,18 @@ def test_select_posts_skips_posts_without_decisions_and_done_ids(tmp_path, monke
     assert [p["id"] for p in select_posts(set(), None)] == ["a", "c"]
     assert [p["id"] for p in select_posts({"a"}, None)] == ["c"]
     assert [p["id"] for p in select_posts(set(), 1)] == ["a"]
+
+
+def test_applicant_type_comes_from_subreddit_not_the_model():
+    row, _ = to_row(POST, record(applicant_type="transfer"), resolver())
+    assert row["applicant_type"] == "first_year"
+    row, _ = to_row(POST | {"subreddit": "TransferToTop25"}, record(applicant_type="first_year"), resolver())
+    assert row["applicant_type"] == "transfer" and "Applicant type: transfer" in row["profile_text"]
+
+
+def test_residency_state_is_normalized_or_dropped():
+    assert [_state_code(v) for v in ("MI", "mi", "Michigan", "New York", "Northeast", "bay area", None, "")] == [
+        "MI", "MI", "MI", "NY", None, None, None, None]
+    demo = record().demographics.model_copy(update={"residency_state": "Northeast"})
+    row, _ = to_row(POST, record(demographics=demo), resolver())
+    assert row["demographics"]["residency_state"] is None
