@@ -159,6 +159,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [ ] **D09 — Pitch assets** · §5.9 ("About the data"), §7.5 · Deps: A15, A16
   *Done when:* the About-the-data modal shows real numbers, and `docs/pitch.md` has every §7.5 placeholder filled from real data (never invented).
   Prepared by gridiii via Codex, 2026-10-24: accessible data disclosure, report manifest, three-minute prototype pitch and rehearsal notes. Real corpus/coverage/calibration fields remain explicitly unverified, so A15/A16-dependent acceptance stays open.
+  Pitch status refreshed by gridiii via Codex, 2026-10-25: acknowledge Track A's verified A12 stack and Track B's implemented B13 graph; keep local connection, real recordings and A15/A16 claims separate. No unverified figures were filled in.
 - [ ] **D10 — Meterless judging evidence** · §1.7, §7.4 · Deps: B17, B18, D07
   *Done when:* a short recorded demo shows the app, its Meterless provider connection, and one real request through Nightshift answered by a Nemotron lane (all keys and tokens hidden), plus the World Model conformance scorecard.
   Prepared by gridiii via Codex, 2026-10-24: evidence/capture handoff in `docs/meterless-evidence/README.md`. S03/B17/B18 and real capture are still unavailable; no mock conformance scorecard or fictional provider proof was substituted.

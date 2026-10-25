@@ -1,6 +1,6 @@
 # AdCom: current prototype pitch
 
-Prepared by gridiii via Codex, 2026-10-24.
+Prepared by gridiii via Codex, 2026-10-24; team-status update 2026-10-25.
 
 **Status:** ready to rehearse with the fictional replay. This is not the final
 live-demo pitch: real corpus, calibration, deployment and Meterless proof are
@@ -57,7 +57,9 @@ Use the currently displayed calculation if fixture inputs change.
 
 “Our target architecture uses Zetaris for governed institutional data, Supabase
 for comparable-applicant search, and Meterless for the committee models. The local
-Zetaris platform and direct JDBC connection work. The real-data integration,
+Zetaris platform and direct JDBC connection work. Track A has also verified
+AdCom's semantic views and least-privilege agent on its stack, and Track B's
+graph is implemented. Connecting the chosen demo host, recording a real run,
 deployment and Meterless judging evidence are our remaining gates.”
 
 ## Answers we can support today
@@ -69,8 +71,10 @@ deployment and Meterless judging evidence are our remaining gates.”
 - **Are these real Reddit applicants?** No. Every profile in this replay is fictional.
 - **Does the prototype make admission decisions?** No. It demonstrates an advisory
   interface; universities make their own decisions.
-- **Is the partner integration finished?** The Zetaris platform and JDBC check
-  work locally. AdCom semantic views and the Meterless/World Model proof remain open.
+- **Is the partner integration finished?** The standalone Zetaris platform passes
+  its checks locally. Track A verified AdCom semantic views and agent permissions
+  in A12 on its stack; the chosen demo host still needs its own working connection.
+  Meterless/World Model proof remains open.
 
 ## Final pitch numbers: do not substitute fixture figures
 
@@ -91,6 +95,8 @@ zero or the earlier unsupported 10,000+ corpus claim.
 
 Use `/room/demo/maya-uiuc`; **Shift+R** switches to/restarts its replay and leaves
 text inputs alone. The three fictional applicant packs are in `data/demo_dossiers`.
-Record two real fictional-persona runs once B13/B14 is available, using
-`scripts.record_demo`; review the files before committing. Keep a final demo video
-on both presenting machines once live evidence can be recorded.
+B13 is implemented. Record two real fictional-persona runs once the shared
+database/demo data and provider setup are available, with human approval for
+provider usage, using `scripts.record_demo`; review the files before committing.
+B14 remains responsible for the complete fake-mode graph path. Keep a final demo
+video on both presenting machines once live evidence can be recorded.
