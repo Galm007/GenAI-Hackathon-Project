@@ -65,8 +65,21 @@ def _clean_numbers(rec: RedditApplicantRecord, issues: list[str]) -> dict:
         gpa_w, gpa_uw = gpa_w or gpa_uw, None
     sat = rec.sat_total if rec.sat_total and 400 <= rec.sat_total <= 1600 else None
     act = rec.act_composite if rec.act_composite and 1 <= rec.act_composite <= 36 else None
-    rank = rec.class_rank_pct if rec.class_rank_pct is not None and 0 < rec.class_rank_pct <= 1 else None
-    return {"gpa_uw": gpa_uw, "gpa_w": gpa_w, "sat_score": sat, "act_score": act, "class_rank_pct": rank}
+    rank = rec.class_rank_pct if rec.class_rank_pct is not None and 0 < rec.class_rank_pct < 1 else None
+    scale = rec.gpa_w_scale
+    if gpa_w is not None and not 0 < gpa_w <= 6.0:   # 100-point or other foreign scale put in the weighted field
+        issues.append(f"gpa_w {gpa_w} outside 0-6 dropped")
+        gpa_w, scale = None, None
+    if scale is not None and not 0 < scale <= 10:
+        scale = None
+    college_gpa = rec.college_gpa if rec.college_gpa is not None and 0 <= rec.college_gpa <= 4.0 else None
+    # Same bounds as the CHECK constraints in migration 0003: one bad value must not fail a whole upsert batch.
+    sat_math = rec.sat_math if rec.sat_math and 200 <= rec.sat_math <= 800 else None
+    sat_ebrw = rec.sat_ebrw if rec.sat_ebrw and 200 <= rec.sat_ebrw <= 800 else None
+    ap_count = rec.ap_count if rec.ap_count is not None and 0 <= rec.ap_count <= 30 else None
+    return {"gpa_uw": gpa_uw, "gpa_w": gpa_w, "gpa_w_scale": scale, "college_gpa": college_gpa,
+            "sat_score": sat, "sat_math": sat_math, "sat_ebrw": sat_ebrw, "act_score": act,
+            "class_rank_pct": rank, "ap_count": ap_count}
 
 
 def _state_code(raw: str | None) -> str | None:
@@ -119,9 +132,9 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
         applicant_type=applicant_type,
         intended_major=rec.intended_major_raw,
         major_category=rec.major_category,
-        gpa_uw=nums["gpa_uw"], gpa_w=nums["gpa_w"], college_gpa=rec.college_gpa,
+        gpa_uw=nums["gpa_uw"], gpa_w=nums["gpa_w"], college_gpa=nums["college_gpa"],
         sat=nums["sat_score"], act=nums["act_score"],
-        advanced_courses=(rec.ap_count or 0) + (rec.dual_enrollment_count or 0) or None,
+        advanced_courses=(nums["ap_count"] or 0) + (rec.dual_enrollment_count or 0) or None,
         rigor_label=rec.rigor_label,
         spike=rec.spike_summary,
         activities=[(a.tier, a.description) for a in rec.activities],
@@ -136,7 +149,7 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
         f"{nums['gpa_uw']:.2f} UW" if nums["gpa_uw"] else None,
         f"{nums['sat_score']} SAT" if nums["sat_score"]
         else (f"{nums['act_score']} ACT" if nums["act_score"] else "TO"),
-        f"{rec.ap_count} AP" if rec.ap_count else None,
+        f"{nums['ap_count']} AP" if nums["ap_count"] else None,
         rec.major_category.replace("_", " "),
         f"T1:{tiers.count(1)} T2:{tiers.count(2)}",
     ]))
@@ -149,11 +162,8 @@ def to_row(post: dict, rec: RedditApplicantRecord, resolver: SchoolResolver) -> 
         "cycle_year": _cycle_year(rec, created),
         "applicant_type": applicant_type,
         **nums,
-        "gpa_w_scale": rec.gpa_w_scale,
-        "college_gpa": rec.college_gpa,
-        "sat_math": rec.sat_math, "sat_ebrw": rec.sat_ebrw,
         "applied_test_optional": rec.applied_test_optional,
-        "ap_count": rec.ap_count, "ib_diploma": rec.ib_diploma,
+        "ib_diploma": rec.ib_diploma,
         "honors_count": rec.honors_count, "dual_enrollment_count": rec.dual_enrollment_count,
         "rigor_label": rec.rigor_label,
         "intended_major": rec.intended_major_raw,

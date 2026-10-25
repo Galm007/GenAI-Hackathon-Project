@@ -221,6 +221,13 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Re-run of the 20 smoke posts: 13 kept, 7 rejected, all kept rows first_year, residency 3 codes and 10 nulls.
 - Impact on other tracks: none. A08 can embed `twins.jsonl`.
 
+## D-028 — Extraction number gates aligned with the applicant_twins CHECK constraints
+- Step: A08 · Date: 2026-10-24 · By: Jmar L. Pineda via Claude Code
+- Plan said: `_clean_numbers` validates GPA, SAT total, ACT and rank only (§2.9.6). The first live upsert failed on `gpa_w_scale = 100.0` (`numeric(3,1)`); the row also had `gpa_w = 97.5`, a 100-point grade put in the weighted field.
+- We did: `_clean_numbers` now also nulls `gpa_w` outside 0–6 (with `gpa_w_scale`), `gpa_w_scale` outside 0–10, `college_gpa` outside 0–4, `sat_math`/`sat_ebrw` outside 200–800 and `ap_count` outside 0–30, recording an issue for dropped weighted GPAs. `class_rank_pct` must now be strictly between 0 and 1: a rank of 1.0 (bottom of the class) was the model misreading "top 1%". One bad value no longer fails a 500-row upsert batch.
+- Re-extracted the 20 smoke posts (13 kept, 7 rejected) and loaded them: `match_applicant_twins` returns UCLA neighbors, the query's own row first.
+- Impact on other tracks: none.
+
 ### D-021 production breakpoint follow-up
 - Production browser testing at exactly 1440px exposed overlapping desktop/laptop layout variants. The laptop grid now applies only within its explicit 1024–1439px range. A rebuilt production page verifies one visible dossier, one analytics sidebar and no horizontal body overflow at 1440px. Lint, types and production build pass after the correction.
 - The final narrow-sidebar radar review exposed a clipped Personal label and crowded raw values. Long axis labels now wrap onto two lines and numeric columns have fixed, right-aligned widths. The rebuilt production chart was visually checked with the complete assumed label visible and separate comparison columns.

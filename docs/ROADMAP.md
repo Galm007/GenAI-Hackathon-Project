@@ -43,7 +43,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* resolver tests pass: "UMich" → `umich`, "CMU SCS" → `cmu`, "UW" → `None` (ambiguous), unknown names land in the unresolved counter.
 - [x] **A07 — Reddit structured extraction** · §2.9.3, §2.9.4, §2.9.6 · Deps: A05, A06, S02, B02, B05 (B01 no longer needed: extraction uses local Gemma, DECISIONS D-007). — done by Jmar L. Pineda via Claude Code, 2026-10-24 (smoke run 13 kept / 7 rejected of 20; applicant_type and residency_state fixed in D-027)
   *Done when:* `--limit 20` on local `gemma4:e2b` with the short schema (cap 3,000 posts, Zetaris auto-paused by `etl/resources.py::zetaris_paused`, already built) (free, but it loads the GPU and RAM: tell your human first so they can close their browser) produces rows in `data/processed/twins.jsonl` and `rejects.jsonl` with reasons; quality gates are unit-tested on two synthetic records.
-- [ ] **A08 — Embeddings + twin loader** · §2.9.7 (`load_twins.py`) · Deps: A07, A03
+- [x] **A08 — Embeddings + twin loader** · §2.9.7 (`load_twins.py`) · Deps: A07, A03 — done by Jmar L. Pineda via Claude Code, 2026-10-24 (13 smoke twins loaded; D-028)
   *Done when:* the 20 smoke rows are upserted with 768-d vectors, and `match_applicant_twins` returns them for a school they applied to.
 - [x] **A09 — College Scorecard API loader** · §2.9.8 · Deps: A01, A06 — done by Jmar L. Pineda via Claude Code, 2026-10-24 (live load: 265 schools; filter widened, D-025)
   *Done when:* ≥200 schools and their aliases are in Supabase; `resolve_school('michigan')` returns `umich`.

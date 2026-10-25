@@ -83,3 +83,12 @@ def test_residency_state_is_normalized_or_dropped():
     demo = record().demographics.model_copy(update={"residency_state": "Northeast"})
     row, _ = to_row(POST, record(demographics=demo), resolver())
     assert row["demographics"]["residency_state"] is None
+
+
+def test_out_of_range_values_are_nulled_to_fit_db_constraints():
+    row, _ = to_row(POST, record(gpa_w=97.5, gpa_w_scale=100.0, college_gpa=4.5, sat_math=900, sat_ebrw=100,
+                                 ap_count=45, class_rank_pct=1.0), resolver())
+    for col in ("gpa_w", "gpa_w_scale", "college_gpa", "sat_math", "sat_ebrw", "ap_count", "class_rank_pct"):
+        assert row[col] is None, col
+    assert row["gpa_uw"] == 3.9 and row["sat_score"] == 1520
+    assert any("gpa_w 97.5" in i for i in row["extraction_issues"])
