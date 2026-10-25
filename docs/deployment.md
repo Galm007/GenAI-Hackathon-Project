@@ -1,8 +1,10 @@
 # AdCom deployment handoff
 
-Prepared by gridiii via Codex, 2026-10-24. D08 is **not deployed**. No Vercel project,
-public API origin, configured team database or complete live graph was available.
-Local replay success is not a production integration result.
+Prepared by gridiii via Codex, 2026-10-24; refreshed 2026-10-25 after the Track B
+handoff. D08 is **not deployed**. B13's live graph is now implemented. A Vercel
+project, public API origin and working shared-database configuration are still
+unavailable on gridiii's machine. Local replay success is not a production
+integration result.
 
 ## Verified local path
 
@@ -15,13 +17,44 @@ Local replay success is not a production integration result.
 
 ## Release prerequisites
 
-- Track B finishes B13/B14 and B16, and the API reports actual DB/Zetaris health.
-- Track A supplies verified project data, semantic views and the least-privilege
-  account. Keep all private values on the API host.
+- Track B finishes B14 and B16, and the API reports actual DB/Zetaris health.
+  B13's graph and HTTP stream are implemented; this is no longer missing code.
+- Track A supplies the shared project connection and the demo-school/twin data.
+  A12's semantic views and agent permissions were verified on Track A's stack;
+  they must also exist on the chosen API/Zetaris host. Keep private values there.
 - The demo owner configures S03 and B17/B18 and captures D10 evidence.
 - Choose the team's Vercel account/project and an API host co-located with Zetaris.
   The existing Zetaris bundle and its ports stay private. Do not deploy that bundle
   to Vercel or publish its `.env`.
+
+## gridiii's local environment
+
+Each developer keeps their own ignored repo-root `.env`; that does not require a
+separate Supabase project. gridiii chose the shared AdCom project. Its URL and
+backend service-role key are not committed, and the installed Supabase CLI is not
+signed in on this Mac. Obtain those values privately from Jmar or the shared
+project's settings, then put them in the root `.env`, never the frontend file.
+
+The local root `.env` is prepared with `FAKE_LLM=true`, `ZETARIS_ENABLED=false`,
+`DEMO_MODE=true` and CORS for the web app on port 3001. The ignored web
+`apps/web/.env.local` sets `ADCOM_API_URL=http://127.0.0.1:8000`. Both files have
+mode 600. Existing credentials were preserved; no placeholder credential was
+described as a working connection.
+
+The authored replay uses no Supabase or provider calls. A new `/api/evaluate`
+run still needs Supabase school/twin data even with fake LLM calls. Do not use
+the unrelated local database project to stand in for AdCom. Turn Zetaris on only
+after this host's semantic views and least-privilege agent login are configured.
+Live model calls also need a real provider credential and human approval for
+provider usage; B17 adds the planned Meterless provider switch.
+
+| Setting | Source / status on gridiii's Mac |
+|---|---|
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Jmar/shared AdCom project; still placeholders |
+| `ZETARIS_AGENT_EMAIL`, `ZETARIS_AGENT_PASSWORD` | Least-privilege user on the API host's Zetaris; local password still a placeholder |
+| `SUPABASE_POOLER_HOST`, `ZETARIS_PG_USER`, `ZETARIS_PG_PASSWORD` | Shared session-pooler and reader login for configuring this host's datasource; still placeholders |
+| `ANTHROPIC_API_KEY` | Optional live-provider alternative; placeholder, not used by the replay |
+| `METERLESS_RUNTIME_TOKEN` | Nightshift Console after S03; placeholder, B17 still pending |
 
 ## Vercel web project
 

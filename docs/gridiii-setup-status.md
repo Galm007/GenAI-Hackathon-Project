@@ -1,58 +1,53 @@
 # gridiii: current setup and Track D status
 
-Updated by gridiii via Codex, 2026-10-24. This supersedes the earlier pre-integration
-audit on the same date. Track B's B06–B08 and Track C's C02–C08 have since landed.
+Updated by gridiii via Codex, 2026-10-25 after Aron's Track B handoff. Synced
+through `e4db91f`: B01–B13 are implemented, and Track A has checked A07–A13,
+including live A12 views and agent permissions on its stack. Those team results
+do not mean the same credentials or semantic layer exist on every developer Mac.
 
-The local development tools, standalone Zetaris platform and complete fictional
-UI replay work. The full live AdCom stack and release evidence are still pending.
+## Verified today on this Mac
 
-## Verified
+- Locked Python dependencies and ruff pass; **298 API tests** pass.
+- The fixture/encoding suite also passes with an ASCII locale and Python UTF-8
+  mode disabled: **6 tests**, including a byte-identical fixture rebuild.
+- **43 web tests**, lint, TypeScript and production build pass.
+- Aron's D-1 fixture blocker is fixed: all fixture generator/test reads and
+  generator writes explicitly use UTF-8. D-3 is fixed too: the fake chair ends
+  with the computed recommendation. See D-033.
+- Docker Desktop was started and Zetaris passed **all 9 vendor checks**,
+  including authenticated SQL through the platform.
+- The production web proxy serves the updated **101-event fictional replay** to
+  completion. Its alternative-major what-if still calculates **42.0%** from the
+  same fictional inputs. This is not a live-provider recording.
+- The root `.env` imports successfully and is configured for the authored replay
+  (`FAKE_LLM=true`, `ZETARIS_ENABLED=false`, `DEMO_MODE=true`). The web's local
+  environment points its same-origin proxy at port 8000. Both files are ignored
+  and have mode 600; existing private values were preserved.
+- No paid model request, local model load, database mutation or volume reset was
+  performed. The unrelated local database was not used for AdCom.
 
-- Node 24.12.0, pnpm 11.25.0, uv 0.13.5 and API Python 3.13.7 are available.
-- Locked dependencies and ruff pass; **171 API tests** pass.
-- **43 web tests**, lint, TypeScript and the production build pass.
-- The three D01 applicant packs pass schema, PDF-derived GPA and multipart-upload checks.
-- Zetaris previously passed **all 9 vendor checks** and direct Lightning JDBC
-  `SELECT 1` returned 1 using the supplied jar and Java 11. Its private bundle and
-  environment files remain outside Git.
-- Ollama responds; `gemma4:e2b` and `embeddinggemma` are installed. The earlier
-  embedding check confirmed 768 dimensions. No model was loaded for this work.
-- The integrated room's charts, simulations and four-turn fictional replay work
-  without provider keys. The same-origin proxy avoids the local 3000/3001 CORS conflict.
-- Private environment files are ignored by Git with mode 600. Nightshift defaults
-  are present, but the Runtime token remains a placeholder.
+## What still needs team input
 
-Docker reports 14 CPUs and about 7.75 GiB usable memory for its configured 8 GB
-allocation. Preflight rounds down and warns about memory, emulation and retained
-volumes; the existing platform authenticates and runs. Rosetta was enabled during
-setup. Approximately 48 GiB of host disk was free at the hardware audit. No volume
-reset or unrelated project-container changes were made.
-
-## Still missing
-
-| Area | Current state |
+| Area | Current state / next owner |
 |---|---|
-| Shared AdCom database | Supabase project/credentials, pooler/reader values and real migration/RPC acceptance are not verified here. The unrelated local Supabase project is not used. |
-| Real data and Zetaris semantic layer | Scorecard key and agent credentials are placeholders; real datasets, ADCOM views/gold and least-privilege checks remain pending Track A. |
-| Live graph | B09–B14 and A13 are unfinished. `app/db.py` now exists, but the Zetaris client/repository and real graph are not integrated. |
-| Live simulation | The route delegates to Track B's scoring-context method when available. Until then non-demo runs get 503; they are never evaluated using Maya's fictional inputs. |
-| Meterless / World Model | Nightshift installation/token and S03/B17/B18 evidence are unavailable. No paid/provider request was made. |
-| Deployment | Vercel/project access and a public API host are not known. Web configuration and handoff exist; D08 live phone acceptance has not run. |
-| Real-data pitch and judging proof | D09 awaits A15/A16 metrics; D10 awaits real Nemotron/World Model evidence. Their preparation files exist, but their checkboxes remain open. |
-| Password rotation | Deferred at gridiii's earlier request. Coordinate private configuration when rotating it. |
+| Shared AdCom database | gridiii chose the shared project. Its URL and backend service-role key remain placeholders locally. No concrete project URL or backend key is committed. The Supabase CLI is not signed in. Jmar/shared project settings must supply the values privately. |
+| Zetaris on this Mac | The standalone platform works; the local agent password, pooler/reader settings and local ADCOM semantic layer are not configured. Jmar's A12 checks apply to his stack. The API host needs its own matching datasource/views and least-privilege user. |
+| B14 offline graph | Track A's flag/transport fallbacks and UIUC school/twin data (Aron A-1/A-2), plus Track B's CLI/direct-client fake mode, remain required. Fake model calls alone do not replace the database. |
+| Real fictional-persona recording | B13 now persists event logs, and the D07 recorder exists. A real run still needs database data, provider setup and human approval for provider usage. No live recording was fabricated. |
+| D08 deployment | Frontend/proxy configuration is ready. B16, a linked Vercel project, reachable API host and live phone acceptance are still pending. |
+| D09 pitch | Prototype script/data disclosure exist. A15/A16 corpus, calibration and backtest figures remain missing; the manifest keeps unknown values null. |
+| D10 judging evidence | S03 Nightshift setup, B17/B18 integration, a real served Nemotron request and genuine World Model scorecard are still pending. |
+| Password rotation | Deferred at gridiii's earlier request. Keep private configuration coordinated when rotating it. |
 
-## Direction
+## Next steps without overlapping teammates
 
-D01–D07's components and explicit authored-replay fallback follow Track D's plan.
-The original static chart previews are now integrated with the team's shared
-store. Frozen event, Python schema and TypeScript contracts remain unchanged.
-The demo's numbers come from the real deterministic scoring implementation, using
-fictional inputs. They do not establish real admissions accuracy.
+Aron's D-1 and D-3 items are resolved by Track D. Leave A-1/A-2 to Track A and
+B14's fake-mode wiring to Track B. Once Jmar supplies the shared connection,
+configure this Mac without copying secrets into Git or frontend variables.
+Then recheck the demo data and chosen host before capturing a real run.
 
-Focus the next team work on live data, graph/provider integration and release
-proof. Country/school discovery, CV-interest matching and persistent memory remain
-unapproved expansion proposals. Track A should also reconcile the approved
-3,000-post extraction cap with the later 5K/10K corpus milestones.
+D08–D10 remain unchecked until their actual hosted/data/provider acceptance
+checks pass. No event names, Python schemas or TypeScript contracts changed.
 
 See [Track D verification](track-d-verification.md), [deployment handoff](deployment.md),
 [prototype pitch](pitch.md) and [Meterless evidence handoff](meterless-evidence/README.md).

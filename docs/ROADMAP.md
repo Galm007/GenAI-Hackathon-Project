@@ -8,7 +8,7 @@
 
 Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real probability via CLI · **H18** integration on the deployed stack · **H24** recorded replay · **H28** feature freeze · **H33** code freeze.
 
-> **gridiii's Track D status, 2026-10-24:** D01–D07 components and the explicit offline-replay fallback are implemented and verified, including shared-store chart integration. D08–D10 retain their real deployment/data/provider acceptance gates. The authored replay does not complete the live graph or partner evidence. See [the setup audit](gridiii-setup-status.md) for local checks and team dependencies.
+> **gridiii's Track D status, 2026-10-25:** D01–D07 components and the explicit offline-replay fallback are implemented and verified, including shared-store chart integration and the D-033 handoff fixes. B13 is now implemented; the local shared-database/provider connection and a real recording are still pending. D08–D10 retain their real deployment/data/provider acceptance gates. The authored replay does not establish live integration or partner evidence. See [the setup audit](gridiii-setup-status.md) for local checks and team dependencies.
 
 ---
 
@@ -155,6 +155,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [ ] **D08 — Deploy** · §4.10 · Deps: B16, C06
   *Done when:* the web app is on Vercel, the API is co-located with Zetaris (VM or laptop + tunnel), and a live run works from a phone. **H18 milestone with X01.**
   Prepared by gridiii via Codex, 2026-10-24: Vercel web config, same-origin API proxy, frontend environment example and deployment handoff. Local proxy/replay verified. Actual Vercel/API hosting, B16 and a live phone run remain unavailable, so this gate stays open.
+  Setup refreshed by gridiii via Codex, 2026-10-25: private local replay configuration imports successfully; production proxy replay/what-if and all 9 Zetaris platform checks pass. B13 is now implemented. Shared project credentials and host-specific Zetaris agent/views remain unavailable on this Mac; see the deployment handoff.
 - [ ] **D09 — Pitch assets** · §5.9 ("About the data"), §7.5 · Deps: A15, A16
   *Done when:* the About-the-data modal shows real numbers, and `docs/pitch.md` has every §7.5 placeholder filled from real data (never invented).
   Prepared by gridiii via Codex, 2026-10-24: accessible data disclosure, report manifest, three-minute prototype pitch and rehearsal notes. Real corpus/coverage/calibration fields remain explicitly unverified, so A15/A16-dependent acceptance stays open.
