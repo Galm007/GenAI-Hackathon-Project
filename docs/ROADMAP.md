@@ -92,7 +92,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* `select_contrastive` and `compute_baseline` are unit-tested; a real run returns 5 cards with ≥1 accepted and ≥1 rejected.
 - [x] **B11 — Committee docket + debate nodes** · §3.8.1–3.8.3 · Deps: B04, B06 — done by Aron via Claude Code, 2026-10-25
   *Done when:* citation-validator tests pass (incl. `sql:` refs); the fallback turn path is tested; docket bytes are identical across turns.
-- [ ] **B12 — Node 5: delta engine** · §3.8.4 · Deps: B06, B11
+- [x] **B12 — Node 5: delta engine** · §3.8.4 · Deps: B06, B11 — done by Aron via Claude Code, 2026-10-25
   *Done when:* `bind_report` tests pass (unknown counterfactual IDs nulled, percentages scrubbed, disposition taken from the chair).
 - [ ] **B13 — Graph assembly + CLI + real `/api/evaluate`** · §3.9.1–3.9.2, §4.3–4.4 · Deps: B03, B08–B12
   *Done when:* `get_graph().draw_mermaid()` matches §3.1; the CLI completes for Maya at UIUC; the browser stream from `/api/evaluate` comes from the real graph. **H12 milestone.**
