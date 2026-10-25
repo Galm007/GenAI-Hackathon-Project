@@ -54,7 +54,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [ ] **A12 — Zetaris bring-up + Lightning SQL files** · §2.10.2, §2.10.4 · Deps: A04 — files committed, DDL not applied yet (see commit)
   Commits `zetaris/sql/01_sources.sql` through `04_security.sql` and `docs/zetaris-setup.md` (steps only, no secrets). Resolve every "(verify at Hour 1)" marker against the running stack and correct the plan text.
   *Done when:* `./verify.sh` passes; `SELECT * FROM ADCOM.v_school_profile WHERE slug='uiuc'` returns a row in the Zetaris SQL editor; `adcom_agent` is denied on `ADCOM_PG.*`.
-- [ ] **A13 — Zetaris client + repository** · §2.10.5 (incl. config additions) · Deps: B01, B07
+- [x] **A13 — Zetaris client + repository** · §2.10.5 (incl. config additions) · Deps: B01, B07 — done by Jmar L. Pineda via Claude Code, 2026-10-24 (live: `SELECT 7` via admin login; the agent-user path waits for A12's SQL)
   `app/zetaris.py`, `app/zetaris_repo.py`, and `tests/test_zetaris_guard.py` (cases from §3.10).
   *Done when:* the guard tests pass; `zetaris.query("SELECT 7 AS seven")` works against local Zetaris; with `ZETARIS_ENABLED=false`, `school_profile` falls back to Supabase.
 - [ ] **A14 — `zetaris_setup.py` + CLI stages** · §2.10.6 · Deps: A11, A12, A13
