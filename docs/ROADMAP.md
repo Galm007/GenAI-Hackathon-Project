@@ -86,7 +86,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* functions are unit-tested with a mocked client; with A03 available, `match_twins` hits the real RPC.
 - [x] **B08 — Node 1: dossier parser + rubric grader** · §3.7.1 · Deps: B04, B05, S02 — done by Aron via Claude Code, 2026-10-24
   *Done when:* guardrail and redaction tests pass; a real run on Maya's dossier (D01) produces a sensible `DossierGrade`, or the report notes "not run" without keys.
-- [ ] **B09 — Node 2: institutional + Zetaris SQL tool** · §3.7.2, §2.10.7 · Deps: B04, B05, B07, A13 (fallback until then: `ZETARIS_ENABLED=false`)
+- [x] **B09 — Node 2: institutional + Zetaris SQL tool** · §3.7.2, §2.10.7 · Deps: B04, B05, B07, A13 (fallback until then: `ZETARIS_ENABLED=false`) — done by Aron via Claude Code, 2026-10-25
   *Done when:* the tool loop is tested with a mocked client (budget of 3, `is_error` on rejected SQL); a real run emits `zetaris_queries`.
 - [ ] **B10 — Node 3: twins + radar** · §3.7.3, §4.7 (`radar.py` + node addition) · Deps: B05, B06, B07, A13 (fallback: Supabase)
   *Done when:* `select_contrastive` and `compute_baseline` are unit-tested; a real run returns 5 cards with ≥1 accepted and ≥1 rejected.
