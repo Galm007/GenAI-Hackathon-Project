@@ -38,7 +38,7 @@ live qualifications recorded in the roadmap. Jmar's A15 report has 947 profiles;
 | Real fictional-persona recording | B13 persists event logs and D07's recorder exists. A real run still needs database data, provider setup and human approval for provider usage. The authored UI replay is not substituted as a real recording. |
 | D08 deployment | Local container and proxy are verified. A Vercel project/account connection, reachable public API host, green project health and a live phone run remain open. The Vercel dashboard was at sign-in when checked. |
 | D09 pitch | Real A15 figures are integrated. A16 backtest/bias results and final recorded-run figures remain missing; no accuracy number was invented. |
-| D10 judging evidence | S03 Nightshift setup, B17/B18 integration, a real served Nemotron request and a genuine World Model scorecard remain pending. |
+| D10 judging evidence | The official Mac M1+ setup app is prepared in `~/Applications`, but macOS rejected its execution assessment (ad-hoc signature). It was not launched; vendor/install review is needed. S03 Runtime/NVIDIA setup, B17/B18 integration, a real served Nemotron request and a genuine World Model scorecard remain pending. |
 | Password rotation | Deferred at gridiii's earlier request. Keep private configuration coordinated when rotating it. |
 
 ## Next steps without overlapping teammates

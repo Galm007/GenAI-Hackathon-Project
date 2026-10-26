@@ -112,3 +112,15 @@ only `127.0.0.1:8000` to the host.
 The temporary navigation-test recording was removed. No public tunnel, live
 model call, database mutation or volume reset was part of these checks. D08/X01
 and B16's live Zetaris acceptance are still open.
+
+## Nightshift setup preparation — 2026-10-26
+
+Done by gridiii via Codex. The official M1+ disk image (17,778,594 bytes) was
+downloaded for this M4 Pro Mac, mounted read-only and detached after copying the
+setup bootstrap to `~/Applications/Nightshift Setup.app`. Its SHA-256, bundle
+identifier and version are recorded in `docs/meterless-evidence/README.md`.
+
+macOS execution assessment rejected the ad-hoc-signed application; it was not
+launched. Gatekeeper/quarantine protections are unchanged. The Runtime is not
+installed, no token or NVIDIA lane is configured, and no smoke/provider request
+was made. S03/D10 remain open pending vendor/install review and genuine evidence.
