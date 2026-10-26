@@ -415,7 +415,14 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Verified: `tests/test_world_model.py` starts the real sidecar: 60 sections from Nodes 2 and 3 plus extra writers appended concurrently with none lost and audit seqs gapless; the docket built from the engine equals the in-state docket; a section planted in the engine shows up in the docket; with nothing listening the docket node returns the in-state docket with the warning and the client backs off; with the URL unset nothing is sent. Not verified: building the compose image (it pulls `node:24-alpine`, not approved here) and a full graph run with the sidecar on.
 - Impact on other tracks: Track D's deployment runs the extra `world-model` service (already in the compose overlay) and sets nothing else; the frontend and event contracts are unchanged.
 
-## D-054 — Nonzero shape embedding for the database-backed fake graph
+## D-054 — D09: recorded-run figures, and no major-arbitrage number
+- Step: D09 · Date: 2026-10-26 · By: Jmar L. Pineda via Claude Code
+- Plan said: fill `{P_UIUC}`, `{P_ARB}`, `{DELTA_MAJOR}`, `{N_MAJOR}`, `{DELTA_SAT}` from the final recorded Maya at UIUC run (§7.5).
+- We did: ran Maya live (Meterless/Nemotron, Zetaris `zetaris.profile` and `zetaris.sql` calls, 854 s) and saved it as `maya-uiuc-live` (the authored `maya-uiuc` replay is kept). `{P_UIUC}` = 54.7% (43.4–65.8%). `{DELTA_SAT}` = 0.0 pp: her 1520 equals UIUC's 75th percentile (1600 would add +0.7 pp). `{P_ARB}`, `{DELTA_MAJOR}` and `{N_MAJOR}` are not claimed: `school_major_stats` has only computer_science for UIUC (n=132), so the run produced no major pivot. `docs/pitch.md` gives the real pivots (+1.9 and +2.9 pp) and a script change for the 2:05 and 2:30 beats.
+- Also: the Zetaris setup needed the federal files copied into the driver and `ADCOM_PUBLIC` tables recreated after they were first registered empty (no repo change).
+- Impact on other tracks: Track D should stop quoting the fixture's +8.3 pp major pivot as live evidence. More major rows in `school_major_stats` (A18) would restore the arbitrage beat.
+
+## D-056 — Nonzero shape embedding for the database-backed fake graph
 - Step: D06 / D08 integration verification · Date: 2026-10-26 · By: gridiii via Codex
 - Found against the newly accessible shared Supabase project: the all-zero D06 embedding makes pgvector cosine similarity undefined. PostgREST returns the hybrid scores as the string `NaN`; the first database-backed fake graph failed in contrastive selection before its twins event. Converting that string to a float would leave an invalid similarity and hide the fixture problem.
 - Fixed the D06 generator and fixture to use a deterministic nonzero shape vector. It remains explicitly nonsemantic and is never retrieval evidence. The offline Node 1 regression now requires a finite positive vector norm; the fixture rebuild check covers regeneration. No scoring/RPC/schema or Track B runtime behavior changed; the fake-provider comment was corrected to describe a fixed vector.

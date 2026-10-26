@@ -150,7 +150,7 @@ restarting Zetaris or touching the unrelated database project.
 
 The initial fake-LLM evaluation failed before its twins event: the zero-vector
 fixture produced cosine `NaN` values, serialized by PostgREST as strings.
-D-054 fixes the D06 fixture and generator, retaining an explicitly nonsemantic
+D-056 fixes the D06 fixture and generator, retaining an explicitly nonsemantic
 shape vector. The existing offline Node 1 regression now checks a positive,
 finite vector norm; the reproducible rebuild test also passes.
 

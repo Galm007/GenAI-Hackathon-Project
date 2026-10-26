@@ -32,7 +32,13 @@ and [the held-out backtest output](https://github.com/Galm007/GenAI-Hackathon-Pr
   it as rough calibration, not as accuracy.
 - Say **947**, not “10,000+”. Further corpus growth is optional A18.
 
-## Three-minute walkthrough
+## Three-minute walkthrough — gridiii hosted Gemini run
+
+Use the figures for the chosen run consistently. Jmar's recorded Nemotron run
+uses different agent grades and has its own figures below; never mix its pivots
+with the separate 56.66% Gemini run.
+
+## Walkthrough
 
 **0:00–0:25 — The problem**
 
@@ -110,14 +116,19 @@ committee evidence are tracked explicitly in our handoff."
 |---|---|---|
 | Real applicant count and school coverage | 947 profiles; 265 universities; all five demo schools meet the reported coverage targets | A15 data report, 2026-10-26 |
 | Real CDS and Zetaris federation coverage | 5 CDS schools, 260 IPEDS fallback; gold refreshed | A12/A15 data report |
-| Recorded fictional-Maya probability and pivot sizes | 56.66% baseline; Tier 2 activity 58.64% (+1.98 pp); SAT 1520→1570 gives 57.02% (+0.36 pp) | Live run and deterministic what-if, 2026-10-26 |
+| Team recorded Nemotron run (Jmar) | Live Maya at UIUC run, 2026-10-26: **54.7%** (range 43.4–65.8%, LIKELY ADMIT), base rate 42.4%. Best pivots: promote the Tier 3 crop-disease project to Tier 2, +1.9 pp; add one Tier 2 activity, +2.9 pp. SAT: Maya's 1520 is already UIUC's 75th percentile, so `{DELTA_SAT}` = 0.0 pp (1600 would add +0.7 pp). Major arbitrage: none supported, because UIUC has major data only for CS (n=132), so `{P_ARB}`, `{DELTA_MAJOR}` and `{N_MAJOR}` are not claimed | `data/demo_runs/maya-uiuc-live.json` (recorded run, Meterless/Nemotron, Zetaris on) |
+| Separate local Gemini run (gridiii) | 56.66% baseline; Tier 2 activity 58.64% (+1.98 pp); SAT 1520→1570 gives 57.02% (+0.36 pp) | Live run and deterministic what-if, 2026-10-26 |
 | Typical odds correction | Median 3.24× across 88 schools with at least 15 outcomes | A15 calibration table summary |
 | Model and base-rate Brier scores; bias audit | Brier 0.232 vs 0.303 base rate; weak within-school ranking; subgroup gaps reported | A16 backtest, `docs/data-report.md` |
 | Real Nemotron request and World Model conformance | Smoke/extraction requests captured; World Model 8/8; streamed committee check still open | D10 evidence |
 
 `data/data-report.json` now contains the reported corpus, coverage and odds
 adjustment figures, with a dated source link, and now the A16 Brier scores
-(0.232 model, 0.303 base rate). The final run figures above now replace illustrative pitch values. No positive empirical major pivot was returned: Math/Stats yields 57.10% (+0.44 pp) only as a model experiment, with the explicit warning that major-specific data is unavailable. Do not sell it as a data-backed arbitrage recommendation.
+(0.232 model, 0.303 base rate). The recorded-run figures come from `data/demo_runs/maya-uiuc-live.json` (see the table).
+
+**Script change for the recorded run:** the 2:05 "major arbitrage" and 2:30 "SAT to the 75th percentile" lines must not quote numbers. Say instead: "Her best lever is turning the crop-disease project into a Tier 2 result, worth about two points; the agents say plainly that UIUC's data doesn't support a major pivot, so they don't invent one." The authored `maya-uiuc` replay still shows fixture pivots (+8.3 pp) and stays labeled illustrative.
+
+For gridiii's separate hosted Gemini run: The final run figures above now replace illustrative pitch values. No positive empirical major pivot was returned: Math/Stats yields 57.10% (+0.44 pp) only as a model experiment, with the explicit warning that major-specific data is unavailable. Do not sell it as a data-backed arbitrage recommendation.
 
 ## Judge questions about the current data
 
@@ -152,7 +163,7 @@ Only report aggregate run figures until a shareable capture has been reviewed.
 Keep a final demo video on both presenting machines once evidence can be recorded.
 
 
-## Final §7.5 values from the live run
+## Separate hosted Gemini §7.5 values (gridiii, not the team recording)
 
 - `P_UIUC`: **56.66%**.
 - `P_ARB`: **57.10%**, Math/Stats model experiment only; no empirical major pivot was returned.
