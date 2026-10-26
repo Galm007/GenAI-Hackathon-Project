@@ -29,6 +29,7 @@ def api(monkeypatch):
     Each reply is an httpx.Response or a callable(request) -> Response, used in order (the last one repeats)."""
     monkeypatch.setattr(settings, "llm_provider", "gemini")
     monkeypatch.setattr(settings, "gemini_api_key", "test-gemini")
+    monkeypatch.setattr(settings, "gemini_model", "gemini-3.8-flash")   # a main model distinct from the fast one
     sleeps: list[float] = []
 
     async def fake_sleep(s: float) -> None:

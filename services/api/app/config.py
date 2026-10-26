@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     meterless_model: str = "meterless/auto"
     meterless_app: str = "adcom"
     gemini_api_key: str | None = None                     # AI Studio key from a Cloud project with no billing account
-    gemini_model: str = "gemini-3.8-flash"                # extraction, grading, briefs, delta
+    gemini_model: str = "gemini-3.5-flash-lite"           # extraction, grading, briefs, delta; 3.8-flash stalls (D-049)
     gemini_fast_model: str = "gemini-3.5-flash-lite"      # effort="low": debate turns and the SQL loop
 
     @model_validator(mode="after")
