@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { emptyRun, reduce, useRunStore } from "./run-store";
+import { emptyRun, reduce, runFailure, useRunStore } from "./run-store";
 import type { Envelope, ToolCall } from "@/lib/types";
 
 describe("run-store reducer", () => {
@@ -402,5 +402,46 @@ describe("run-store reducer", () => {
       expect(childRun.dossier?.test_scores.sat_total).toBe(1520);
       expect(childRun.grade?.spike?.strength).toBe("strong");
     });
+  });
+});
+
+describe("runFailure (D-041)", () => {
+  const env = (seq: number, event: string, data: Record<string, unknown> = {}): Envelope =>
+    ({ seq, run_id: "run-1", ts: 1000 + seq, event, ...data }) as Envelope;
+  const started = () => reduce(emptyRun("run-1"), env(0, "run_started", { school_slug: "uiuc" }));
+
+  it("is null while a run is connecting, running or complete", () => {
+    expect(runFailure(emptyRun("run-1"))).toBeNull();
+    expect(runFailure(started())).toBeNull();
+    expect(runFailure(reduce(started(), env(1, "done", { status: "complete", elapsed_ms: 10 })))).toBeNull();
+  });
+
+  it("returns the API's message for an unrecoverable error, even before done arrives", () => {
+    const run = reduce(started(), env(1, "error", {
+      node: null, message: "Evaluation failed (ValueError).", recoverable: false,
+    }));
+    expect(runFailure(run)).toBe("Evaluation failed (ValueError).");
+    const done = reduce(run, env(2, "done", { status: "failed", elapsed_ms: 900 }));
+    expect(done.status).toBe("failed");
+    expect(runFailure(done)).toBe("Evaluation failed (ValueError).");
+  });
+
+  it("ignores recoverable node errors, which only degrade that node", () => {
+    const run = reduce(started(), env(1, "error", {
+      node: "institutional", message: "Live fact-check unavailable — using Common Data Set only.", recoverable: true,
+    }));
+    expect(run.nodes.institutional).toBe("degraded");
+    expect(runFailure(run)).toBeNull();
+  });
+
+  it("falls back to a generic message when the run failed without an error event", () => {
+    const run = reduce(started(), env(1, "done", { status: "failed", elapsed_ms: 5 }));
+    expect(runFailure(run)).toBe("The evaluation stopped before the committee could meet.");
+  });
+
+  it("reports the most recent unrecoverable error", () => {
+    let run = reduce(started(), env(1, "error", { node: null, message: "first", recoverable: false }));
+    run = reduce(run, env(2, "error", { node: null, message: "Run cancelled: no viewers.", recoverable: false }));
+    expect(runFailure(run)).toBe("Run cancelled: no viewers.");
   });
 });

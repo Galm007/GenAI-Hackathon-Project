@@ -1,12 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { DebateBubble } from "./DebateBubble";
 import { RecommendationStamp } from "./RecommendationStamp";
 import { FactCheckStrip } from "./FactCheckStrip";
 import { ToolTicker } from "@/components/room/ToolTicker";
-import { useActiveRun, type RunView } from "@/store/run-store";
+import { runFailure, useActiveRun, type RunView } from "@/store/run-store";
 import { schoolName } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,32 @@ function PreMeeting({ run }: { run: RunView }) {
   );
 }
 
+function RunFailed({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="mx-auto my-auto w-full max-w-md space-y-3 rounded-xl border border-[var(--color-deny)]/40 bg-[var(--color-panel)] px-6 py-5 text-center text-sm"
+    >
+      <p className="font-display text-lg text-[var(--color-ink)]">The committee couldn&apos;t meet.</p>
+      <p className="text-[var(--color-muted)]">{message}</p>
+      <div className="flex flex-wrap justify-center gap-2 pt-1">
+        <Link
+          href="/"
+          className="rounded-full border border-[var(--color-line)] px-4 py-1.5 text-[var(--color-ink)] transition hover:bg-[var(--color-panel-2)]"
+        >
+          Start a new evaluation
+        </Link>
+        <Link
+          href="/room/demo/maya-uiuc"
+          className="rounded-full border border-[var(--color-advocate)]/30 bg-[var(--color-advocate)]/10 px-4 py-1.5 text-[var(--color-ink)] transition hover:bg-[var(--color-advocate)]/20"
+        >
+          Watch the demo replay
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function CommitteeRoom() {
   const run = useActiveRun((r) => r);
   const scroller = useRef<HTMLDivElement>(null);
@@ -79,6 +106,7 @@ export function CommitteeRoom() {
 
   const last = run.debate.at(-1);
   const final = run.debate.find((t) => t.recommendation)?.recommendation;
+  const failure = runFailure(run);
 
   const displaySchool =
     run.rubric?.name ?? (run.schoolSlug ? schoolName(run.schoolSlug) : "UIUC");
@@ -113,7 +141,7 @@ export function CommitteeRoom() {
         }}
         className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-6"
       >
-        {run.debate.length === 0 && <PreMeeting run={run} />}
+        {run.debate.length === 0 && !failure && <PreMeeting run={run} />}
 
         <AnimatePresence initial={false}>
           {run.debate.map((t) => (
@@ -121,11 +149,13 @@ export function CommitteeRoom() {
           ))}
         </AnimatePresence>
 
-        {last?.streaming && last.content === "" && (
+        {!failure && last?.streaming && last.content === "" && (
           <TypingIndicator speaker={last.speaker} />
         )}
 
         {final && <RecommendationStamp value={final} />}
+
+        {failure && <RunFailed message={failure} />}
       </div>
     </section>
   );

@@ -47,6 +47,14 @@ export const emptyRun = (runId: string): RunView => ({
   progress: {}, tools: [], snippets: [], sqlQueries: [], twins: [], debate: [], citationWarnings: [], counterfactuals: [], errors: [],
 });
 
+/** Why the run stopped for good, or null while it can still finish. The API sends an unrecoverable `error`
+ *  just before `done` with status "failed"; either one means the committee will not meet (DECISIONS D-041). */
+export function runFailure(r: RunView): string | null {
+  const fatal = [...r.errors].reverse().find((e) => !e.recoverable);
+  if (fatal) return fatal.message;
+  return r.status === "failed" ? "The evaluation stopped before the committee could meet." : null;
+}
+
 const upsertTurn = (turns: DebateTurn[], t: DebateTurn) =>
   turns.some((x) => x.turn === t.turn) ? turns.map((x) => (x.turn === t.turn ? t : x)) : [...turns, t];
 
