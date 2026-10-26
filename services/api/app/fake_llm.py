@@ -31,7 +31,7 @@ def install():
         return content
 
     async def embed_one(_):
-        # Shape fixture only: this zero vector is not a semantic embedding or retrieval evidence.
+        # Shape fixture only: this fixed vector is not a semantic embedding or retrieval evidence.
         return json.loads((FIXTURES / "profile_embedding.json").read_text(encoding="utf-8"))
 
     async def run_zetaris_research(**_):

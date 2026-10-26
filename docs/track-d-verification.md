@@ -139,3 +139,24 @@ must be configured before the first build.
 No backend secret, paid upgrade or custom domain was added. D08/X01 remain open.
 Settings screenshot: `outputs/adcom-vercel-settings-2026-10-26.png` in gridiii's
 workspace, outside the repository.
+
+## Shared-database fake graph — 2026-10-26
+
+Done by gridiii via Codex after the team invitation became available. The private
+backend environment now targets the shared AdCom project. Direct read-only
+checks returned 265 universities, 947 profiles and the UIUC school row. The API
+container was rebuilt from the latest team revision and recreated without
+restarting Zetaris or touching the unrelated database project.
+
+The initial fake-LLM evaluation failed before its twins event: the zero-vector
+fixture produced cosine `NaN` values, serialized by PostgREST as strings.
+D-052 fixes the D06 fixture and generator, retaining an explicitly nonsemantic
+shape vector. The existing offline Node 1 regression now checks a positive,
+finite vector norm; the reproducible rebuild test also passes.
+
+After rebuilding the image, the fictional Maya fake-mode graph completed
+**244 events**, contiguous sequence numbers, all four debate turns, a final
+report and successful `done`. Its live-context what-if request returned **200**.
+No real model request was made by this fake-mode check; its vector does not
+establish semantic retrieval quality. Raw retrieved profiles/events are not
+committed. D08/D09 provider/live gates remain separate.
