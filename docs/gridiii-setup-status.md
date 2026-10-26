@@ -1,60 +1,56 @@
 # gridiii: current setup and Track D status
 
-Updated by gridiii via Codex, 2026-10-26. Synced through `b6b3d37` before this
-Track D update: Track A A01–A15 and Track B B01–B13/B15/B16 are checked, with
-live qualifications recorded in the roadmap. Jmar's A15 report has 947 profiles;
-10K is optional A18. Team data does not automatically grant this Mac access.
+Updated by gridiii via Codex, 2026-10-26. Main is integrated through `5798dbb`,
+including Aron's B18a/B18b World Model implementation. Teammate work is retained.
 
-## Verified today on this Mac
+## Verified on this Mac
 
-- Locked Python dependencies and ruff pass; **340 API tests** pass.
-- **43 web tests**, lint, TypeScript and production build pass.
-- The data disclosure and pitch use A15's reported **947 profiles, 265
-  universities, five CDS schools**, per-school coverage and scoped 3.24× median
-  odds inflation. The source link is dated and immutable; Brier scores stay null.
-- The production panel fits a **390px** phone viewport without horizontal panel
-  overflow. Escape closes it and restores focus to its trigger.
-- Alternate saved recordings now restart themselves with the button or Shift+R,
-  retaining projector mode. The temporary fictional test recording was removed.
-- Aron's arm64 API image was built and started on the Zetaris Compose network.
-  It binds only **127.0.0.1:8000**. In-container access to the Zetaris UI returns
-  HTTP 200; the 101-event replay and deterministic what-if work.
-- Zetaris passed **all 9 vendor checks** after API bring-up. This admin/platform
-  check does not verify an AdCom agent's curated-view access.
-- Vercel's **adcom** project is created in gridiii's workspace. Next.js, root
-  `apps/web`, build/install commands and Node 24 are saved and verified. Default
-  deployment protection is retained; Git linking and the first deployment wait
-  for a working public API origin.
-- The container contains no private root/API environment file. The ignored local
-  configuration remains for the authored replay: `FAKE_LLM=true`,
-  `ZETARIS_ENABLED=false`, `DEMO_MODE=true`. Existing private values are preserved.
-- No paid model request, local model load, database mutation or volume reset was
-  performed. The unrelated local database was not used for AdCom.
+- Shared AdCom Supabase access works: 265 universities and 947 applicant profiles.
+  Backend credentials are in the ignored root `.env` with owner-only permissions.
+- A dedicated `adcom_gridiii_reader` login inherits the existing `zetaris_reader`
+  role. It has no superuser, database-creation or role-creation privileges. The
+  existing team reader password was not changed.
+- Track A's SQL files were applied to this Mac's Zetaris with the real pooler
+  connection, official Scorecard institution CSV and IPEDS ADM2023 file. The
+  local AdCom agent reads the UIUC view and gold table. Direct source-table and
+  internal IPEDS-view reads are denied as intended.
+- The API on the Zetaris network reports `db=true`, `zetaris=true`,
+  `fake_llm=false`. The Nightshift provider check reported `meterless=true`
+  when selected; with Gemini selected its status is explicitly `not_selected`. Discovery checks the configured model's
+  presence; it does not pretend to prove a completed evaluation.
+- Nightshift M1-M4 installed successfully through its official setup application.
+  The earlier execution assessment remains a historical observation: no security
+  protection was bypassed or changed. NVIDIA is saved inside Nightshift only.
+- The authorized smoke test passed configuration, authenticated model discovery
+  and a real reply served by `nvidia/nemotron-3.5-lightning-30b-a3b`. Nightshift's
+  genuine receipt is captured privately; the UI labels it unsigned, which must
+  remain disclosed when presenting that receipt.
+- Local settings: `LLM_PROVIDER=gemini`, `ALLOW_PAID_PROVIDERS=false`,
+  `MAX_RUNS_PER_DAY=30`, `MAX_CONCURRENT_RUNS=2`. A dedicated AdCom AI Studio
+  project was created and visibly verified Free Tier. The Gemini key lives only
+  in this Mac's private backend `.env`; billing was not enabled.
+- The shared-database fake graph completed 244 contiguous events and what-if.
+  D-054 fixes the nonsemantic demo embedding that previously yielded NaN cosine
+  distances. This result is explicitly separate from real retrieval/provider proof.
+- With the latest upstream integration and local health additions: 422 API tests
+  and ruff pass. Aron's World Model passes all seven Node tests and the unmodified
+  upstream conformance runner passes 8/8 independently on this Mac.
+- Web checks earlier today: 48 tests, lint, TypeScript and production build pass.
+  A16's real backtest figures are available: app Brier 0.232, official-rate baseline
+  0.303, Reddit-rate baseline 0.216; weak within-school ranking and subgroup gaps
+  are stated in the pitch.
 
-## What still needs input or real acceptance
+## Acceptance still being checked
 
-| Area | Current state / next owner |
+| Area | Current status |
 |---|---|
-| Shared AdCom database | gridiii chose the shared project. Its URL/backend key remain placeholders locally. The Supabase web account is signed in, but the last check showed only gridiii's organization and five unrelated projects. Jmar must supply an invitation or the connection privately; GitHub does not contain the credentials. |
-| Zetaris on this Mac | The standalone platform works. Local agent and pooler/reader credentials remain placeholders, and the AdCom semantic layer is not verified locally. Jmar's A12/A14 checks apply to his stack; the chosen API host needs matching datasource/views and a least-privilege user. |
-| Actual project health | The API responds with `ok=false, db=false, zetaris=false` in the current fake/replay configuration. HTTP reachability to the UI is not proof of working project SQL/data access. |
-| B14 offline graph | A15 now supplies UIUC and the other demo schools/twins on the team stack. Access is still needed here. Track B's CLI/direct-client fake-mode work and Track A's flag/transport fallbacks remain separate handoff items. |
-| Real fictional-persona recording | B13 persists event logs and D07's recorder exists. A real run still needs database data, provider setup and human approval for provider usage. The authored UI replay is not substituted as a real recording. |
-| D08 deployment | Local container/proxy and [Vercel project settings](https://vercel.com/gridiiis-projects/adcom/settings/build-and-deployment) are verified. The workspace connection is approved. Git linking, reachable public API host, green project health, first deployment and a live phone run remain open. |
-| D09 pitch | Real A15 figures are integrated. A16 backtest/bias results and final recorded-run figures remain missing; no accuracy number was invented. |
-| D10 judging evidence | The official Mac M1+ setup app is prepared in `~/Applications`, but macOS rejected its execution assessment (ad-hoc signature). It was not launched; vendor/install review is needed. S03 Runtime/NVIDIA setup, B17/B18 integration, a real served Nemotron request and a genuine World Model scorecard remain pending. |
-| Password rotation | Deferred at gridiii's earlier request. Keep private configuration coordinated when rotating it. |
+| Live Maya evaluation | Completed through Gemini Free Tier: 97 contiguous events, four non-degraded committee turns, final report and working what-if. The earlier slow Nightshift full evaluation was stopped. Raw captures stay private because retrieved twins are real profiles. |
+| D08 deployment | The real API is reachable through a temporary Cloudflare tunnel. Vercel's existing adcom project is being deployed with backend origin only, no model/database secrets. A successful hosted run and physical-phone check remain required. |
+| D09 pitch | Published data/backtest figures are filled. Completed: 56.66% baseline; Tier 2 activity +1.98 pp; SAT +50 gives +0.36 pp. No eligible empirical major pivot was returned. |
+| D10 judging evidence | Local Runtime setup and genuine 8/8 conformance are verified. The actual streamed committee request returned no text and a “No route completed” receipt. Blank streams now take the existing degraded fallback in the PR. B17c/D10 remain open; successful smoke/extraction requests are not substituted. |
 
-## Next steps without overlapping teammates
+Private credential handoff is in `.local/team-handoff/` (ignored, owner-only).
+Share it privately only if needed; do not post it to GitHub or a group chat.
+The public PR documents configuration names and checks, never keys.
 
-The available data-panel/pitch update, named-replay correction, local API
-bring-up and Vercel project preparation are complete. Keep A16 and the data-service fixes with Track A, and
-B14/B17/B18 with Track B. Once project access is available, configure this Mac's
-private values, apply the host-specific Zetaris setup, and verify real health
-before public deployment or recording a provider-backed run.
-
-D08–D10 remain unchecked until their hosted/data/provider acceptance checks pass.
-Frozen event names, Python schemas and TypeScript contracts are unchanged.
-
-See [Track D verification](track-d-verification.md), [deployment handoff](deployment.md),
-[prototype pitch](pitch.md) and [Meterless evidence handoff](meterless-evidence/README.md).
+Done by gridiii via Codex. Frozen browser/Pydantic/event contracts are unchanged.

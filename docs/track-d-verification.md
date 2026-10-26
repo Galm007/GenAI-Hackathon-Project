@@ -150,7 +150,7 @@ restarting Zetaris or touching the unrelated database project.
 
 The initial fake-LLM evaluation failed before its twins event: the zero-vector
 fixture produced cosine `NaN` values, serialized by PostgREST as strings.
-D-052 fixes the D06 fixture and generator, retaining an explicitly nonsemantic
+D-054 fixes the D06 fixture and generator, retaining an explicitly nonsemantic
 shape vector. The existing offline Node 1 regression now checks a positive,
 finite vector norm; the reproducible rebuild test also passes.
 
@@ -160,3 +160,28 @@ report and successful `done`. Its live-context what-if request returned **200**.
 No real model request was made by this fake-mode check; its vector does not
 establish semantic retrieval quality. Raw retrieved profiles/events are not
 committed. D08/D09 provider/live gates remain separate.
+
+
+## Final live checks — gridiii via Codex, 2026-10-26
+
+- Latest integrated main: `5798dbb` (Aron's B18a/B18b retained). API: 422 tests
+  and ruff pass; World Model: seven Node tests and genuine upstream 8/8.
+- Local least-privilege Zetaris agent reads UIUC and the gold table; direct
+  `ADCOM_PG.universities` and `ADCOM.v_ipeds_c7` reads are denied. The shared
+  reader login inherits only the existing reader permissions.
+- New AI Studio AdCom project visibly shows Free tier. Private backend Gemini
+  configuration uses limits 30/day and two concurrent; Claude/paid mode stays off.
+- Completed real fictional-Maya run `cd712489-e9e2-4940-8e5b-6fed71adb07e`:
+  97 gap-free events, four non-degraded debate turns, final report and successful
+  deterministic what-if. Aggregate results are in `live-verification-2026-10-26.json`.
+- Vercel deployment `dpl_AfuwHDnLXB5n1xS39WoDvAvtyfj6` reached READY. Its
+  authenticated browser shows the actual completed run and the `/api/health`
+  route reaches the real local services through the tunnel. Only backend origin
+  is configured in Vercel, not any model/database credential.
+- Remaining acceptance: physical-phone verification for D08, and a successful
+  nonempty streamed Nemotron committee response/recording for D10. The current
+  Nightshift attempt returned no text and a No route completed receipt. D-055
+  makes that visibly degraded rather than a successful blank turn.
+
+Raw retrieved profiles remain private and are not committed recordings. The
+authored fictional replay remains the safe, portable backup.
