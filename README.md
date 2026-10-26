@@ -35,7 +35,9 @@ Edit `.env`. It is git-ignored; never commit it or paste its values into chat, i
 | `ZETARIS_AGENT_PASSWORD` | yes (Zetaris steps) | Any password you choose for the `adcom_agent` service user |
 | `ZETARIS_PG_USER`, `ZETARIS_PG_PASSWORD`, `SUPABASE_POOLER_HOST` | yes (Zetaris steps) | The `zetaris_reader` login on Supabase and your project's session-pooler host |
 | `METERLESS_BASE_URL`, `METERLESS_RUNTIME_TOKEN` | the person running the demo | Nightshift's Console; see [`docs/meterless-setup.md`](docs/meterless-setup.md). The NVIDIA key goes only inside Nightshift. |
-| `ANTHROPIC_API_KEY`, `TAVILY_API_KEY` | only Track B (live agents) | Anthropic Console (optional: Claude is the selectable alternative to Nightshift), Tavily |
+| `GEMINI_API_KEY` | only Track B (live agents) | [Google AI Studio](https://aistudio.google.com/apikey), from a Google Cloud project with **no billing account** so it stays free. Used with `LLM_PROVIDER=gemini`, the free alternative to Nightshift (needs B17a). |
+| `TAVILY_API_KEY` | only Track B (live agents) | Tavily's free plan (no card) |
+| `ANTHROPIC_API_KEY` | no | Leave unset. Claude is paid and stays off unless the team agrees (AGENTS.md §4). |
 | `ETL_MODEL`, `CDS_MODEL`, `EMBEDDING_MODEL`, `OLLAMA_URL`, `ZETARIS_URL`, ... | no | Leave the defaults |
 
 Reddit extraction, CDS extraction and embeddings run locally, so they need **no API key**. Each person fills in their own `.env`; the Supabase project can be shared if the team agrees on one.

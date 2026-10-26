@@ -109,10 +109,16 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* a second identical upload skips Node 1 but still fills the dossier panel; `/api/health` reports DB and Zetaris; the 429 paths are tested.
 - [x] **B16 — API container + co-located compose** · §4.10 · Deps: B13 — done by Aron via Claude Code, 2026-10-25 (image built and smoke-tested offline; compose-up with Zetaris pending on the Zetaris host)
   *Done when:* `docker compose -f zetaris-platform/docker-compose.yml -f docker-compose.adcom.yml up -d adcom-api` serves `/api/health` with `zetaris: true`.
-- [ ] **B17 — Meterless provider in the LLM wrapper** · §1.7.2, §3.5.2 · Deps: B01, S03
-  Adds `app/meterless.py` and the `LLM_PROVIDER` switch (default `meterless`, `anthropic` stays selectable); `/api/health` reports `"meterless"`.
-  *Done when:* tests with a mocked Runtime cover chat, structured output (and its retry), `length` → `LLMTruncated`, refusal → `LLMRefusal`, and auth errors; a real committee turn answers through Nightshift (needs S03).
-- [ ] **B18 — World Model engine sidecar + committee integration** · §1.7.3, §3.8.1 · Deps: B11, B17
+- [ ] **B17a — Provider layer + Gemini free tier** · §1.7.2, §3.5.2, §0.2–0.3 · Deps: B01 (D-043)
+  Adds `app/openai_compat.py` (Meterless and Gemini profiles) and the `LLM_PROVIDER` switch in `llm.parse` / `llm.stream_text` (default `meterless`; `gemini` free; `anthropic` refused unless `ALLOW_PAID_PROVIDERS=true`), PDF-to-text for OpenAI-compatible providers, provider-neutral errors in the nodes and `LLM_RETRY`, the new settings and `.env.example` keys, and `llm_provider` / `llm_key` in `/api/health`. Updates the §3.5.2, node and graph code blocks in the plan to match.
+  *Done when:* `tests/test_openai_compat.py` (mocked transport, both profiles) covers structured output, invalid JSON retried once, schema rejection falling back to the prompt, `length` → `LLMTruncated`, `content_filter` → `LLMRefusal`, 401 → `LLMAuthError`, per-minute 429 retried, daily 429 not retried, streaming, PDF-to-text, Meterless headers only on Meterless, and `anthropic` refused by default; ruff and pytest pass; the CLI completes with `FAKE_LLM=1`; one real `LLM_PROVIDER=gemini` run on Maya's dossier (about 11 free requests; needs `GEMINI_API_KEY` and Supabase).
+- [ ] **B17b — Zetaris SQL tool loop on the provider layer** · §2.10.7, §1.7.2 · Deps: B17a, A13
+  Adds `llm.chat_with_tools(...)` and moves `agents/zetaris_tool.py` off direct `llm.client` calls: OpenAI-style function calling for Meterless and Gemini, today's Claude loop as the `anthropic` branch. Query budget, SQL guard and D-039 fallbacks unchanged.
+  *Done when:* mocked-transport tests cover a tool call that runs a query and leads to a summary, budget exhaustion, rejected SQL and an unreachable stack; the fake-mode guard in `test_graph.py` also fails on any OpenAI-layer call; one real Gemini run shows a `[Zetaris Z#]` finding (needs the Zetaris stack).
+- [ ] **B17c — Meterless live check** · §1.7.2, §1.7.4 · Deps: B17a, S03
+  Startup `GET /v1/models` check and `"meterless"` in `/api/health`; removes the **(verify)** markers in §1.7.2 that a real Runtime confirms.
+  *Done when:* a real committee turn answers through a pinned Nemotron lane, confirmed in Nightshift's run details.
+- [ ] **B18 — World Model engine sidecar + committee integration** · §1.7.3, §3.8.1 · Deps: B11, B17a
   `services/world-model/` (TypeScript, upstream interface), `app/world_model.py`, and `agents/docket.py` reading the engine's context builder; Nodes 1–3 and the debate append observations.
   *Done when:* the upstream conformance suite is green (scorecard saved to `docs/meterless-evidence/world-model-conformance.txt`), an integration test shows Nodes 2 and 3 appending concurrently without loss, and the sidecar being down degrades to the in-state docket.
 
@@ -171,7 +177,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Prepared by gridiii via Codex, 2026-10-24: accessible data disclosure, report manifest, three-minute prototype pitch and rehearsal notes. Real corpus/coverage/calibration fields remain explicitly unverified, so A15/A16-dependent acceptance stays open.
   Pitch status refreshed by gridiii via Codex, 2026-10-25: acknowledge Track A's verified A12 stack and Track B's implemented B13 graph; keep local connection, real recordings and A15/A16 claims separate. No unverified figures were filled in.
   Real-data disclosure done by gridiii via Codex, 2026-10-26: A15's 947 profiles, 265 universities, 5 CDS schools, per-demo coverage and 3.24× median odds inflation are integrated into the panel and pitch with a dated source link (D-038). Brier fields remain null; A16 and final recorded-run figures still gate completion.
-- [ ] **D10 — Meterless judging evidence** · §1.7, §7.4 · Deps: B17, B18, D07
+- [ ] **D10 — Meterless judging evidence** · §1.7, §7.4 · Deps: B17c, B18, D07
   *Done when:* a short recorded demo shows the app, its Meterless provider connection, and one real request through Nightshift answered by a Nemotron lane (all keys and tokens hidden), plus the World Model conformance scorecard.
   Prepared by gridiii via Codex, 2026-10-24: evidence/capture handoff in `docs/meterless-evidence/README.md`. S03/B17/B18 and real capture are still unavailable; no mock conformance scorecard or fictional provider proof was substituted.
   Setup preparation done by gridiii via Codex, 2026-10-26: correct Mac installer downloaded and identified; macOS assessment rejection recorded in the evidence handoff. Runtime installation, provider usage, actual served-model proof and conformance capture remain open.

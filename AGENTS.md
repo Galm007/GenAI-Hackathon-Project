@@ -46,10 +46,14 @@ One step = one commit. If a step turns out too big for one reviewable commit (ro
 - Touch only files your step creates or modifies. If you need a change in another track's file, describe it in your report instead of making it, unless the step says otherwise.
 - **Frozen contracts:** event names and payloads (plan §1.6, §4.2), Pydantic schemas (`services/api/app/schemas/`, plan §3.3) and TS types (`apps/web/lib/types.ts`, plan §5.4.1). Change them only in a commit that updates **both** the Python and TypeScript sides and logs the change in `docs/DECISIONS.md`.
 
-**Claude API code: do not "fix" it from memory**
+**Plan A: Claude API code: do not "fix" it from memory**
 - The plan's Anthropic SDK usage is current and deliberate. It uses model `claude-opus-5-5`, `client.beta.messages.parse(..., output_format=Model, output_config={"effort": ...})`, `fallbacks="default"` with beta `server-side-fallback-2026-07-01`, and adaptive thinking with **no** `budget_tokens`, `temperature` or forced `tool_choice`. Your training data may suggest older shapes or model names. **Keep the plan's versions.** Changing models or removing fallbacks is a human decision.
-- **Not everything uses Claude.** Reddit extraction and embeddings run locally on Gemma through Ollama (`app/local_llm.py`, `gemma4:e2b` and `embeddinggemma`, 768-d vectors): no API key, no per-token cost, and the plan's `vector(768)` columns depend on it. CDS PDF extraction (A10) also runs locally (`CDS_MODEL`). The live agents (Track B) use **Meterless Nightshift** as the primary provider (`LLM_PROVIDER=meterless`, plan §1.7) with Claude as the selectable alternative. The NVIDIA key lives only in Nightshift's Providers tab; never put it or the Meterless Runtime token in a coding tool's settings. See D-011. See `docs/DECISIONS.md` D-007, D-008 and D-010.
+- **Not everything uses Claude.** Reddit extraction and embeddings run locally on Gemma through Ollama (`app/local_llm.py`, `gemma4:e2b` and `embeddinggemma`, 768-d vectors): no API key, no per-token cost, and the plan's `vector(768)` columns depend on it. CDS PDF extraction (A10) also runs locally (`CDS_MODEL`). The live agents (Track B) use **Meterless Nightshift** as the primary provider (`LLM_PROVIDER=meterless`, plan §1.7) with Gemini as the selectable alternative. The NVIDIA key lives only in Nightshift's Providers tab; never put it or the Meterless Runtime token in a coding tool's settings. See D-011. See `docs/DECISIONS.md` D-007, D-008 and D-010.
 - Probabilities and deltas come only from `app/scoring/` (deterministic code). Never let an LLM output a number that is shown to the user (plan §0.1).
+
+**Plan B: Gemini's Free tier API**
+- Since the team agrees to proceed with a "no cost" deployment plan, I am including this entry to take note that Gemini's free tier API is permitted to be used in the project and deployment.
+- Claude API may be kept, however not used until an explicit team consensus.
 
 **Secrets, data and safety**
 - Never commit or print secrets. Keep `.env` out of git and maintain `.env.example` with placeholders only. **Never commit `zetaris-platform/`** or its zip: it contains the Zetaris `.env` keypair password and a 27 MB JDBC jar. `.gitignore` already covers it.
