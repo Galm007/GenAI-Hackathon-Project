@@ -184,7 +184,7 @@ export function IntakeWizard() {
             description: "Live committee capacity is full. Would you like to replay Maya's demo evaluation?",
             action: {
               label: "Replay Maya Demo",
-              onClick: () => router.push("/room/demo/maya"),
+              onClick: () => router.push("/room/demo/maya-uiuc"),
             },
           });
         } else {
@@ -220,7 +220,7 @@ export function IntakeWizard() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push("/room/demo/maya")}
+            onClick={() => router.push("/room/demo/maya-uiuc")}
             className="h-7 gap-1 text-xs border-[var(--color-line)] hover:border-[var(--color-advocate)]"
           >
             <Play className="h-3 w-3 text-[var(--color-admit)]" />

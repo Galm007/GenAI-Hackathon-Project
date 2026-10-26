@@ -327,3 +327,9 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - We did: `runFailure(run)` in `store/run-store.ts` returns the latest unrecoverable error's message, a generic message when the run ended `failed` without one, or null. Recoverable node errors, which only mark a node degraded, don't count. `CommitteeRoom` shows a "The committee couldn't meet." panel (`role="alert"`) with that message and links to start a new evaluation (`/`) or watch the demo replay (`/room/demo/maya-uiuc`). The panel replaces the pre-meeting text before the debate, or appears under the turns if the debate had begun, and the typing indicator is hidden once the run has failed.
 - Verified: 5 new vitest cases in `store/run-store.test.ts` (48 web tests pass), lint, `tsc --noEmit` and `pnpm build`. In the browser, a run that failed at Node 2 (Supabase unreachable, fake LLM, separate test servers on ports 8010/3010, since stopped) shows the panel with "Evaluation failed (ConnectError)." and both links.
 - Impact on other tracks: none on contracts. Event names and payloads are unchanged.
+
+## D-042 — Intake links to the Maya replay use the recording's real name
+- Fix in Track C's files, with the human's explicit OK · Date: 2026-10-26 · By: Aron via Claude Code. **@egli3: FYI, two-line change in `IntakeWizard.tsx`.**
+- Found: the "Load Maya's file" button and the rate-limit toast's "Replay Maya Demo" action pushed `/room/demo/maya`, but the only recording is `data/demo_runs/maya-uiuc.json`, so both led to "Replay not found". The landing page and the committee room already link to `maya-uiuc`.
+- We did: both now push `/room/demo/maya-uiuc`. Verified: 48 web tests, lint, `tsc --noEmit` and `pnpm build` pass.
+- Impact on other tracks: none. If a second recording is added later, these links still point at Maya at UIUC.
