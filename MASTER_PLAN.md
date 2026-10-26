@@ -81,6 +81,8 @@ GEMINI_API_KEY=...                              # Google AI Studio, from a Cloud
 GEMINI_MODEL=gemini-3.5-flash-lite              # extraction, grading, briefs, delta (effort medium/high); see D-049
 GEMINI_FAST_MODEL=gemini-3.5-flash-lite         # debate turns and the Zetaris SQL loop (effort low)
 ALLOW_PAID_PROVIDERS=false                      # must be true before LLM_PROVIDER=anthropic will start
+MAX_RUNS_PER_DAY=30                             # Flash Lite free tier: 500 requests/day ÷ 9–13 per evaluation, with headroom
+MAX_CONCURRENT_RUNS=2                           # two evaluations stay near Flash Lite's 15 requests/minute
 
 # Tunables
 REASONING_MODEL=claude-opus-5-5
@@ -377,7 +379,7 @@ sequenceDiagram
 | N5 Delta | 1 RPC + 1 parse | `high` | 10–15 s | `counterfactuals` first, then `final_report` |
 | **Total** | **10–14 LLM calls** | | **~65–90 s cold, ~45 s with cached dossier** | Something visibly happens every ~1.5 s |
 
-**Cost.** **$0 per evaluation** on the deployed stack (team rule, D-046). Nightshift routes to NVIDIA's free Nemotron credits, and the Gemini free tier bills nothing because its key comes from a Cloud project with no billing account. The real limit is quota: an evaluation makes 10–14 requests, all on `gemini-3.5-flash-lite` with the default settings (D-049), so set `MAX_RUNS_PER_DAY` to fit that model's daily quota shown in Google AI Studio. For comparison, the same run on Claude Opus 5.5 (roughly 70–90K input and 15–25K output tokens at $4 / $20 per MTok) would cost about $0.60–$1.00, which is why `anthropic` stays off. What-if calls are free.
+**Cost.** **$0 per evaluation** on the deployed stack (team rule, D-046). Nightshift routes to NVIDIA's free Nemotron credits, and the Gemini free tier bills nothing because its key comes from a Cloud project with no billing account. The real limit is quota: an evaluation makes 10–14 requests, all on `gemini-3.5-flash-lite` with the default settings (D-049). AI Studio shows its free tier at 15 requests a minute, 250K tokens a minute and 500 requests a day per project (2026-10-26; 3.8 and 3.6 Flash allow 5 a minute and 20 a day), so `.env.example` sets `MAX_RUNS_PER_DAY=30` and `MAX_CONCURRENT_RUNS=2` (D-050). A separate free project for the deployed host keeps team testing from using up the demo's quota. For comparison, the same run on Claude Opus 5.5 (roughly 70–90K input and 15–25K output tokens at $4 / $20 per MTok) would cost about $0.60–$1.00, which is why `anthropic` stays off. What-if calls are free.
 
 ### 1.6 Stream event taxonomy (wire format specified in Part II, §4)
 
