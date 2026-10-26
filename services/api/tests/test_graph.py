@@ -146,11 +146,16 @@ def fake_mode(monkeypatch):
     from app.agents.nodes import dossier_parser
     monkeypatch.setattr(dossier_parser, "embed_one", dossier_parser.embed_one)
 
-    class NoPaidCalls:
-        def __getattr__(self, name):
-            raise AssertionError(f"fake mode reached the real Anthropic client (llm.client.{name})")
+    class NoProviderCalls:
+        def __init__(self, label: str):
+            self.label = label
 
-    monkeypatch.setattr(llm, "client", NoPaidCalls())
+        def __getattr__(self, name):
+            raise AssertionError(f"fake mode reached a real model provider ({self.label}.{name})")
+
+    from app import openai_compat
+    monkeypatch.setattr(llm, "client", NoProviderCalls("llm.client"))
+    monkeypatch.setattr(openai_compat, "http", NoProviderCalls("openai_compat.http"))
     monkeypatch.setattr(zetaris_repo, "_cache", {})
 
     def const(value):

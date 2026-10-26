@@ -35,7 +35,7 @@ def install():
         return json.loads((FIXTURES / "profile_embedding.json").read_text(encoding="utf-8"))
 
     async def run_zetaris_research(**_):
-        # Node 2's SQL tool loop calls the Anthropic client directly, so fake mode never runs it (D-039).
+        # Fake mode has no scripted tool turns, so Node 2's SQL loop is skipped rather than reaching a provider (D-039).
         return []
 
     llm.parse, llm.stream_text, dossier_parser.embed_one = parse, stream_text, embed_one

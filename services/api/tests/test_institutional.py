@@ -1,5 +1,7 @@
-"""Node 2 (§3.7.2) and its Zetaris SQL tool loop (§2.10.7), with the Anthropic client, Zetaris and Tavily mocked."""
+"""Node 2 (§3.7.2) and its Zetaris SQL tool loop (§2.10.7) on both providers, with the model, Zetaris and Tavily
+mocked."""
 import asyncio
+import json
 from datetime import date
 from types import SimpleNamespace
 
@@ -7,10 +9,11 @@ import anthropic
 import httpx
 import pytest
 
-from app import llm
+from app import llm, openai_compat
 from app.agents import zetaris_tool as Z
 from app.agents.nodes import institutional as N
 from app.agents.prompts.institutional import INSTITUTIONAL_SYSTEM
+from app.config import settings
 from app.schemas.institution import FactCheck, InstitutionalBrief, Priority, WebSnippet
 from app.zetaris import ZetarisError
 
@@ -37,6 +40,7 @@ def done(text: str = "Summary.") -> SimpleNamespace:
 def loop(monkeypatch):
     """Scripts the model's replies and Zetaris's rows; records requests, queries and tool-ticker events."""
     seen: dict[str, list] = {"requests": [], "queries": [], "ticker": []}
+    monkeypatch.setattr(settings, "llm_provider", "anthropic")
 
     def install(*replies, rows=None, zetaris_error: str | None = None):
         replies = iter(replies)
@@ -75,7 +79,9 @@ async def test_loop_request_shape_and_one_finding(loop):
     assert findings == [{"id": "Z1", "purpose": "CS sample size", "rows": [{"n": "42"}], "error": None,
                          "sql": f"SELECT * FROM ({GOOD_SQL}) q LIMIT 50"}]          # guard added the LIMIT
     first = seen["requests"][0]
-    assert first["tools"] == [Z.ZETARIS_SQL_TOOL] and Z.ZETARIS_SQL_TOOL["strict"] is True
+    [tool] = first["tools"]
+    assert tool == {"name": "zetaris_sql", "description": Z.ZETARIS_SQL_TOOL["description"], "strict": True,
+                    "input_schema": Z.ZETARIS_SQL_TOOL["parameters"]}
     assert "tool_choice" not in first                                     # Opus 5.5 rejects forced tool use
     assert (first["model"], first["output_config"], first["fallbacks"]) == ("claude-opus-5-5", {"effort": "low"},
                                                                            "default")
@@ -141,6 +147,100 @@ async def test_rows_are_capped_for_the_model_and_the_docket(loop):
 async def test_refusal_raises(loop):
     loop(reply(stop="refusal"))
     with pytest.raises(llm.LLMRefusal):
+        await research()
+
+
+# ---------- the same loop on Gemini: OpenAI function calling over a mocked transport ----------
+def oa_call(i: int, sql: str = GOOD_SQL, purpose: str = "CS sample size", arguments: str | None = None) -> dict:
+    return {"id": f"call_{i}", "type": "function",
+            "function": {"name": "zetaris_sql", "arguments": arguments or json.dumps({"sql": sql, "purpose": purpose})},
+            "extra_content": {"google": {"thought_signature": f"sig{i}"}}}
+
+
+def oa_reply(*calls: dict, text: str | None = None, finish: str | None = None) -> dict:
+    message = {"role": "assistant", "content": text, **({"tool_calls": list(calls)} if calls else {})}
+    finish = finish or ("tool_calls" if calls else "stop")
+    return {"choices": [{"index": 0, "message": message, "finish_reason": finish}]}
+
+
+@pytest.fixture
+def gemini_loop(monkeypatch):
+    """Like `loop`, but on LLM_PROVIDER=gemini: replies are OpenAI chat completions; requests are the JSON bodies."""
+    seen: dict[str, list] = {"requests": [], "queries": [], "ticker": []}
+    monkeypatch.setattr(settings, "llm_provider", "gemini")
+    monkeypatch.setattr(settings, "gemini_api_key", "test-gemini")
+
+    def install(*replies, rows=None, zetaris_down: bool = False):
+        replies = iter(replies)
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen["requests"].append(json.loads(request.content))
+            return httpx.Response(200, json=next(replies))
+
+        async def query(sql, **kw):
+            seen["queries"].append(sql)
+            if zetaris_down:
+                raise httpx.ConnectError("connection refused")
+            return rows if rows is not None else [{"n": "42"}]
+
+        monkeypatch.setattr(openai_compat, "http", httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+        monkeypatch.setattr(Z.zetaris_repo.zetaris, "query", query)
+        monkeypatch.setattr(Z, "tool_call", lambda node, tool, status, **d: seen["ticker"].append((status, d)))
+        return seen
+    return install
+
+
+async def test_gemini_tool_call_runs_a_query_and_leads_to_a_summary(gemini_loop):
+    seen = gemini_loop(oa_reply(oa_call(1)), oa_reply(text="Summary."))
+    findings = await research()
+
+    assert [(f["id"], f["purpose"], f["rows"]) for f in findings] == [("Z1", "CS sample size", [{"n": "42"}])]
+    first, second = seen["requests"]
+    assert first["tools"] == [{"type": "function", "function": Z.ZETARIS_SQL_TOOL}] and "tool_choice" not in first
+    assert first["model"] == settings.gemini_fast_model and first["reasoning_effort"] == "low"
+    assert first["messages"][0] == {"role": "system", "content": Z.INSTITUTIONAL_SQL_SYSTEM}
+    assert "'uiuc'" in first["messages"][1]["content"]
+    # the assistant turn is replayed as returned (thought signature included), then the tool result
+    assert second["messages"][2] == {"role": "assistant", "content": None, "tool_calls": [oa_call(1)]}
+    assert second["messages"][3] == {"role": "tool", "tool_call_id": "call_1", "content": '[{"n": "42"}]'}
+    assert [s for s, _ in seen["ticker"]] == ["started", "done"]
+
+
+async def test_gemini_budget_of_three_queries(gemini_loop):
+    seen = gemini_loop(oa_reply(oa_call(1), oa_call(2)), oa_reply(oa_call(3), oa_call(4)), oa_reply(text="Done."))
+    findings = await research()
+    assert [f["id"] for f in findings] == ["Z1", "Z2", "Z3"] and len(seen["queries"]) == 3
+    third_call, over_budget = seen["requests"][2]["messages"][-2:]
+    assert third_call["tool_call_id"] == "call_3" and third_call["content"] == '[{"n": "42"}]'
+    assert over_budget == {"role": "tool", "tool_call_id": "call_4",
+                           "content": "Query budget used up. Summarize what you found."}
+
+
+async def test_gemini_rejected_sql_goes_back_as_text_and_is_not_evidence(gemini_loop):
+    seen = gemini_loop(oa_reply(oa_call(1, sql="DROP TABLE ADCOM.v_major_stats")), oa_reply(oa_call(2)),
+                       oa_reply(text="Done."))
+    findings = await research()
+    rejected = seen["requests"][1]["messages"][-1]
+    assert rejected["tool_call_id"] == "call_1" and rejected["content"].startswith("Query rejected: ")
+    assert [f["id"] for f in findings] == ["Z1"] and len(seen["queries"]) == 1
+
+
+async def test_gemini_unreachable_stack_is_a_failed_query(gemini_loop):
+    seen = gemini_loop(oa_reply(oa_call(1)), oa_reply(text="Zetaris was down."), zetaris_down=True)
+    assert await research() == []
+    failed = seen["requests"][1]["messages"][-1]
+    assert failed["content"].startswith("Query rejected: ") and seen["ticker"][-1][0] == "failed"
+
+
+async def test_gemini_malformed_arguments_are_rejected_not_crashed(gemini_loop):
+    seen = gemini_loop(oa_reply(oa_call(1, arguments="{not json")), oa_reply(text="Done."))
+    assert await research() == []
+    assert seen["requests"][1]["messages"][-1]["content"].startswith("Query rejected: ")
+
+
+async def test_gemini_content_filter_raises_refusal(gemini_loop):
+    gemini_loop(oa_reply(finish="content_filter"))
+    with pytest.raises(llm.LLMRefusal, match="zetaris research refused"):
         await research()
 
 

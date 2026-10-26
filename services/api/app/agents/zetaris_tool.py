@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 
 from app import llm, zetaris_repo
-from app.config import settings
 
 from .events import tool_call
 
@@ -26,8 +25,7 @@ ZETARIS_SQL_TOOL = {
         "peer_n, peer_median_admit_rate, peer_median_sat_75)\n"
         "Use single quotes for string literals. Always filter or aggregate; never select whole views."
     ),
-    "strict": True,
-    "input_schema": {
+    "parameters": {
         "type": "object",
         "properties": {
             "purpose": {"type": "string", "description": "One sentence: what this query checks and why."},
@@ -57,38 +55,28 @@ async def run_zetaris_research(*, slug: str, major_category: str, applicant_summ
         f"Applicant summary: {applicant_summary}\nInvestigate.")}]
 
     for _ in range(MAX_QUERIES + 1):
-        resp = await llm.client.beta.messages.create(
-            model=settings.reasoning_model, max_tokens=8000,
-            system=llm.cached_system(INSTITUTIONAL_SQL_SYSTEM),
-            tools=[ZETARIS_SQL_TOOL], messages=messages,
-            output_config={"effort": "low"},
-            betas=[llm.FALLBACK_BETA], fallbacks="default",
-        )
-        if resp.stop_reason == "refusal":
-            raise llm.LLMRefusal("zetaris research refused")
-        messages.append({"role": "assistant", "content": resp.content})
-        uses = [b for b in resp.content if b.type == "tool_use"]
-        if resp.stop_reason != "tool_use" or not uses:
+        turn = await llm.chat_with_tools(system=INSTITUTIONAL_SQL_SYSTEM, messages=messages,
+                                         tools=[ZETARIS_SQL_TOOL], name="zetaris research")
+        messages.append({"role": "assistant", "turn": turn})
+        if not turn.calls:
             break
 
         results = []
-        for use in uses:                                       # all results go back in ONE user message
+        for call in turn.calls:
             if len(findings) >= MAX_QUERIES:
-                results.append({"type": "tool_result", "tool_use_id": use.id, "is_error": True,
+                results.append({"id": call.id, "is_error": True,
                                 "content": "Query budget used up. Summarize what you found."})
                 continue
             fid = f"Z{len(findings) + 1}"
-            sql, purpose = str(use.input.get("sql", "")), str(use.input.get("purpose", ""))
+            sql, purpose = str(call.input.get("sql", "")), str(call.input.get("purpose", ""))
             tool_call("institutional", "zetaris.sql", "started", id=fid, purpose=purpose, sql=sql)
             try:
                 safe_sql, rows = await zetaris_repo.agent_query(sql)
                 findings.append({"id": fid, "purpose": purpose, "sql": safe_sql, "rows": rows[:20], "error": None})
                 tool_call("institutional", "zetaris.sql", "done", id=fid, result_count=len(rows))
-                results.append({"type": "tool_result", "tool_use_id": use.id,
-                                "content": json.dumps(rows[:50])[:12000]})
+                results.append({"id": call.id, "content": json.dumps(rows[:50])[:12000]})
             except (zetaris_repo.SqlNotAllowed, *zetaris_repo.UNAVAILABLE) as exc:   # down stack = failed query (D-039)
                 tool_call("institutional", "zetaris.sql", "failed", id=fid, error=str(exc)[:200])
-                results.append({"type": "tool_result", "tool_use_id": use.id, "is_error": True,
-                                "content": f"Query rejected: {exc}"})
-        messages.append({"role": "user", "content": results})
+                results.append({"id": call.id, "is_error": True, "content": f"Query rejected: {exc}"})
+        messages.append({"role": "tool_results", "results": results})
     return findings

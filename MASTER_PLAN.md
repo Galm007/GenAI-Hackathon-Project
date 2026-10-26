@@ -3078,10 +3078,7 @@ from __future__ import annotations
 
 import json
 
-import anthropic
-
 from app import llm, zetaris_repo
-from app.config import settings
 
 from .events import tool_call
 
@@ -3104,8 +3101,7 @@ ZETARIS_SQL_TOOL = {
         "peer_n, peer_median_admit_rate, peer_median_sat_75)\n"
         "Use single quotes for string literals. Always filter or aggregate; never select whole views."
     ),
-    "strict": True,
-    "input_schema": {
+    "parameters": {
         "type": "object",
         "properties": {
             "purpose": {"type": "string", "description": "One sentence: what this query checks and why."},
@@ -3135,44 +3131,34 @@ async def run_zetaris_research(*, slug: str, major_category: str, applicant_summ
         f"Applicant summary: {applicant_summary}\nInvestigate.")}]
 
     for _ in range(MAX_QUERIES + 1):
-        resp = await llm.client.beta.messages.create(
-            model=settings.reasoning_model, max_tokens=8000,
-            system=llm.cached_system(INSTITUTIONAL_SQL_SYSTEM),
-            tools=[ZETARIS_SQL_TOOL], messages=messages,
-            output_config={"effort": "low"},
-            betas=[llm.FALLBACK_BETA], fallbacks="default",
-        )
-        if resp.stop_reason == "refusal":
-            raise llm.LLMRefusal("zetaris research refused")
-        messages.append({"role": "assistant", "content": resp.content})
-        uses = [b for b in resp.content if b.type == "tool_use"]
-        if resp.stop_reason != "tool_use" or not uses:
+        turn = await llm.chat_with_tools(system=INSTITUTIONAL_SQL_SYSTEM, messages=messages,
+                                         tools=[ZETARIS_SQL_TOOL], name="zetaris research")
+        messages.append({"role": "assistant", "turn": turn})
+        if not turn.calls:
             break
 
         results = []
-        for use in uses:                                       # all results go back in ONE user message
+        for call in turn.calls:
             if len(findings) >= MAX_QUERIES:
-                results.append({"type": "tool_result", "tool_use_id": use.id, "is_error": True,
+                results.append({"id": call.id, "is_error": True,
                                 "content": "Query budget used up. Summarize what you found."})
                 continue
             fid = f"Z{len(findings) + 1}"
-            sql, purpose = str(use.input.get("sql", "")), str(use.input.get("purpose", ""))
+            sql, purpose = str(call.input.get("sql", "")), str(call.input.get("purpose", ""))
             tool_call("institutional", "zetaris.sql", "started", id=fid, purpose=purpose, sql=sql)
             try:
                 safe_sql, rows = await zetaris_repo.agent_query(sql)
                 findings.append({"id": fid, "purpose": purpose, "sql": safe_sql, "rows": rows[:20], "error": None})
                 tool_call("institutional", "zetaris.sql", "done", id=fid, result_count=len(rows))
-                results.append({"type": "tool_result", "tool_use_id": use.id,
-                                "content": json.dumps(rows[:50])[:12000]})
+                results.append({"id": call.id, "content": json.dumps(rows[:50])[:12000]})
             except (zetaris_repo.SqlNotAllowed, *zetaris_repo.UNAVAILABLE) as exc:   # down stack = failed query (D-039)
                 tool_call("institutional", "zetaris.sql", "failed", id=fid, error=str(exc)[:200])
-                results.append({"type": "tool_result", "tool_use_id": use.id, "is_error": True,
-                                "content": f"Query rejected: {exc}"})
-        messages.append({"role": "user", "content": results})
+                results.append({"id": call.id, "is_error": True, "content": f"Query rejected: {exc}"})
+        messages.append({"role": "tool_results", "results": results})
     return findings
 ```
 
-> Opus 5.5 rejects a forced `tool_choice` (`any` / `tool`). The loop uses the default `auto` plus a system prompt that asks for the tool, with `strict: true` guaranteeing schema-valid inputs. Rejected or failed queries go back as `is_error` tool results so the model can correct its SQL, and they don't count as evidence.
+> The loop is provider-neutral (B17b, D-051): `llm.chat_with_tools` runs one round on whichever provider `LLM_PROVIDER` selects and returns a `ToolTurn` (text, calls, and the assistant message in the provider's own shape, replayed unchanged next round). On Claude the tool gets `strict: true` and failed queries go back as `is_error` tool results; Opus 5.5 rejects a forced `tool_choice` (`any` / `tool`), so the loop uses the default `auto` plus a system prompt that asks for the tool. On Meterless and Gemini it is OpenAI function calling with `role: "tool"` results; there is no error flag, so the text says "Query rejected: …", and Gemini's thought signatures ride along on the replayed tool calls (verified against real Gemini, D-051). Either way, rejected or failed queries let the model correct its SQL and don't count as evidence.
 
 #### 2.10.8 Latency & caching
 
@@ -4128,6 +4114,8 @@ Every live-agent call goes through this module, so models, fallbacks, refusal ha
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 import anthropic
 from anthropic import AsyncAnthropic, Timeout
@@ -4193,6 +4181,22 @@ class LLMInvalidOutput(LLMProviderError):
 PROVIDER_ERRORS = (anthropic.APIError, LLMProviderError)
 RETRYABLE = (anthropic.APIConnectionError, anthropic.InternalServerError, anthropic.RateLimitError,
              LLMUnavailable, LLMRateLimited)
+
+
+@dataclass
+class ToolCall:
+    id: str
+    name: str
+    input: dict
+
+
+@dataclass
+class ToolTurn:
+    """One model turn in a tool loop: its text, the calls to run (empty once it is done), and the assistant message in
+    the provider's own shape, replayed unchanged next round (thinking blocks, Gemini's thought signatures)."""
+    text: str
+    calls: list[ToolCall]
+    native: Any
 
 
 def key_configured() -> bool:
@@ -4294,6 +4298,50 @@ async def stream_text(
     if final.stop_reason == "refusal":
         raise LLMRefusal("debate turn refused")
     return _final_text(final.content)
+
+
+async def chat_with_tools(
+    *,
+    system: str,
+    messages: list[dict],
+    tools: list[dict],
+    name: str = "tool turn",
+    effort: str = "low",
+    max_tokens: int = 8000,
+) -> ToolTurn:
+    """One round of a tool loop (Node 2's Zetaris SQL tool, §2.10.7). `messages` is provider-neutral:
+    {"role": "user", "content": str}, {"role": "assistant", "turn": ToolTurn} and
+    {"role": "tool_results", "results": [{"id", "content", "is_error"}]}. `tools` are
+    {"name", "description", "parameters"} with a strict JSON schema."""
+    if settings.llm_provider != "anthropic":
+        return await openai_compat.chat_with_tools(system=system, messages=messages, tools=tools, name=name,
+                                                   effort=effort, max_tokens=max_tokens)
+    resp = await client.beta.messages.create(
+        model=settings.reasoning_model,
+        max_tokens=max_tokens,
+        system=cached_system(system),
+        tools=[{"name": t["name"], "description": t["description"], "strict": True, "input_schema": t["parameters"]}
+               for t in tools],
+        messages=[_anthropic_message(m) for m in messages],
+        output_config={"effort": effort},
+        betas=[FALLBACK_BETA],
+        fallbacks="default",
+    )
+    if resp.stop_reason == "refusal":
+        raise LLMRefusal(f"{name} refused")
+    calls = [ToolCall(b.id, b.name, dict(b.input)) for b in resp.content if b.type == "tool_use"]
+    return ToolTurn(text=_final_text(resp.content), calls=calls if resp.stop_reason == "tool_use" else [],
+                    native=resp.content)
+
+
+def _anthropic_message(m: dict) -> dict:
+    if m["role"] == "assistant":
+        return {"role": "assistant", "content": m["turn"].native}
+    if m["role"] == "tool_results":                       # all results go back in ONE user message
+        return {"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": r["id"], "content": r["content"],
+             **({"is_error": True} if r.get("is_error") else {})} for r in m["results"]]}
+    return m
 ```
 
 The Meterless and Gemini path lives in `app/openai_compat.py` (B17a). It follows the contract in §1.7.2 and is not copied here: one `httpx` client with a `meterless` and a `gemini` profile, Anthropic-shaped messages converted to OpenAI chat (PDFs to text with `pypdf`), strict `json_schema` output with the prompt-and-retry fallback, server-sent events for `stream_text`, and status codes mapped to the exceptions above. It imports `llm` back for those exceptions, which is safe because each module only reads the other's attributes at call time.

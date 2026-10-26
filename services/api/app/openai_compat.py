@@ -133,9 +133,9 @@ def _body(p: Profile, chat: list[dict], *, effort: str, max_tokens: int, model: 
             "max_tokens": max_tokens, "reasoning_effort": effort}
 
 
-async def _complete(p: Profile, body: dict, name: str) -> str:
-    """One non-streamed completion. A rejected `reasoning_effort` level is retried once without it, and an
-    overloaded Gemini main model hands the call to the fast model."""
+async def _choice(p: Profile, body: dict, name: str) -> dict:
+    """One non-streamed completion's first choice. A rejected `reasoning_effort` level is retried once without it,
+    and an overloaded Gemini main model hands the call to the fast model."""
     async def call() -> httpx.Response:
         try:
             resp = await http.post(f"{p.base_url}/chat/completions", json=body, headers=_headers(p),
@@ -163,8 +163,11 @@ async def _complete(p: Profile, body: dict, name: str) -> str:
         log.warning("%s overloaded for %s; retrying on %s", body["model"], name, p.fast_model)
         body = body | {"model": p.fast_model}
         resp = await send()
+    return resp.json()["choices"][0]
 
-    choice = resp.json()["choices"][0]
+
+async def _complete(p: Profile, body: dict, name: str) -> str:
+    choice = await _choice(p, body, name)
     message = choice.get("message") or {}
     if choice.get("finish_reason") == "length":
         raise llm.LLMTruncated(f"{name} hit max_tokens={body['max_tokens']}")
@@ -258,3 +261,41 @@ async def stream_text(
     if finish == "content_filter":
         raise llm.LLMRefusal("debate turn refused")
     return "".join(parts)
+
+
+# ---------- chat_with_tools ----------
+def _arguments(call: dict) -> dict:
+    try:
+        args = json.loads(call["function"].get("arguments") or "{}")
+    except json.JSONDecodeError:
+        return {}                                          # the tool rejects it and the model can try again
+    return args if isinstance(args, dict) else {}
+
+
+async def chat_with_tools(
+    *, system: str, messages: list[dict], tools: list[dict], name: str, effort: str, max_tokens: int,
+) -> llm.ToolTurn:
+    """OpenAI function calling. Assistant turns are replayed as returned, so Gemini's thought signatures on its tool
+    calls survive; tool results have no error flag here, and their text says when a query was rejected."""
+    p = profile()
+    chat: list[dict] = [{"role": "system", "content": system}]
+    for m in messages:
+        if m["role"] == "assistant":
+            chat.append(m["turn"].native)
+        elif m["role"] == "tool_results":
+            chat.extend({"role": "tool", "tool_call_id": r["id"], "content": r["content"]} for r in m["results"])
+        else:
+            chat.append({"role": m["role"], "content": _text(m["content"])})
+    body = _body(p, chat, effort=effort, max_tokens=max_tokens, model=None) | {
+        "tools": [{"type": "function", "function": t} for t in tools]}
+
+    choice = await _choice(p, body, name)
+    message = choice.get("message") or {}
+    if choice.get("finish_reason") == "content_filter" or message.get("refusal"):
+        raise llm.LLMRefusal(f"{name} refused ({p.name})")
+    raw_calls = message.get("tool_calls") or []
+    native = {"role": "assistant", "content": message.get("content"),
+              **({"tool_calls": raw_calls} if raw_calls else {})}
+    calls = [llm.ToolCall(c["id"], c["function"]["name"], _arguments(c)) for c in raw_calls]
+    return llm.ToolTurn(text=message.get("content") or "", native=native,
+                        calls=[] if choice.get("finish_reason") == "length" else calls)

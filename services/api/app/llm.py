@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 import anthropic
 from anthropic import AsyncAnthropic, Timeout
@@ -66,6 +68,22 @@ class LLMInvalidOutput(LLMProviderError):
 PROVIDER_ERRORS = (anthropic.APIError, LLMProviderError)
 RETRYABLE = (anthropic.APIConnectionError, anthropic.InternalServerError, anthropic.RateLimitError,
              LLMUnavailable, LLMRateLimited)
+
+
+@dataclass
+class ToolCall:
+    id: str
+    name: str
+    input: dict
+
+
+@dataclass
+class ToolTurn:
+    """One model turn in a tool loop: its text, the calls to run (empty once it is done), and the assistant message in
+    the provider's own shape, replayed unchanged next round (thinking blocks, Gemini's thought signatures)."""
+    text: str
+    calls: list[ToolCall]
+    native: Any
 
 
 def key_configured() -> bool:
@@ -167,3 +185,47 @@ async def stream_text(
     if final.stop_reason == "refusal":
         raise LLMRefusal("debate turn refused")
     return _final_text(final.content)
+
+
+async def chat_with_tools(
+    *,
+    system: str,
+    messages: list[dict],
+    tools: list[dict],
+    name: str = "tool turn",
+    effort: str = "low",
+    max_tokens: int = 8000,
+) -> ToolTurn:
+    """One round of a tool loop (Node 2's Zetaris SQL tool, §2.10.7). `messages` is provider-neutral:
+    {"role": "user", "content": str}, {"role": "assistant", "turn": ToolTurn} and
+    {"role": "tool_results", "results": [{"id", "content", "is_error"}]}. `tools` are
+    {"name", "description", "parameters"} with a strict JSON schema."""
+    if settings.llm_provider != "anthropic":
+        return await openai_compat.chat_with_tools(system=system, messages=messages, tools=tools, name=name,
+                                                   effort=effort, max_tokens=max_tokens)
+    resp = await client.beta.messages.create(
+        model=settings.reasoning_model,
+        max_tokens=max_tokens,
+        system=cached_system(system),
+        tools=[{"name": t["name"], "description": t["description"], "strict": True, "input_schema": t["parameters"]}
+               for t in tools],
+        messages=[_anthropic_message(m) for m in messages],
+        output_config={"effort": effort},
+        betas=[FALLBACK_BETA],
+        fallbacks="default",
+    )
+    if resp.stop_reason == "refusal":
+        raise LLMRefusal(f"{name} refused")
+    calls = [ToolCall(b.id, b.name, dict(b.input)) for b in resp.content if b.type == "tool_use"]
+    return ToolTurn(text=_final_text(resp.content), calls=calls if resp.stop_reason == "tool_use" else [],
+                    native=resp.content)
+
+
+def _anthropic_message(m: dict) -> dict:
+    if m["role"] == "assistant":
+        return {"role": "assistant", "content": m["turn"].native}
+    if m["role"] == "tool_results":                       # all results go back in ONE user message
+        return {"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": r["id"], "content": r["content"],
+             **({"is_error": True} if r.get("is_error") else {})} for r in m["results"]]}
+    return m
