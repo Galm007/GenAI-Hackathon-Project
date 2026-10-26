@@ -62,11 +62,16 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* `run_etl zetaris-setup` is idempotent (a second run logs "exists"); `run_etl zetaris-refresh` rewrites the gold table.
 - [x] **A15 — Full data run → `docs/data-report.md`** · §2.9.10–2.9.11, §7.5 · Deps: A08–A14 · **needs your human's spend approval** — done by Jmar L. Pineda via Claude Code, 2026-10-26 (947 twins, not 10K: capped source, D-037; all 5 demo schools ≥ 80)
   *Done when:* ≥10K twins are loaded, the stats and Zetaris gold are refreshed, and the report has corpus size, demo-school coverage (≥80 each), calibration and tier distribution. Updated aliases are committed.
+  *Closed at 947 twins (D-037): the ≥10K target moved to optional step A18.*
 - [ ] **A16 — Backtest + bias audit** · §6.2 (H16–24), §7.3 Q1 · Deps: A15, B06
   `scripts/backtest.py`: hold out the latest cycle and compute Brier score and AUC versus a base-rate baseline, a reliability curve, and calibration by income bracket and first-gen status.
   *Done when:* results are appended to `docs/data-report.md`, honestly, even if weak.
 - [ ] **A17 — (stretch) Coefficient fitting** · §3.9.3 · Deps: A15
   *Done when:* fitted values are logged; adopt them only if they pass the sanity bounds, and record the decision in `DECISIONS.md`.
+- [ ] **A18 — (optional) Grow the corpus toward ≥10K twins** · §2.9.1–2.9.7, §2.9.11 · Deps: A15 · **Only if time remains before the hackathon submission deadline; needs your human's explicit OK and spend approval**
+  Why: A15 stopped at 947 twins because the capped Reddit source holds only about 1,500 decision posts (D-037). Reaching 10K needs more source data, and at 8.9 s per post on local `gemma4:e2b` about 10K twins is roughly 30+ hours of GPU, so it also needs a faster extractor (a larger GPU, or a hosted model, which costs money).
+  Do: (1) choose and verify extra sources, such as more subreddits or an earlier `--since`, and keep the 4 s Arctic Shift spacing; (2) raise `CAPS` in `etl/extract_reddit.py` only with your human's OK; (3) extend `data/school_aliases.yaml` from `unresolved_schools.csv`, and add the schools the 265-school table lacks (Caltech, Penn State, UC Santa Cruz and so on) if they matter; (4) extract, `load-twins`, `refresh-stats`, `zetaris-refresh`; (5) update `docs/data-report.md` (and, with Track D, `data/data-report.json`) with the new numbers.
+  *Done when:* ≥10K twins are loaded and `docs/data-report.md` is regenerated from the live counts. Partial growth is still worth reporting honestly; never claim 10,000+ anywhere unless the database says so.
 
 ## B: Agents & API
 
@@ -169,5 +174,5 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 
 - [ ] **X01 — Integration gate (H18)** · §3.10, §6.2 · Deps: B13, C07, D05, D08
   Runs every row of the §3.10 checklist on the deployed stack and commits the results to `docs/integration-report.md`.
-- [ ] **X02 — Freeze & release (H32–33)** · §6.2, §7.4 · Deps: everything not marked stretch
+- [ ] **X02 — Freeze & release (H32–33)** · §6.2, §7.4 · Deps: everything not marked stretch or optional
   Final demo replays re-recorded on production, the backup video path noted, the pre-demo checklist ticked in `docs/pitch.md`. The human tags `v1.0`.

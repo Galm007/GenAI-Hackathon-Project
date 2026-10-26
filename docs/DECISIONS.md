@@ -293,7 +293,7 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 ## D-037 — A15 closes at 947 twins, not 10,000; alias list rebuilt
 - Step: A15 · Date: 2026-10-26 · By: Jmar L. Pineda via Claude Code
 - Plan said: at least 10K twins loaded (roadmap A15, §2.9.11, §7.5).
-- Found: the capped Reddit source holds 3,579 posts, 1,487 of which mention a decision; extraction at 8.9 s per post kept 947 (the database holds exactly those). More twins need another source or a wider scrape, which is a scope call for the team.
+- Found: the capped Reddit source holds 3,579 posts, 1,487 of which mention a decision; extraction at 8.9 s per post kept 947 (the database holds exactly those). More twins need another source or a wider scrape, which is a scope call for the team; the human made it optional step A18 in `docs/ROADMAP.md`, to be done only if time remains before the submission deadline.
 - We did: ran the full capped extraction, loaded the twins, refreshed stats and the Zetaris gold table, and wrote `docs/data-report.md` with the real numbers. The first run lost many decisions to unaliased school names (Cornell, Columbia, USC, NYU…) and two alias entries pointed at slugs that do not exist (`upenn`, `washu`); `data/school_aliases.yaml` now covers 87 schools and the extraction was re-run (95 → 12 posts rejected for no resolved school).
 - Impact on other tracks: Track D can fill `data/data-report.json` with n_twins 947, n_schools 265, n_cds_schools 5 and must not claim 10,000+. Track B's calibration now rests on 947 twins.
 
