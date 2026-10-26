@@ -60,7 +60,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* the guard tests pass; `zetaris.query("SELECT 7 AS seven")` works against local Zetaris; with `ZETARIS_ENABLED=false`, `school_profile` falls back to Supabase.
 - [x] **A14 — `zetaris_setup.py` + CLI stages** · §2.10.6 · Deps: A11, A12, A13 — done by Jmar L. Pineda via Claude Code, 2026-10-25 (live: two setup runs, 24 "exists"; refresh OK)
   *Done when:* `run_etl zetaris-setup` is idempotent (a second run logs "exists"); `run_etl zetaris-refresh` rewrites the gold table.
-- [ ] **A15 — Full data run → `docs/data-report.md`** · §2.9.10–2.9.11, §7.5 · Deps: A08–A14 · **needs your human's spend approval**
+- [x] **A15 — Full data run → `docs/data-report.md`** · §2.9.10–2.9.11, §7.5 · Deps: A08–A14 · **needs your human's spend approval** — done by Jmar L. Pineda via Claude Code, 2026-10-26 (950 twins, not 10K: capped source, D-037; all 5 demo schools ≥ 80)
   *Done when:* ≥10K twins are loaded, the stats and Zetaris gold are refreshed, and the report has corpus size, demo-school coverage (≥80 each), calibration and tier distribution. Updated aliases are committed.
 - [ ] **A16 — Backtest + bias audit** · §6.2 (H16–24), §7.3 Q1 · Deps: A15, B06
   `scripts/backtest.py`: hold out the latest cycle and compute Brier score and AUC versus a base-rate baseline, a reliability curve, and calibration by income bracket and first-gen status.
