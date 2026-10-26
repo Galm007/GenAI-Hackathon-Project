@@ -342,3 +342,11 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Open: whether the organizers accept Wine as "running on your machine", and the visual check of Nightshift's run details (the smoke test names the model that answered, but the app's own run view was not inspected). Cosmetic quirks: invisible mouse cursor over the window under Wayland.
 - Impact on other tracks: B17 and B18 are unblocked on this machine; the provider keys stay in Nightshift and the app only needs `METERLESS_RUNTIME_TOKEN`.
 
+
+## D-044 — A16 backtest holds out the latest posts, not the latest cycle
+- Step: A16 · Date: 2026-10-26 · By: Jmar L. Pineda via Claude Code
+- Plan said: hold out the latest cycle and compare Brier and AUC with a base-rate baseline (§6.2 H16-24).
+- Found: 925 of 947 twins are the 2026 cycle, so a cycle split leaves 22 training rows. The ratings the live app gets from Node 1 (an LLM) do not exist for a Reddit post either.
+- We did: `services/api/scripts/backtest.py` holds out the latest 30% of posts by `post_created_at` and gives each held-out row twin evidence from earlier posts only. Ratings come from the same statistical anchors Node 1 clamps to (no LLM, no spend); personal and athletic are neutral; the stored major multiplier is held at 1.0 because it is learned from these same posts. Twin neighbours are chosen by GPA and SAT proximity, not embeddings. It adds a within-school AUC, because plain AUC is mostly the school's admit rate. First-gen audit groups use explicit self-report only: the extractor sets a `first_gen` hook on 507 of 947 twins but only 125 state it.
+- Result, written to `docs/data-report.md` and `data/backtest.json` as it came out: held-out Brier 0.232 for the app, 0.303 for the official admit rate, 0.216 for the earlier Reddit rate at the school; within-school AUC 0.535. The profile ranks applicants only slightly better than chance, and subgroup gaps are large (for example <$30k income: predicted 28% vs observed 59%).
+- Impact on other tracks: Track D can fill `data/data-report.json` Brier fields from `data/backtest.json` (`models.rubric_plus_twins.brier` = 0.232, `models.official_rate.brier` = 0.303) and should describe the result as weak at ranking. Track B should know the first_gen hook flag is probably over-set by the extractor (an A07 follow-up, not changed here).

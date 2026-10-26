@@ -64,7 +64,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [x] **A15 — Full data run → `docs/data-report.md`** · §2.9.10–2.9.11, §7.5 · Deps: A08–A14 · **needs your human's spend approval** — done by Jmar L. Pineda via Claude Code, 2026-10-26 (947 twins, not 10K: capped source, D-037; all 5 demo schools ≥ 80)
   *Done when:* ≥10K twins are loaded, the stats and Zetaris gold are refreshed, and the report has corpus size, demo-school coverage (≥80 each), calibration and tier distribution. Updated aliases are committed.
   *Closed at 947 twins (D-037): the ≥10K target moved to optional step A18.*
-- [ ] **A16 — Backtest + bias audit** · §6.2 (H16–24), §7.3 Q1 · Deps: A15, B06
+- [x] **A16 — Backtest + bias audit** · §6.2 (H16–24), §7.3 Q1 · Deps: A15, B06 — done by Jmar L. Pineda via Claude Code, 2026-10-26 (held-out Brier 0.232 vs 0.303 baseline, weak within-school ranking; D-044)
   `scripts/backtest.py`: hold out the latest cycle and compute Brier score and AUC versus a base-rate baseline, a reliability curve, and calibration by income bracket and first-gen status.
   *Done when:* results are appended to `docs/data-report.md`, honestly, even if weak.
 - [ ] **A17 — (stretch) Coefficient fitting** · §3.9.3 · Deps: A15
