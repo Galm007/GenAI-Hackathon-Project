@@ -123,8 +123,9 @@ the held-out backtest/bias audit and final recorded-run figures are still missin
 
 ## Backup and rehearsal
 
-Use `/room/demo/maya-uiuc`; **Shift+R** switches to/restarts its replay and leaves
-text inputs alone. The three fictional applicant packs are in `data/demo_dossiers`.
+Use `/room/demo/maya-uiuc`; **Shift+R** restarts the selected named replay, or
+switches a live room to the default Maya replay, and leaves text inputs alone.
+Projector mode is retained. The three fictional applicant packs are in `data/demo_dossiers`.
 B13 is implemented. Record two real fictional-persona runs once the shared
 database/demo data and provider setup are available, with human approval for
 provider usage, using `scripts.record_demo`; review the files before committing.

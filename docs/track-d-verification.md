@@ -78,3 +78,16 @@ to `b6b3d37`; the manifest is partial and both Brier fields remain null.
 D09's actual completion still requires A16 and final real-run figures. The
 reported corpus snapshot is not a claim of live credentials, deployed phone
 acceptance, model accuracy or provider judging evidence.
+
+## Named replay restart — 2026-10-26
+
+Done by gridiii via Codex. Previously every restart navigated to `maya-uiuc`,
+which would silently leave any future alternate recording. The controls now
+retain the selected recording name for demo sources, while live sources keep
+the default Maya fallback. The callback is stable across render updates.
+
+- In the production browser, both the button and Shift+R retained an alternate
+  recording's route and `?projector=1` instead of switching to Maya.
+- The check used a temporary, clearly authored fictional fixture in the local
+  container. It was removed afterwards and is not judging evidence or a live run.
+- 43 web tests, lint, TypeScript and production build passed after the fix.
