@@ -4,6 +4,7 @@ LLM calls and the embedder come from `app.fake_llm` (fictional fixtures); every 
 mocked. This proves the browser stream comes from graph.astream, not the B03 script."""
 import json
 import re
+from pathlib import Path
 
 import httpx
 import pytest
@@ -19,6 +20,7 @@ from .test_runs import INTAKE, _parse_sse
 from .test_scoring_rubric import school
 from .test_twins import MEDIANS, STATS
 
+MAYA = Path(__file__).resolve().parents[3] / "data/demo_dossiers/maya"
 NODES = ["dossier_parser", "institutional", "twins", "committee_docket", "advocate", "chair", "delta_engine"]
 PLAN_EDGES = {  # plan §3.1: solid = fixed edge, dotted = conditional
     ("__start__", "-.->", "dossier_parser"), ("__start__", "-.->", "institutional"), ("__start__", "-.->", "twins"),
@@ -130,6 +132,82 @@ async def test_evaluate_streams_the_real_graph_offline(client, offline):
     assert child.status == "complete" and child.events[0]["cached_dossier"] is True
     assert child_names[1:3] == ["dossier_parsed", "scorecard"]
     assert "dossier_parser" not in [e["node"] for e in child.events if e["event"] == "node_complete"]
+
+
+# ---------- B14: FAKE_LLM=1 with the real Zetaris repository (only Supabase is stood in) ----------
+@pytest.fixture
+def fake_mode(monkeypatch):
+    """Fake mode as a developer gets it: fixtures for the model, the real zetaris_repo, Supabase stood in."""
+    from app import llm
+    monkeypatch.setattr(settings, "fake_llm", True)
+    for name in ("parse", "stream_text"):                       # let monkeypatch restore what install() replaces
+        monkeypatch.setattr(llm, name, getattr(llm, name))
+    monkeypatch.setattr(institutional, "run_zetaris_research", institutional.run_zetaris_research)
+    from app.agents.nodes import dossier_parser
+    monkeypatch.setattr(dossier_parser, "embed_one", dossier_parser.embed_one)
+
+    class NoPaidCalls:
+        def __getattr__(self, name):
+            raise AssertionError(f"fake mode reached the real Anthropic client (llm.client.{name})")
+
+    monkeypatch.setattr(llm, "client", NoPaidCalls())
+    monkeypatch.setattr(zetaris_repo, "_cache", {})
+
+    def const(value):
+        async def f(*_, **__):
+            return value
+        return f
+
+    for name, value in {"get_school": school(name="University of Illinois", peer_group="big_ten_public"),
+                        "peer_schools": ["purdue"], "school_calibration": 2.4, "admitted_medians": MEDIANS,
+                        "match_twins": twin_rows(), "neighborhood_stats": STATS, "major_arbitrage": [],
+                        "save_run": None, "append_event_log": None}.items():
+        monkeypatch.setattr(db, name, const(value))
+    monkeypatch.setattr(institutional, "research_school", const([]))       # no Tavily key in fake mode
+    return monkeypatch
+
+
+@pytest.mark.parametrize("zetaris", ["disabled", "enabled_but_down"])
+async def test_fake_mode_runs_the_whole_graph_offline(client, fake_mode, zetaris):
+    from app.zetaris import zetaris as client_
+    calls: list[str] = []
+
+    async def query(sql, **_):
+        calls.append(sql)
+        raise httpx.ConnectError("no Zetaris on this machine")
+
+    fake_mode.setattr(settings, "zetaris_enabled", zetaris == "enabled_but_down")
+    fake_mode.setattr(client_, "query", query)
+    restore = fake_llm.install()
+    try:
+        from app.main import runs
+        r = await client.post("/api/evaluate", data={"intake": json.dumps(INTAKE | {"session_id": f"b14-{zetaris}"})})
+        run = runs.get(r.json()["run_id"])
+        await run.task
+    finally:
+        restore()
+    names = [e["event"] for e in run.events]
+    assert run.status == "complete", [e for e in run.events if e["event"] == "error"]
+    assert names.count("debate_turn_end") == MAX_TURNS and "final_report" in names
+    assert run.final["zetaris_queries"] == []                       # fake mode never runs the SQL tool loop
+    if zetaris == "disabled":
+        assert calls == []                                          # not one Zetaris call
+    else:
+        assert calls                                                # tried, failed, fell back to Supabase
+    assert run.final["baseline"].odds_inflation == 2.4              # the Supabase calibration was used
+
+
+async def test_cli_runs_in_fake_mode(fake_mode, monkeypatch, capsys):
+    from scripts import run_graph_cli
+    monkeypatch.setattr(settings, "zetaris_enabled", False)
+    root = MAYA
+    monkeypatch.setattr("sys.argv", ["run_graph_cli", "--transcript", str(root / "transcript.pdf"),
+                                     "--activities", str(root / "activities.txt"), "--essay", str(root / "essay.txt"),
+                                     "--major", "Computer Science", "--school", "uiuc"])
+    await run_graph_cli.main()
+    out = capsys.readouterr().out
+    assert "◆ P(admit)" in out and "━━ Turn 4 · CHAIR ━━" in out and "✔ delta_engine" in out
+    assert '"committee_disposition"' in out
 
 
 def node_one_ran(run) -> bool:

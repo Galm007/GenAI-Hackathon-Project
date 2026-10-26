@@ -9,6 +9,7 @@ import uuid
 from pathlib import Path
 
 from app.agents.graph import graph
+from app.config import settings
 from app.schemas.inputs import RawApplicantInputs
 
 
@@ -37,6 +38,9 @@ async def main() -> None:
     p.add_argument("--school", required=True, help="slug, e.g. uiuc")
     p.add_argument("--round", default=None, choices=["ED", "ED2", "EA", "REA", "RD"])
     a = p.parse_args()
+    if settings.fake_llm:                         # FAKE_LLM=1: fixtures instead of model calls, as the API does (§4.9)
+        from app.fake_llm import install
+        install()
 
     inputs = _inputs(a)
     run_id = str(uuid.uuid4())

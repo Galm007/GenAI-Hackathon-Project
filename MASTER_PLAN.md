@@ -2829,6 +2829,8 @@ import re
 import time
 from typing import Any
 
+import httpx
+
 from . import db
 from .config import settings
 from .zetaris import ZetarisError, zetaris
@@ -2845,6 +2847,8 @@ CTE_RE = re.compile(r"(?:\bwith|,)\s*(\w+)\s+as\s*\(", re.IGNORECASE)
 LIMIT_RE = re.compile(r"\blimit\s+(\d+)\s*$", re.IGNORECASE)
 MAX_AGENT_ROWS = 50
 TTL_S = 600
+# A stopped or unreachable stack raises httpx errors from the client's login/query, not ZetarisError (D-039).
+UNAVAILABLE = (ZetarisError, httpx.HTTPError)
 
 _cache: dict[str, tuple[float, Any]] = {}
 
@@ -2904,7 +2908,7 @@ async def school_profile(slug: str) -> dict:
     async def load() -> dict:
         try:
             rows = await zetaris.query(f"SELECT * FROM {settings.zetaris_gold_profile} WHERE slug = '{slug}' LIMIT 1")
-        except ZetarisError:
+        except UNAVAILABLE:
             return await db.get_school(slug)                  # degrade to the operational copy
         if not rows:
             raise ValueError(f"unknown school slug: {slug}")
@@ -2916,29 +2920,37 @@ async def school_profile(slug: str) -> dict:
 async def peer_schools(slug: str, peer_group: str, limit: int = 6) -> list[str]:
     if not SLUG_RE.match(peer_group):
         return []
+    if not settings.zetaris_enabled:
+        return await db.peer_schools(slug, peer_group, limit)
     try:
         rows = await zetaris.query(f"SELECT slug FROM {settings.zetaris_gold_profile} "
                                    f"WHERE peer_group = '{peer_group}' AND slug <> '{slug}' LIMIT {int(limit)}")
         return [r["slug"] for r in rows]
-    except ZetarisError:
+    except UNAVAILABLE:
         return await db.peer_schools(slug, peer_group, limit)
 
 
 async def reddit_calibration(slug: str) -> float:
+    if not settings.zetaris_enabled:
+        return await db.school_calibration(slug)
+
     async def load() -> float:
         try:
             rows = await zetaris.query(f"SELECT odds_inflation FROM ADCOM.v_reddit_calibration WHERE slug = '{slug}' LIMIT 1")
             return _f(rows[0]["odds_inflation"]) or 1.0 if rows else 1.0
-        except ZetarisError:
+        except UNAVAILABLE:
             return await db.school_calibration(slug)
     return await _cached(f"calib:{slug}", load)
 
 
 async def admitted_medians(slug: str) -> dict:
+    if not settings.zetaris_enabled:
+        return await db.admitted_medians(slug)
+
     async def load() -> dict:
         try:
             rows = await zetaris.query(f"SELECT * FROM ADCOM.v_admitted_medians WHERE slug = '{slug}' LIMIT 1")
-        except ZetarisError:
+        except UNAVAILABLE:
             return await db.admitted_medians(slug)
         if not rows:
             return {"n": 0}
@@ -3057,7 +3069,6 @@ import anthropic
 
 from app import llm, zetaris_repo
 from app.config import settings
-from app.zetaris import ZetarisError
 
 from .events import tool_call
 
@@ -3140,7 +3151,7 @@ async def run_zetaris_research(*, slug: str, major_category: str, applicant_summ
                 tool_call("institutional", "zetaris.sql", "done", id=fid, result_count=len(rows))
                 results.append({"type": "tool_result", "tool_use_id": use.id,
                                 "content": json.dumps(rows[:50])[:12000]})
-            except (zetaris_repo.SqlNotAllowed, ZetarisError) as exc:
+            except (zetaris_repo.SqlNotAllowed, *zetaris_repo.UNAVAILABLE) as exc:   # down stack = failed query (D-039)
                 tool_call("institutional", "zetaris.sql", "failed", id=fid, error=str(exc)[:200])
                 results.append({"type": "tool_result", "tool_use_id": use.id, "is_error": True,
                                 "content": f"Query rejected: {exc}"})
@@ -6862,9 +6873,13 @@ def install() -> None:
     llm.stream_text = stream_text
     from .agents.nodes import dossier_parser
     dossier_parser.embed_one = embed_one                 # imported by name, so patch where it's used
+    from .agents.nodes import institutional
+    async def run_zetaris_research(**_):                 # the SQL tool loop calls llm.client directly (D-039)
+        return []
+    institutional.run_zetaris_research = run_zetaris_research
 ```
 
-Frontend devs without 8 GB to spare for Docker also set `ZETARIS_ENABLED=false`: every Zetaris read falls back to Supabase and Node 2 skips the SQL tool (§2.10.10). Fixtures are created at Hour 4 by running the real graph once on Maya's dossier and dumping each node's output (`model_dump_json`) to `data/fixtures/`. That decouples the UI from API keys, rate limits and cost for the rest of the hackathon.
+`scripts/run_graph_cli.py` calls `install()` too when `FAKE_LLM=1`, so the CLI runs offline like the API. Frontend devs without 8 GB to spare for Docker also set `ZETARIS_ENABLED=false`: every Zetaris read falls back to Supabase and Node 2 skips the SQL tool (§2.10.10). Fixtures are created at Hour 4 by running the real graph once on Maya's dossier and dumping each node's output (`model_dump_json`) to `data/fixtures/`. That decouples the UI from API keys, rate limits and cost for the rest of the hackathon.
 
 ### 4.10 Deployment
 

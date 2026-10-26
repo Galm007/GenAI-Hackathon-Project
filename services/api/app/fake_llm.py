@@ -13,9 +13,9 @@ FIXTURES = Path(__file__).resolve().parents[3] / "data/fixtures"
 
 
 def install():
-    from .agents.nodes import dossier_parser
+    from .agents.nodes import dossier_parser, institutional
 
-    originals = llm.parse, llm.stream_text, dossier_parser.embed_one
+    originals = llm.parse, llm.stream_text, dossier_parser.embed_one, institutional.run_zetaris_research
 
     async def parse(schema, **_):
         await asyncio.sleep(0)
@@ -34,9 +34,14 @@ def install():
         # Shape fixture only: this zero vector is not a semantic embedding or retrieval evidence.
         return json.loads((FIXTURES / "profile_embedding.json").read_text(encoding="utf-8"))
 
+    async def run_zetaris_research(**_):
+        # Node 2's SQL tool loop calls the Anthropic client directly, so fake mode never runs it (D-039).
+        return []
+
     llm.parse, llm.stream_text, dossier_parser.embed_one = parse, stream_text, embed_one
+    institutional.run_zetaris_research = run_zetaris_research
 
     def restore():
-        llm.parse, llm.stream_text, dossier_parser.embed_one = originals
+        llm.parse, llm.stream_text, dossier_parser.embed_one, institutional.run_zetaris_research = originals
 
     return restore

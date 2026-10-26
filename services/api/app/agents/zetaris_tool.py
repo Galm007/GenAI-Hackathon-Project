@@ -4,7 +4,6 @@ import json
 
 from app import llm, zetaris_repo
 from app.config import settings
-from app.zetaris import ZetarisError
 
 from .events import tool_call
 
@@ -87,7 +86,7 @@ async def run_zetaris_research(*, slug: str, major_category: str, applicant_summ
                 tool_call("institutional", "zetaris.sql", "done", id=fid, result_count=len(rows))
                 results.append({"type": "tool_result", "tool_use_id": use.id,
                                 "content": json.dumps(rows[:50])[:12000]})
-            except (zetaris_repo.SqlNotAllowed, ZetarisError) as exc:
+            except (zetaris_repo.SqlNotAllowed, *zetaris_repo.UNAVAILABLE) as exc:   # down stack = failed query (D-039)
                 tool_call("institutional", "zetaris.sql", "failed", id=fid, error=str(exc)[:200])
                 results.append({"type": "tool_result", "tool_use_id": use.id, "is_error": True,
                                 "content": f"Query rejected: {exc}"})

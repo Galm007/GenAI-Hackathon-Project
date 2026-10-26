@@ -5,6 +5,8 @@ import re
 import time
 from typing import Any
 
+import httpx
+
 from . import db
 from .config import settings
 from .zetaris import ZetarisError, zetaris
@@ -21,6 +23,8 @@ CTE_RE = re.compile(r"(?:\bwith|,)\s*(\w+)\s+as\s*\(", re.IGNORECASE)
 LIMIT_RE = re.compile(r"\blimit\s+(\d+)\s*$", re.IGNORECASE)
 MAX_AGENT_ROWS = 50
 TTL_S = 600
+# A stopped or unreachable stack raises httpx errors from the client's login/query, not ZetarisError (D-039).
+UNAVAILABLE = (ZetarisError, httpx.HTTPError)
 
 _cache: dict[str, tuple[float, Any]] = {}
 
@@ -80,7 +84,7 @@ async def school_profile(slug: str) -> dict:
     async def load() -> dict:
         try:
             rows = await zetaris.query(f"SELECT * FROM {settings.zetaris_gold_profile} WHERE slug = '{slug}' LIMIT 1")
-        except ZetarisError:
+        except UNAVAILABLE:
             return await db.get_school(slug)                  # degrade to the operational copy
         if not rows:
             raise ValueError(f"unknown school slug: {slug}")
@@ -92,31 +96,39 @@ async def school_profile(slug: str) -> dict:
 async def peer_schools(slug: str, peer_group: str, limit: int = 6) -> list[str]:
     if not SLUG_RE.match(peer_group):
         return []
+    if not settings.zetaris_enabled:
+        return await db.peer_schools(slug, peer_group, limit)
     try:
         rows = await zetaris.query(f"SELECT slug FROM {settings.zetaris_gold_profile} "
                                    f"WHERE peer_group = '{peer_group}' AND slug <> '{slug}' LIMIT {int(limit)}")
         return [r["slug"] for r in rows]
-    except ZetarisError:
+    except UNAVAILABLE:
         return await db.peer_schools(slug, peer_group, limit)
 
 
 async def reddit_calibration(slug: str) -> float:
+    if not settings.zetaris_enabled:
+        return await db.school_calibration(slug)
+
     async def load() -> float:
         try:
             rows = await zetaris.query(
                 f"SELECT odds_inflation FROM ADCOM.v_reddit_calibration WHERE slug = '{slug}' LIMIT 1"
             )
             return _f(rows[0]["odds_inflation"]) or 1.0 if rows else 1.0
-        except ZetarisError:
+        except UNAVAILABLE:
             return await db.school_calibration(slug)
     return await _cached(f"calib:{slug}", load)
 
 
 async def admitted_medians(slug: str) -> dict:
+    if not settings.zetaris_enabled:
+        return await db.admitted_medians(slug)
+
     async def load() -> dict:
         try:
             rows = await zetaris.query(f"SELECT * FROM ADCOM.v_admitted_medians WHERE slug = '{slug}' LIMIT 1")
-        except ZetarisError:
+        except UNAVAILABLE:
             return await db.admitted_medians(slug)
         if not rows:
             return {"n": 0}
