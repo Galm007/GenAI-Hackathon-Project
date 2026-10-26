@@ -333,3 +333,12 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Found: the "Load Maya's file" button and the rate-limit toast's "Replay Maya Demo" action pushed `/room/demo/maya`, but the only recording is `data/demo_runs/maya-uiuc.json`, so both led to "Replay not found". The landing page and the committee room already link to `maya-uiuc`.
 - We did: both now push `/room/demo/maya-uiuc`. Verified: 48 web tests, lint, `tsc --noEmit` and `pnpm build` pass.
 - Impact on other tracks: none. If a second recording is added later, these links still point at Maya at UIUC.
+
+## D-043 — S03 on Linux: Nightshift runs under Wine
+- Step: S03 · Date: 2026-10-26 · By: Jmar L. Pineda via Claude Code
+- Plan said: Nightshift has no Linux edition, so the demo machine must be Windows, Mac or DGX Spark (§1.7.1, §1.7.5).
+- Found: the Windows edition runs on the Linux dev machine under Wine 11.19 Staging once Microsoft's WebView2 standalone runtime and `vcrun2022` are installed in an isolated prefix. The runtime serves `127.0.0.1:8088` on the host, the NVIDIA and Gemini keys were added in Nightshift's Providers tab, and the Runtime API key went into `.env` only. `scripts.smoke_meterless` prints three PASS lines and the chat answer came from `nvidia/nemotron-3.5-lightning-30b-a3b`. Nightshift also has a built-in Gemini provider, so a free Gemini lane needs no change to `llm.py`.
+- We did: documented the Wine route in `docs/meterless-setup.md`. No code changed.
+- Open: whether the organizers accept Wine as "running on your machine", and the visual check of Nightshift's run details (the smoke test names the model that answered, but the app's own run view was not inspected). Cosmetic quirks: invisible mouse cursor over the window under Wayland.
+- Impact on other tracks: B17 and B18 are unblocked on this machine; the provider keys stay in Nightshift and the app only needs `METERLESS_RUNTIME_TOKEN`.
+

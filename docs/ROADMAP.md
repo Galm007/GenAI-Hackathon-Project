@@ -22,7 +22,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Creates `app/profile_text.py`, `app/embeddings.py` and `app/agents/prompts/rubrics.py` exactly as specified (the ETL and Node 1 must share them byte for byte).
   *Done when:* a unit test builds the profile text for a fixture and its output is deterministic; `embed_texts` is mocked in the test.
 
-- [ ] **S03 — Meterless Nightshift setup + smoke test** · Plan §1.7.1, §1.7.4 · Deps: S01 · Owner: whoever runs the demo machine
+- [x] **S03 — Meterless Nightshift setup + smoke test** · Plan §1.7.1, §1.7.4 · Deps: S01 · Owner: whoever runs the demo machine — done by Jmar L. Pineda via Claude Code, 2026-10-26 (Linux, Nightshift 1.2.7 under Wine, D-043; smoke test 3/3 PASS, answered by nvidia/nemotron-3.5-lightning-30b-a3b)
   `docs/meterless-setup.md` and `scripts/smoke_meterless.py` exist (tests pass). A human must install Nightshift (Windows, Mac or DGX; no Linux edition), add the NVIDIA key in its Providers tab, configure a Nemotron lane and copy the Console URL and token into `.env`.
   *Done when:* `uv run python -m scripts.smoke_meterless` prints three PASS lines and Nightshift's run details show a Nemotron model answered.
   Mac setup prepared by gridiii via Codex, 2026-10-26: official M1+ installer copied to `~/Applications/Nightshift Setup.app`. macOS execution assessment rejected its ad-hoc signature; installer not launched and protections unchanged. Vendor/install review is required before Runtime, NVIDIA lane and smoke-test setup. Download identity and exact checks are in the D10 evidence handoff.
