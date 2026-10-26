@@ -67,7 +67,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [x] **A16 — Backtest + bias audit** · §6.2 (H16–24), §7.3 Q1 · Deps: A15, B06 — done by Jmar L. Pineda via Claude Code, 2026-10-26 (held-out Brier 0.232 vs 0.303 baseline, weak within-school ranking; D-044)
   `scripts/backtest.py`: hold out the latest cycle and compute Brier score and AUC versus a base-rate baseline, a reliability curve, and calibration by income bracket and first-gen status.
   *Done when:* results are appended to `docs/data-report.md`, honestly, even if weak.
-- [ ] **A17 — (stretch) Coefficient fitting** · §3.9.3 · Deps: A15
+- [x] **A17 — (stretch) Coefficient fitting** · §3.9.3 · Deps: A15 — done by Jmar L. Pineda via Claude Code, 2026-10-26 (fit rejected by the sanity bounds; priors kept, D-045)
   *Done when:* fitted values are logged; adopt them only if they pass the sanity bounds, and record the decision in `DECISIONS.md`.
 - [ ] **A18 — (optional) Grow the corpus toward ≥10K twins** · §2.9.1–2.9.7, §2.9.11 · Deps: A15 · **Only if time remains before the hackathon submission deadline; needs your human's explicit OK and spend approval**
   Why: A15 stopped at 947 twins because the capped Reddit source holds only about 1,500 decision posts (D-037). Reaching 10K needs more source data, and at 8.9 s per post on local `gemma4:e2b` about 10K twins is roughly 30+ hours of GPU, so it also needs a faster extractor (a larger GPU, or a hosted model, which costs money).
