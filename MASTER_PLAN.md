@@ -417,16 +417,16 @@ Source: the Open Agent Hackathon 2026 Participant Setup Guide (21 Oct 2026) and 
 
 #### 1.7.2 Nightshift as the primary provider, Gemini as the free alternative (`app/openai_compat.py`, switch in `app/llm.py`)
 
-Runtime contract (from the guide's Power prompt; **(verify)** each line on first contact):
+Runtime contract (from the guide's Power prompt). The first four rows were confirmed against a real Nightshift 1.2.7 Runtime in S03 (D-043): `scripts.smoke_meterless` authorized, listed models and got a chat answer from `nvidia/nemotron-3.5-lightning-30b-a3b`, and a full live committee run then completed through it (D-054). Rows still marked **(verify)** were not exercised.
 
 | Item | Value |
 |---|---|
 | Provider id / default base URL | `meterless` / `http://127.0.0.1:8088/v1` (Auto Detect in the upstream prompt scans loopback ports 8088, 8090, 8787, 11434) |
 | Auth and headers | `Authorization: Bearer <METERLESS_RUNTIME_TOKEN>`, `meterless-app: adcom`, `meterless-scope: user` |
-| Health and discovery | `GET /v1/models` decides health: 200 with a model list is healthy, 401/403 is "unauthorized". `/healthz` is not proof that a real model is connected. |
+| Health and discovery | `GET /v1/models` decides health: 200 with a model list is healthy, 401/403 is "unauthorized". `/healthz` is not proof that a real model is connected. The API's startup check and `/api/health` use it with a 5 s timeout and no retry (B17c). |
 | Chat | OpenAI-compatible `POST /v1/chat/completions`, `model: meterless/auto` (a routing mode, not an NVIDIA id; `meterless/<class>` and `meterless/<disposition>` routes come from `/v1/models`) |
-| Timeouts | 180 s (model loads) |
-| Placeholder | The token `rt-local` is rejected. The token is the Console's real Runtime key. |
+| Timeouts | 180 s (model loads) **(verify)** |
+| Placeholder | The token `rt-local` is rejected. The token is the Console's real Runtime key. **(verify)** |
 
 How the switch works (B01 owns `llm.py`; steps B17a–B17c add this, D-046):
 - One OpenAI-compatible client, `app/openai_compat.py` (httpx, no new dependency), with two profiles. **meterless**: `METERLESS_BASE_URL`, the Runtime token and the headers above. **gemini**: `https://generativelanguage.googleapis.com/v1beta/openai/` with `Authorization: Bearer <GEMINI_API_KEY>`.
@@ -438,7 +438,7 @@ How the switch works (B01 owns `llm.py`; steps B17a–B17c add this, D-046):
 - Errors are provider-neutral: `LLMUnavailable` (connection, 5xx, timeout), `LLMRateLimited` (per-minute 429, retried after `Retry-After`), `LLMQuotaExhausted` (daily 429, not retried), `LLMAuthError` (401/403), `LLMBadRequest` (any other 4xx) and `LLMInvalidOutput` (still invalid after the retry). `llm.PROVIDER_ERRORS` replaces bare `anthropic.APIError` in the nodes, and the graph's `LLM_RETRY` also retries `LLMUnavailable` and `LLMRateLimited`.
 - `stream_text`: `stream: true` server-sent events, concatenating `delta.content`. There are no fallback blocks, so `on_reset` is never called.
 - Anthropic-only features (prompt caching, server-side fallbacks, adaptive thinking) are ignored on this path. Node prompts are unchanged; numbers still come only from `app/scoring/` (§0.1).
-- A startup check calls `GET /v1/models` on Meterless; `/api/health` replaces `anthropic_key` with `llm_provider` and `llm_key`, and reports `"meterless": true|false` next to `"zetaris"` (B17c). If the Runtime is unreachable at demo time, set `LLM_PROVIDER=gemini` (a rung of the fallback ladder in §6.3). If Gemini's daily quota is also used up, serve the recorded replay.
+- A startup check calls `GET /v1/models` on Meterless in the background (only when `LLM_PROVIDER=meterless` and not `FAKE_LLM`) and logs whether `METERLESS_MODEL` is listed; it never blocks startup. `/api/health` replaces `anthropic_key` with `llm_provider` and `llm_key`, and reports `"meterless": true|false` next to `"zetaris"` (B17c). If the Runtime is unreachable at demo time, set `LLM_PROVIDER=gemini` (a rung of the fallback ladder in §6.3). If Gemini's daily quota is also used up, serve the recorded replay.
 
 #### 1.7.3 World Model engine: the committee's shared case file (steps B18a–B18b)
 
@@ -465,7 +465,7 @@ How AdCom uses it:
 
 - **No Linux edition.** meterless.ai lists Windows, Mac (M1+, M5+ preorder) and a DGX Spark AppImage whose download link is not live yet. A Linux x86 dev machine cannot run Nightshift. The demo machine must be a teammate's Windows or Mac laptop (or a DGX), which also satisfies "running on your machine" for that person; ask the organizers in the HackOS Help desk if our team's eligibility needs the submitting machine to run it.
 - **Engine language mismatch.** The conformance suite is TypeScript; our backend is Python (§1.7.3 sidecar).
-- **Provider contract unverified.** Structured output, streaming and model discovery details are marked **(verify)** until run against a real Runtime.
+- **Provider contract partly verified.** Discovery, auth and chat are confirmed (D-043), and a full committee run completed through Nightshift (D-054). Whether Nightshift lanes take the strict `json_schema` path or the prompt fallback, and the 180 s model-load timeout, are still marked **(verify)**.
 - **Pre-built code.** The guide says to check the event rules on how much project code may be prepared before kickoff. We have prepared a lot; confirm with the organizers.
 
 ---
@@ -6154,7 +6154,7 @@ Adopt fitted values only if they are sane (`K_PILLAR` between 1 and 4, `K_TEST` 
 | `GET /api/schools?q=` | Intake autocomplete (`resolve_school` RPC) | `q` ≥ 2 chars | `[{slug, name, score}]` |
 | `GET /api/schools/{slug}` | School card: C7 grid, admit rates, test band | — | `SchoolSummary` |
 | `GET /api/demo/{name}/stream` | Replay a recorded run with original timing | `?speed=1.0` | `text/event-stream` |
-| `GET /api/health` | Liveness + dependency check | — | `{ok, db, zetaris, zetaris_enabled, llm_provider, llm_key, tavily, demo_mode, fake_llm, ts}` |
+| `GET /api/health` | Liveness + dependency check | — | `{ok, db, zetaris, meterless, zetaris_enabled, llm_provider, llm_key, tavily, demo_mode, fake_llm, ts}` |
 
 ### 4.2 SSE wire format
 
@@ -6397,7 +6397,7 @@ async def demo_stream(name: str, request: Request, speed: float = Query(1.0, ge=
 
 @app.get("/api/health")
 async def health():
-    ok_db = ok_zetaris = True
+    ok_db = ok_zetaris = ok_meterless = True
     try:
         await db.get_school("mit")
     except Exception:
@@ -6406,7 +6406,12 @@ async def health():
         await zetaris.query("SELECT 7 AS seven", page_limit=1)    # the same probe verify.sh runs
     except Exception:
         ok_zetaris = False
-    return {"ok": ok_db, "db": ok_db, "zetaris": ok_zetaris, "zetaris_enabled": settings.zetaris_enabled,
+    try:
+        ok_meterless = bool(await openai_compat.meterless_models())   # authorized and at least one model (§1.7.2)
+    except llm.LLMProviderError:
+        ok_meterless = False
+    return {"ok": ok_db, "db": ok_db, "zetaris": ok_zetaris, "meterless": ok_meterless,
+            "zetaris_enabled": settings.zetaris_enabled,
             "llm_provider": settings.llm_provider, "llm_key": llm.key_configured() or settings.fake_llm,
             "tavily": bool(settings.tavily_api_key), "demo_mode": settings.demo_mode,
             "fake_llm": settings.fake_llm, "ts": time.time()}

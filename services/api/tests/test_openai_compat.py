@@ -306,6 +306,64 @@ async def test_stream_text_retries_only_before_the_first_token(api):
     assert len(requests) == 2 and sleeps == [1.0]
 
 
+# ---------- Meterless discovery (B17c) ----------
+MODELS = {"object": "list", "data": [{"id": "meterless/auto"}, {"id": "nvidia/nemotron-3.5-lightning-30b-a3b"}]}
+
+
+async def test_meterless_models_lists_ids_with_runtime_headers_whatever_the_provider(api, monkeypatch):
+    monkeypatch.setattr(settings, "meterless_runtime_token", "rt-test")
+    monkeypatch.setattr(settings, "meterless_base_url", "http://127.0.0.1:8088/v1/")
+    requests, _ = api(httpx.Response(200, json=MODELS))            # LLM_PROVIDER is still gemini here
+    assert await openai_compat.meterless_models() == ["meterless/auto", "nvidia/nemotron-3.5-lightning-30b-a3b"]
+    r = requests[0]
+    assert r.method == "GET" and str(r.url) == "http://127.0.0.1:8088/v1/models"
+    assert r.headers["authorization"] == "Bearer rt-test" and r.headers["meterless-app"] == "adcom"
+
+
+@pytest.mark.parametrize(("reply", "error"), [
+    (httpx.Response(401, text="unauthorized"), llm.LLMAuthError),
+    (httpx.Response(503, text="loading"), llm.LLMUnavailable),
+    (httpx.Response(200, text="<html>another app</html>"), llm.LLMUnavailable),
+])
+async def test_meterless_models_raises_provider_errors(api, reply, error):
+    requests, sleeps = api(reply)
+    with pytest.raises(error):
+        await openai_compat.meterless_models()
+    assert len(requests) == 1 and sleeps == []                       # a health probe is never retried
+
+
+async def test_meterless_models_unreachable(monkeypatch):
+    def refuse(request):
+        raise httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(openai_compat, "http", httpx.AsyncClient(transport=httpx.MockTransport(refuse)))
+    with pytest.raises(llm.LLMUnavailable, match="unreachable"):
+        await openai_compat.meterless_models()
+
+
+@pytest.mark.parametrize(("model", "level", "says"), [
+    ("meterless/auto", "INFO", "including meterless/auto"),
+    ("meterless/deep", "WARNING", "but not METERLESS_MODEL=meterless/deep"),
+])
+async def test_startup_check_says_whether_the_pinned_model_is_listed(api, monkeypatch, caplog, model, level, says):
+    from app import main
+
+    monkeypatch.setattr(settings, "meterless_model", model)
+    api(httpx.Response(200, json=MODELS))
+    with caplog.at_level("INFO", logger="main"):
+        await main.check_meterless()
+    assert [(r.levelname, says in r.getMessage()) for r in caplog.records] == [(level, True)]
+
+
+async def test_startup_check_suggests_gemini_when_the_runtime_is_down(api, caplog):
+    from app import main
+
+    api(httpx.Response(401, text="unauthorized"))
+    with caplog.at_level("INFO", logger="main"):
+        await main.check_meterless()
+    assert "LLM_PROVIDER=gemini" in caplog.text
+
+
 # ---------- settings ----------
 REQUIRED = {"supabase_url": "http://localhost:54321", "supabase_service_role_key": "k", "zetaris_agent_password": "p"}
 

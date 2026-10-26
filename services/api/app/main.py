@@ -12,7 +12,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFi
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
-from . import db, llm, zetaris_repo
+from . import db, llm, openai_compat, zetaris_repo
 from .api_models import IntakeForm
 from .config import settings
 from .demo import register_demo_runs
@@ -44,6 +44,20 @@ async def prewarm() -> None:
             log.warning("prewarm failed for %s", slug)
 
 
+async def check_meterless() -> None:
+    """Startup check (§1.7.2): the Runtime answers GET /v1/models and lists the model the agents will ask for."""
+    try:
+        ids = await openai_compat.meterless_models()
+    except llm.LLMProviderError as exc:
+        log.warning("Meterless check failed (%s); set LLM_PROVIDER=gemini if the Runtime stays down", exc)
+        return
+    if settings.meterless_model in ids:
+        log.info("Meterless lists %d models, including %s", len(ids), settings.meterless_model)
+    else:
+        log.warning("Meterless lists %d models but not METERLESS_MODEL=%s: %s", len(ids), settings.meterless_model,
+                    ", ".join(ids[:8]))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     restore = None
@@ -52,10 +66,14 @@ async def lifespan(app: FastAPI):
         from .fake_llm import install
         restore = install()                    # offline dev: fixtures instead of model calls (§4.9)
     warm = asyncio.create_task(prewarm())      # in the background, so a missing Zetaris never delays startup (D-036)
+    checks = [warm]
+    if settings.llm_provider == "meterless" and not settings.fake_llm:
+        checks.append(asyncio.create_task(check_meterless()))     # also in the background: a log line, not a gate
     try:
         yield
     finally:
-        warm.cancel()
+        for task in checks:
+            task.cancel()
         if restore:
             restore()
         await runs.shutdown()
@@ -178,7 +196,7 @@ async def fake_stream(request: Request, after: int = Query(-1), speed: float = Q
 
 @app.get("/api/health")
 async def health():
-    ok_db = ok_zetaris = True
+    ok_db = ok_zetaris = ok_meterless = True
     try:
         await db.get_school("mit")
     except Exception:
@@ -187,7 +205,12 @@ async def health():
         await zetaris.query("SELECT 7 AS seven", page_limit=1)    # the same probe verify.sh runs
     except Exception:
         ok_zetaris = False
-    return {"ok": ok_db, "db": ok_db, "zetaris": ok_zetaris, "zetaris_enabled": settings.zetaris_enabled,
+    try:
+        ok_meterless = bool(await openai_compat.meterless_models())   # authorized and at least one model (§1.7.2)
+    except llm.LLMProviderError:
+        ok_meterless = False
+    return {"ok": ok_db, "db": ok_db, "zetaris": ok_zetaris, "meterless": ok_meterless,
+            "zetaris_enabled": settings.zetaris_enabled,
             "llm_provider": settings.llm_provider, "llm_key": llm.key_configured() or settings.fake_llm,
             "tavily": bool(settings.tavily_api_key), "demo_mode": settings.demo_mode,
             "fake_llm": settings.fake_llm, "ts": time.time()}

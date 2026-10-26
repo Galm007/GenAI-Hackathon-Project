@@ -442,9 +442,10 @@ async def test_dev_fake_stream_resumes_from_last_event_id(client):
     assert frames[-1]["event"] == "done"
 
 
-@pytest.mark.parametrize(("db_up", "zetaris_up"), [(True, True), (True, False), (False, True)])
-async def test_health_probes_the_database_and_zetaris(client, monkeypatch, db_up, zetaris_up):
-    from app import main
+@pytest.mark.parametrize(("db_up", "zetaris_up", "meterless_up"),
+                         [(True, True, True), (True, False, True), (False, True, False)])
+async def test_health_probes_the_database_zetaris_and_meterless(client, monkeypatch, db_up, zetaris_up, meterless_up):
+    from app import llm, main
 
     async def get_school(slug):
         if not db_up:
@@ -457,8 +458,14 @@ async def test_health_probes_the_database_and_zetaris(client, monkeypatch, db_up
         assert sql == "SELECT 7 AS seven" and kw == {"page_limit": 1}
         return [{"seven": "7"}]
 
+    async def meterless_models():
+        if not meterless_up:
+            raise llm.LLMUnavailable("meterless unreachable: ConnectError")
+        return ["meterless/auto"]
+
     monkeypatch.setattr(main.db, "get_school", get_school)
     monkeypatch.setattr(main.zetaris, "query", query)
+    monkeypatch.setattr(main.openai_compat, "meterless_models", meterless_models)
     h = (await client.get("/api/health")).json()
-    assert (h["ok"], h["db"], h["zetaris"]) == (db_up, db_up, zetaris_up)
+    assert (h["ok"], h["db"], h["zetaris"], h["meterless"]) == (db_up, db_up, zetaris_up, meterless_up)
     assert {"zetaris_enabled", "llm_provider", "llm_key", "tavily", "demo_mode", "fake_llm", "ts"} <= set(h)
