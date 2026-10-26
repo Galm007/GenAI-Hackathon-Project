@@ -1,0 +1,5473 @@
+{
+  "name": "maya-uiuc-live",
+  "school_slug": "uiuc",
+  "school": {
+    "slug": "uiuc",
+    "unitid": 145637,
+    "name": "University of Illinois Urbana-Champaign",
+    "short_name": "UIUC",
+    "city": "Champaign",
+    "state": "IL",
+    "control": "public",
+    "peer_group": "public_ivy",
+    "website": "www.illinois.edu/",
+    "applicants": 73742,
+    "admits": 31247,
+    "enrolled": 9008,
+    "admit_rate": 0.4237,
+    "ed_applicants": null,
+    "ed_admits": null,
+    "ed_admit_rate": null,
+    "ea_admit_rate": null,
+    "rd_admit_rate": null,
+    "yield_rate": 0.2883,
+    "in_state_admit_rate": null,
+    "out_state_admit_rate": null,
+    "test_policy": "optional",
+    "sat_composite_25": 1390,
+    "sat_composite_50": 1470,
+    "sat_composite_75": 1520,
+    "sat_ebrw_25": 680,
+    "sat_ebrw_75": 750,
+    "sat_math_25": 700,
+    "sat_math_75": 790,
+    "act_composite_25": 30,
+    "act_composite_75": 34,
+    "pct_submitting_sat": 0.4128,
+    "pct_submitting_act": 0.1433,
+    "avg_hs_gpa": null,
+    "gpa_distribution": [
+      {
+        "pct": 0.0,
+        "bucket": "N/A"
+      }
+    ],
+    "pct_top10_class": 0.5608,
+    "c7_weights": {
+      "essay": "important",
+      "rigor": "very_important",
+      "character": "important",
+      "interview": "not_considered",
+      "class_rank": "not_considered",
+      "test_scores": "considered",
+      "academic_gpa": "very_important",
+      "talent_ability": "important",
+      "volunteer_work": "considered",
+      "alumni_relation": "not_considered",
+      "recommendations": "not_considered",
+      "state_residency": "considered",
+      "work_experience": "considered",
+      "extracurriculars": "important",
+      "first_generation": "important",
+      "applicant_interest": "not_considered",
+      "geographic_residence": "considered",
+      "religious_affiliation": "not_considered"
+    },
+    "early_plans": {
+      "ea": true,
+      "ed": false,
+      "ed2": null,
+      "rea": false
+    },
+    "transfer_profile": {
+      "admits": null,
+      "enrolled": null,
+      "applicants": null,
+      "min_college_gpa": null,
+      "accepts_transfers": true
+    },
+    "major_competitiveness": {
+      "computer_science": {
+        "n": 132,
+        "source": "reddit_smoothed",
+        "multiplier": 0.9,
+        "reddit_admit_rate": 0.477
+      }
+    },
+    "strategic_priorities": [],
+    "institutional_notes": null,
+    "cds_year": "2024-2025",
+    "source_urls": {
+      "cds": "https://uofi.box.com/shared/static/1m3p4sedkotywoec55zbnodc4oci5ctf.xlsx",
+      "scorecard": "https://collegescorecard.ed.gov/school/?145637"
+    },
+    "data_quality": {
+      "notes": [],
+      "extractor": "gemma4:e2b",
+      "base_source": "cds"
+    },
+    "updated_at": "2026-10-26T12:27:22.803215+00:00"
+  },
+  "events": [
+    {
+      "ts": 1793047426.31,
+      "seq": 0,
+      "event": "run_started",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "school_slug": "uiuc",
+      "cached_dossier": false
+    },
+    {
+      "ts": 1793047426.326,
+      "seq": 1,
+      "node": "dossier_parser",
+      "event": "node_start",
+      "label": "Dossier Parser & Rubric Grader",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047426.326,
+      "pct": 0.05,
+      "seq": 2,
+      "node": "dossier_parser",
+      "event": "progress",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "message": "Reading transcript, resume and essay\u2026"
+    },
+    {
+      "ts": 1793047516.323,
+      "seq": 3,
+      "event": "dossier_parsed",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "dossier": {
+        "awards": [
+          {
+            "name": "USACO Gold",
+            "grade": 11,
+            "level": "national"
+          },
+          {
+            "name": "Regional science fair 2nd place",
+            "grade": 11,
+            "level": "regional"
+          }
+        ],
+        "courses": [
+          {
+            "term": "2023-24",
+            "level": "honors",
+            "title": "English 9",
+            "grade_level": 9,
+            "in_progress": false,
+            "letter_grade": "A-",
+            "subject_area": "english",
+            "grade_as_shown": "A-"
+          },
+          {
+            "term": "2023-24",
+            "level": "honors",
+            "title": "Geometry",
+            "grade_level": 9,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "math",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2023-24",
+            "level": "honors",
+            "title": "Algebra II",
+            "grade_level": 9,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "math",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2023-24",
+            "level": "honors",
+            "title": "Biology",
+            "grade_level": 9,
+            "in_progress": false,
+            "letter_grade": "A-",
+            "subject_area": "science",
+            "grade_as_shown": "A-"
+          },
+          {
+            "term": "2023-24",
+            "level": "regular",
+            "title": "World History",
+            "grade_level": 9,
+            "in_progress": false,
+            "letter_grade": "A-",
+            "subject_area": "social_studies",
+            "grade_as_shown": "A-"
+          },
+          {
+            "term": "2023-24",
+            "level": "regular",
+            "title": "Spanish I",
+            "grade_level": 9,
+            "in_progress": false,
+            "letter_grade": "A-",
+            "subject_area": "world_language",
+            "grade_as_shown": "A-"
+          },
+          {
+            "term": "2023-24",
+            "level": "regular",
+            "title": "Introduction to Computer Science",
+            "grade_level": 9,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "computer_science",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2023-24",
+            "level": "regular",
+            "title": "Earth Science",
+            "grade_level": 9,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "science",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2024-25",
+            "level": "honors",
+            "title": "English 10",
+            "grade_level": 10,
+            "in_progress": false,
+            "letter_grade": "A-",
+            "subject_area": "english",
+            "grade_as_shown": "A-"
+          },
+          {
+            "term": "2024-25",
+            "level": "honors",
+            "title": "Precalculus",
+            "grade_level": 10,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "math",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2024-25",
+            "level": "honors",
+            "title": "Chemistry",
+            "grade_level": 10,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "science",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2024-25",
+            "level": "ap",
+            "title": "AP World History",
+            "grade_level": 10,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "social_studies",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2024-25",
+            "level": "regular",
+            "title": "Spanish II",
+            "grade_level": 10,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "world_language",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2024-25",
+            "level": "ap",
+            "title": "AP Computer Science A",
+            "grade_level": 10,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "computer_science",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2024-25",
+            "level": "ap",
+            "title": "AP Physics 1",
+            "grade_level": 10,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "science",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2024-25",
+            "level": "ap",
+            "title": "AP Microeconomics",
+            "grade_level": 10,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "social_studies",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2025-26",
+            "level": "ap",
+            "title": "AP English Language",
+            "grade_level": 11,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "english",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2025-26",
+            "level": "ap",
+            "title": "AP Calculus BC",
+            "grade_level": 11,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "math",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2025-26",
+            "level": "ap",
+            "title": "AP Biology",
+            "grade_level": 11,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "science",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2025-26",
+            "level": "ap",
+            "title": "AP US History",
+            "grade_level": 11,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "social_studies",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2025-26",
+            "level": "honors",
+            "title": "Spanish III",
+            "grade_level": 11,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "world_language",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2025-26",
+            "level": "ap",
+            "title": "AP Statistics",
+            "grade_level": 11,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "math",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2025-26",
+            "level": "ap",
+            "title": "AP Environmental Science",
+            "grade_level": 11,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "science",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2025-26",
+            "level": "regular",
+            "title": "Introduction to Political Science",
+            "grade_level": 11,
+            "in_progress": false,
+            "letter_grade": "A",
+            "subject_area": "social_studies",
+            "grade_as_shown": "A"
+          },
+          {
+            "term": "2026-27",
+            "level": "ap",
+            "title": "AP English Literature",
+            "grade_level": 12,
+            "in_progress": true,
+            "letter_grade": null,
+            "subject_area": "english",
+            "grade_as_shown": "IP"
+          },
+          {
+            "term": "2026-27",
+            "level": "dual_enrollment",
+            "title": "Multivariable Calculus (DE)",
+            "grade_level": 12,
+            "in_progress": true,
+            "letter_grade": null,
+            "subject_area": "math",
+            "grade_as_shown": "IP"
+          },
+          {
+            "term": "2026-27",
+            "level": "regular",
+            "title": "Civics",
+            "grade_level": 12,
+            "in_progress": true,
+            "letter_grade": null,
+            "subject_area": "social_studies",
+            "grade_as_shown": "IP"
+          },
+          {
+            "term": "2026-27",
+            "level": "honors",
+            "title": "Physics: Electricity and Magnetism",
+            "grade_level": 12,
+            "in_progress": true,
+            "letter_grade": null,
+            "subject_area": "science",
+            "grade_as_shown": "IP"
+          },
+          {
+            "term": "2026-27",
+            "level": "honors",
+            "title": "Spanish IV",
+            "grade_level": 12,
+            "in_progress": true,
+            "letter_grade": null,
+            "subject_area": "world_language",
+            "grade_as_shown": "IP"
+          },
+          {
+            "term": "2026-27",
+            "level": "regular",
+            "title": "Independent Study: Applied Computing",
+            "grade_level": 12,
+            "in_progress": true,
+            "letter_grade": null,
+            "subject_area": "computer_science",
+            "grade_as_shown": "IP"
+          }
+        ],
+        "activities": [
+          {
+            "name": "Competitive programming",
+            "role": "Team captain",
+            "grades": [
+              10,
+              11,
+              12
+            ],
+            "category": "other",
+            "description": "Leads weekly practice for 14 members. Prepares problems and reviews approaches with newer students. USACO Gold is a division achievement, not an Olympiad medal or a national rank.",
+            "organization": "School CS club",
+            "hours_per_week": 6.0,
+            "weeks_per_year": 40
+          },
+          {
+            "name": "Crop-disease classifier",
+            "role": "Independent researcher",
+            "grades": [
+              11,
+              12
+            ],
+            "category": "other",
+            "description": "Trained a small CNN using public leaf images. Revisited the train/test split after finding a background-sensitive prediction. Presented the project at a regional science fair; earned 2nd place in grade 11. School prototype only; no deployment, publication, clinical use, or verified farmer impact is claimed.",
+            "organization": null,
+            "hours_per_week": 5.0,
+            "weeks_per_year": 30
+          },
+          {
+            "name": "Library coding workshops",
+            "role": "Volunteer teacher",
+            "grades": [
+              11,
+              12
+            ],
+            "category": "other",
+            "description": "Teaches Scratch to middle-school students on Saturdays. Uses paper game rules and peer testing to help beginners explain what they expect their programs to do.",
+            "organization": "Public library",
+            "hours_per_week": 2.0,
+            "weeks_per_year": 35
+          },
+          {
+            "name": "Awards",
+            "role": null,
+            "grades": [
+              11
+            ],
+            "category": "arts",
+            "description": "USACO Gold (grade 11); regional science fair, 2nd place (grade 11).",
+            "organization": null,
+            "hours_per_week": null,
+            "weeks_per_year": null
+          }
+        ],
+        "high_school": {
+          "name": "Cedar Vale Demo High School",
+          "state": "IL",
+          "country": "United States",
+          "school_type": "public",
+          "class_rank_text": "Not reported"
+        },
+        "pii_strings": [],
+        "test_scores": {
+          "other": [
+            "grading_legend",
+            "unweighted_gpa_scale_4.00",
+            "weighted_gpa_scale_5.00",
+            "weighted_gpa_adding_0.5_for_honors_1.0_for_AP_or_dual_enrollment",
+            "ip_courses_excluded_from_gpa_calculation"
+          ],
+          "ap_exams": [
+            {
+              "score": 5,
+              "subject": "Calculus BC"
+            },
+            {
+              "score": 5,
+              "subject": "Computer Science A"
+            }
+          ],
+          "sat_ebrw": 730,
+          "sat_math": 790,
+          "sat_total": 1520,
+          "act_composite": null
+        },
+        "reported_gpas": [
+          {
+            "scale": 4.0,
+            "value": 3.94,
+            "weighted": false
+          },
+          {
+            "scale": 5.0,
+            "value": 4.52,
+            "weighted": true
+          }
+        ],
+        "additional_info": "FICTIONAL STUDENT | NOT AN OFFICIAL ACADEMIC RECORD | Done by gridiii",
+        "extraction_warnings": [
+          "Transcript marked as fictional demo material; data not official.",
+          "Class rank not reported.",
+          "SAT and ACT scores are marked as Not provided.",
+          "Award levels inferred; USACO Gold described as division achievement, not national rank; level set to national per convention."
+        ]
+      },
+      "metrics": {
+        "gpa_w_5": 4.52,
+        "ec_score": 0.0,
+        "gpa_uw_4": 3.94,
+        "grade_trend": "flat",
+        "rigor_index": 0.545,
+        "sat_equivalent": 1520,
+        "core_course_count": 30,
+        "advanced_course_count": 12,
+        "proxy_academic_rating": 2.5999999999999996,
+        "tier_derived_ec_rating": 5.2
+      }
+    },
+    {
+      "ts": 1793047516.323,
+      "pct": 0.5,
+      "seq": 4,
+      "node": "dossier_parser",
+      "event": "progress",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "message": "Grading 4 activities and four Harvard pillars\u2026"
+    },
+    {
+      "ts": 1793047542.335,
+      "seq": 5,
+      "event": "scorecard",
+      "grade": {
+        "essay": {
+          "voice": "generic",
+          "themes": [
+            "teaching as debugging",
+            "empathy in CS education",
+            "growth from frustration"
+          ],
+          "red_flags": [],
+          "strengths": [
+            "concrete classroom anecdote",
+            "reflective arc from failure to insight",
+            "connects teaching to own learning"
+          ],
+          "weaknesses": [
+            "familiar 'teaching coding to kids' frame",
+            "limited stakes or tension beyond the initial cat sprite",
+            "ending feels more aspirational than earned"
+          ],
+          "strongest_line": "The cat didn't move because I hadn't told it how to listen."
+        },
+        "spike": {
+          "label": "competitive programming & applied ML",
+          "strength": "moderate",
+          "description": "USACO Gold + leading school competitive programming + independent ML research with regional recognition form a coherent CS/engineering spike."
+        },
+        "harvard": {
+          "academic": {
+            "rating": 2,
+            "evidence": [
+              "metrics.gpa_uw_4",
+              "metrics.gpa_w_5",
+              "metrics.advanced_course_count",
+              "metrics.rigor_index",
+              "metrics.sat_equivalent",
+              "metrics.proxy_academic_rating",
+              "test_scores.ap_exams",
+              "courses"
+            ],
+            "modifier": "",
+            "rationale": "3.94 unweighted GPA in a curriculum with 12 advanced courses (7 AP, 1 DE, 4 honors in senior year alone); 1520 SAT (790M/730RW) with two 5s on AP Calculus BC and CSA; rigor_index 0.545 places this at the top of what the school offers. Proxy academic rating 2.6 aligns with a 2. Grades are nearly all A/A- with no B's. No national academic distinction (USAMO, ISEF, Regeneron) to push to a 1."
+          },
+          "athletic": {
+            "rating": 4,
+            "evidence": [],
+            "modifier": "",
+            "rationale": "No athletic activities listed in the dossier. No recruited_athlete hook. Athletic rating defaults to 4."
+          },
+          "personal": {
+            "rating": 2,
+            "evidence": [
+              "essay"
+            ],
+            "modifier": "",
+            "rationale": "Essay shows genuine reflection on teaching as a debugging process, with a distinctive metaphor (the cat that wouldn't move) and clear growth arc. Voice is earnest and self-aware but not uncommon in CS-applicant essays. Without recommendations, maximum possible is 2. The essay alone supports a 2: thoughtful, likable, with moments of insight ('The cat didn't move because I hadn't told it how to listen'), but not the 'uncommon maturity/courage' of a 1."
+          },
+          "extracurricular": {
+            "rating": 3,
+            "evidence": [
+              "activities.0",
+              "activities.1",
+              "activities.2",
+              "awards.0",
+              "awards.1",
+              "ec_anchor_formula"
+            ],
+            "modifier": "",
+            "rationale": "Two Tier 2 activities (USACO Gold = national competitive programming distinction; leading CS club with 14 members for 3 years) and two Tier 3 activities (regional science fair 2nd place, library teaching). EC anchor formula: 5.2 \u2212 0.55\u00d7(4\u00d70 + 2\u00d72 + 0.75\u00d72 + 0.2\u00d71) = 5.2 \u2212 0.55\u00d7(4 + 1.5 + 0.2) = 5.2 \u2212 3.135 = 2.065 \u2192 bounded to [1.6, 5.5] = 2.07. Strong school-level leadership plus a national distinction (USACO Gold) supports a 2. No Tier 1 (no ISEF finalist, no published research, no professional-level deployment)."
+          }
+        },
+        "rigor_label": "most_demanding",
+        "major_category": "computer_science",
+        "activity_grades": [
+          {
+            "tier": 2,
+            "rationale": "Leads weekly competitive programming practices for 14 members over 3 years (grades 10-12), preparing problems and mentoring newer students; USACO Gold achieved in grade 11 demonstrates national-level competitive programming skill.",
+            "spike_role": "core",
+            "activity_index": 0
+          },
+          {
+            "tier": 3,
+            "rationale": "Independently developed a crop-disease CNN classifier, identified and fixed a data leakage issue, and earned 2nd place at a regional science fair in grade 11; project remains a school prototype without publication or real-world deployment.",
+            "spike_role": "core",
+            "activity_index": 1
+          },
+          {
+            "tier": 3,
+            "rationale": "Volunteers 2 hrs/week for 35 weeks/year teaching Scratch to middle-schoolers at a public library over 2 years, using creative pedagogical techniques; demonstrates sustained community impact but at a local scale.",
+            "spike_role": "supporting",
+            "activity_index": 2
+          },
+          {
+            "tier": 4,
+            "rationale": "This entry duplicates awards already captured in the awards list (USACO Gold, regional science fair 2nd place) rather than representing a distinct activity; no separate time commitment or role described.",
+            "spike_role": "peripheral",
+            "activity_index": 3
+          }
+        ],
+        "grader_warnings": [
+          "extracurricular rating 2 clamped to 3 (allowed 3\u20134)"
+        ],
+        "reader_comments": "High-achieving CS applicant with a clear spike in competitive programming and applied ML: USACO Gold, leading the school CS club, and an independent CNN project with regional recognition. Academics are stellar (3.94 UW, 1520 SAT, 12 advanced courses including multivariable calculus DE). Essay is reflective and uses a strong central metaphor, though the 'teaching kids to code' frame is familiar. No athletic involvement. A strong candidate for selective CS programs."
+      },
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "metrics": {
+        "gpa_w_5": 4.52,
+        "ec_score": 3.7,
+        "gpa_uw_4": 3.94,
+        "grade_trend": "flat",
+        "rigor_index": 0.545,
+        "sat_equivalent": 1520,
+        "core_course_count": 30,
+        "advanced_course_count": 12,
+        "proxy_academic_rating": 2.5999999999999996,
+        "tier_derived_ec_rating": 3.165
+      },
+      "warnings": [
+        "extracurricular rating 2 clamped to 3 (allowed 3\u20134)"
+      ]
+    },
+    {
+      "ts": 1793047542.335,
+      "pct": 0.9,
+      "seq": 6,
+      "node": "dossier_parser",
+      "event": "progress",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "message": "Embedding profile for twin search\u2026"
+    },
+    {
+      "ts": 1793047547.773,
+      "seq": 7,
+      "node": "dossier_parser",
+      "event": "node_end",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "elapsed_ms": 121450
+    },
+    {
+      "ts": 1793047547.776,
+      "seq": 8,
+      "node": "dossier_parser",
+      "event": "node_complete",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047547.781,
+      "seq": 9,
+      "node": "institutional",
+      "event": "node_start",
+      "label": "Institutional Rubric & Fact-Checker",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047547.781,
+      "seq": 10,
+      "node": "institutional",
+      "slug": "uiuc",
+      "tool": "zetaris.profile",
+      "event": "tool_call",
+      "table": "ADCOM_LAKE.gold.school_profile",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "started"
+    },
+    {
+      "ts": 1793047547.781,
+      "seq": 11,
+      "node": "twins",
+      "event": "node_start",
+      "label": "Applicant Twins (Hybrid RAG)",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "k": 25,
+      "ts": 1793047547.781,
+      "seq": 12,
+      "node": "twins",
+      "tool": "rpc.match_applicant_twins",
+      "event": "tool_call",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "started",
+      "schools": [
+        "uiuc"
+      ]
+    },
+    {
+      "ts": 1793047548.437,
+      "seq": 13,
+      "node": "twins",
+      "tool": "rpc.match_applicant_twins",
+      "event": "tool_call",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "done",
+      "widened": false,
+      "result_count": 25
+    },
+    {
+      "ts": 1793047548.437,
+      "seq": 14,
+      "event": "twins",
+      "twins": [
+        {
+          "id": "761e9142-ee7d-4498-b7a0-8e672b4eb7b1",
+          "hooks": [
+            "low_income"
+          ],
+          "index": 1,
+          "awards": [
+            {
+              "name": "AP Scholar with Distinction",
+              "level": "school"
+            },
+            {
+              "name": "National Merit Commended Scholar",
+              "level": "national"
+            },
+            {
+              "name": "College Board National Recognition Program",
+              "level": "national"
+            },
+            {
+              "name": "Scholar Athlete",
+              "level": "school"
+            }
+          ],
+          "gpa_uw": 3.91,
+          "outcome": "rejected",
+          "ap_count": 10,
+          "headline": "3.91 UW \u00b7 1510 SAT \u00b7 10 AP \u00b7 computer science \u00b7 T1:0 T2:5",
+          "act_score": null,
+          "sat_score": 1510,
+          "cycle_year": 2026,
+          "source_url": "https://www.reddit.com/r/collegeresults/comments/1s78vm9/unexpected_results_from_an_underqualifed_mathcs/",
+          "hybrid_score": 0.906181137854942,
+          "spike_summary": "Strong application driven by essays and demonstrated ability in STEM, despite an unconventional academic path.",
+          "intended_major": "Computer Science, Applied Math",
+          "major_category": "computer_science",
+          "matched_school": "uiuc",
+          "stat_proximity": 0.904114059538159,
+          "top_activities": [
+            {
+              "role": "Tier 2",
+              "tier": 2,
+              "description": "Intern at AI Firm"
+            },
+            {
+              "role": "Tier 2",
+              "tier": 2,
+              "description": "Media Management Intern"
+            },
+            {
+              "role": "Tier 2",
+              "tier": 2,
+              "description": "Co-Founder of Car Detailing Company"
+            },
+            {
+              "role": "Tier 2",
+              "tier": 2,
+              "description": "Lifeguard (Paid)"
+            }
+          ],
+          "ec_tier_summary": {
+            "tier1": 0,
+            "tier2": 5,
+            "tier3": 1,
+            "tier4": 1,
+            "ec_score": 10.95,
+            "tier_derived_ec_rating": 1.6
+          },
+          "semantic_similarity": 0.907067028562135
+        },
+        {
+          "id": "d217f6a0-2761-45c2-a97b-a86a72dcbcf7",
+          "hooks": [
+            "recruited_athlete",
+            "first_gen",
+            "low_income",
+            "legacy"
+          ],
+          "index": 2,
+          "awards": [
+            {
+              "name": "AMC Distinction/AIME qualifier",
+              "level": "national"
+            },
+            {
+              "name": "USACO Gold",
+              "level": "national"
+            },
+            {
+              "name": "USAMTs Honorable Mention",
+              "level": "national"
+            },
+            {
+              "name": "State Secretary Recognition for EC #2",
+              "level": "state"
+            }
+          ],
+          "gpa_uw": 3.96,
+          "outcome": "waitlisted",
+          "ap_count": 10,
+          "headline": "3.96 UW \u00b7 1530 SAT \u00b7 10 AP \u00b7 computer science \u00b7 T1:3 T2:3",
+          "act_score": null,
+          "sat_score": 1530,
+          "cycle_year": 2026,
+          "source_url": "https://www.reddit.com/r/collegeresults/comments/1s9bto1/optimistic_bay_area_indian_almost_fried_by_t20s/",
+          "hybrid_score": 0.897449661480267,
+          "spike_summary": "High achievement in quantitative fields (Math, Econ, CS) demonstrated through research publications, platform founding, and competitive programming.",
+          "intended_major": "Applied Math",
+          "major_category": "computer_science",
+          "matched_school": "uiuc",
+          "stat_proximity": 0.939413062813476,
+          "top_activities": [
+            {
+              "role": "Founder/Developer",
+              "tier": 1,
+              "description": "Founded an escrow platform for digital asset traders; 3.5k users and six figures (120k+) transacted. Wrote preprint on fraud risk."
+            },
+            {
+              "role": "Participant/Researcher",
+              "tier": 1,
+              "description": "Math Summer Program (SRA, BU Rise, COSMOS level): studied undergrad to graduate level mathematics and wrote a paper on financial models."
+            },
+            {
+              "role": "Research Lead",
+              "tier": 1,
+              "description": "Economics research team lead; wrote a paper on e-commerce effects on economies; preprinted and cited by 13 other academic papers."
+            },
+            {
+              "role": "Branch Lead/Founder",
+              "tier": 2,
+              "description": "Nonprofit Branch Lead; created a branch teaching financial applications to CS; branch had over 1,500 students across 60+ chapters."
+            }
+          ],
+          "ec_tier_summary": {
+            "tier1": 3,
+            "tier2": 3,
+            "tier3": 2,
+            "tier4": 0,
+            "ec_score": 19.5,
+            "tier_derived_ec_rating": 1.0
+          },
+          "semantic_similarity": 0.879465346623177
+        },
+        {
+          "id": "b8137e35-0052-43d8-bcb9-8ab5f44606a7",
+          "hooks": [
+            "recruited_athlete",
+            "first_gen",
+            "low_income",
+            "legacy"
+          ],
+          "index": 3,
+          "awards": [],
+          "gpa_uw": 3.96,
+          "outcome": "rejected",
+          "ap_count": 12,
+          "headline": "3.96 UW \u00b7 1500 SAT \u00b7 12 AP \u00b7 computer science \u00b7 T1:4 T2:2",
+          "act_score": null,
+          "sat_score": 1500,
+          "cycle_year": 2026,
+          "source_url": "https://www.reddit.com/r/collegeresults/comments/1s4v1do/asian_male_donates_thousands_of_dollars_and_hours/",
+          "hybrid_score": 0.892902701426775,
+          "spike_summary": null,
+          "intended_major": "Computer Science",
+          "major_category": "computer_science",
+          "matched_school": "uiuc",
+          "stat_proximity": 0.85910692294244,
+          "top_activities": [
+            {
+              "role": "Published Researcher",
+              "tier": 1,
+              "description": "Published 7+ research papers in machine learning w double-digit citations, self-driving systems, and AI alignment across venues. First-author on multiple works. Research cited & featured by major research institutions + governments."
+            },
+            {
+              "role": "Founder \u2013 Privacy Software",
+              "tier": 1,
+              "description": "Built and scaled an open-source privacy-focused software to ~850K monthly users globally. Generated ~$5K/month ad revenue. Managed infrastructure across 9 servers serving users in 27 countries."
+            },
+            {
+              "role": "Co-Founder \u2013 Platform",
+              "tier": 1,
+              "description": "Built platform for students. Raised pre-seed funding, and received acquisition offer from YC-backed company."
+            },
+            {
+              "role": "Founding Engineer \u2013 EdTech Startup",
+              "tier": 1,
+              "description": "Built payments + backend infrastructure. Platform scaled to 6 figure users and tens of thousands per month in transactions. Company acquired for 7 figures."
+            }
+          ],
+          "ec_tier_summary": {
+            "tier1": 4,
+            "tier2": 2,
+            "tier3": 1,
+            "tier4": 0,
+            "ec_score": 20.75,
+            "tier_derived_ec_rating": 1.0
+          },
+          "semantic_similarity": 0.907386606491489
+        },
+        {
+          "id": "72350519-61a0-4ebb-95c8-a50027e5d324",
+          "hooks": [
+            "recruited_athlete",
+            "first_gen"
+          ],
+          "index": 4,
+          "awards": [
+            {
+              "name": "UC Davis Teen Biotech Poster Winner (1st and 2nd for 2 years)",
+              "level": "school"
+            },
+            {
+              "name": "Essay/Video Comp Winner",
+              "level": "school"
+            },
+            {
+              "name": "TSA Coding Challenge (5th and 6th)",
+              "level": "school"
+            },
+            {
+              "name": "Seal of Biliteracy",
+              "level": "school"
+            }
+          ],
+          "gpa_uw": 3.9,
+          "outcome": "rejected",
+          "ap_count": 15,
+          "headline": "3.90 UW \u00b7 1520 SAT \u00b7 15 AP \u00b7 computer science \u00b7 T1:0 T2:3",
+          "act_score": null,
+          "sat_score": 1520,
+          "cycle_year": 2026,
+          "source_url": "https://www.reddit.com/r/collegeresults/comments/1ts77b2/asian_cs_kid_scores_a_t10/",
+          "hybrid_score": 0.890970420973346,
+          "spike_summary": "Strong STEM focus with significant leadership in clubs and community engagement.",
+          "intended_major": "Computer Science",
+          "major_category": "computer_science",
+          "matched_school": "uiuc",
+          "stat_proximity": 0.889400391535702,
+          "top_activities": [
+            {
+              "role": "President",
+              "tier": 2,
+              "description": "Women in STEM Club President - Revived/restarted the club, created a newsletter with 20% of female student body subscribed. Sent kids to a university for their colloquium."
+            },
+            {
+              "role": "Vice President/Coordinator",
+              "tier": 2,
+              "description": "Computer Science Club Vice President and Hackathon Coordinator - Raised $2000 for hackathon, hackathon had 180+ attendees, sponsored by companies like Verizon, etc."
+            },
+            {
+              "role": "President",
+              "tier": 2,
+              "description": "Biomed Club (President) - Helped encourage participation in UC Davis Poster Competition, hosted labs, guest speakers with 60+ members."
+            },
+            {
+              "role": "President/VP",
+              "tier": 3,
+              "description": "Technology Club (President, VP) - Increased participation in TSA and also hosted an expo with 30+ attendees."
+            }
+          ],
+          "ec_tier_summary": {
+            "tier1": 0,
+            "tier2": 3,
+            "tier3": 4,
+            "tier4": 1,
+            "ec_score": 9.2,
+            "tier_derived_ec_rating": 1.6
+          },
+          "semantic_similarity": 0.891643290732336
+        },
+        {
+          "id": "6ad3a24c-d51b-451d-b702-3a484fe6bc62",
+          "hooks": [
+            "recruited_athlete",
+            "first_gen",
+            "low_income",
+            "legacy"
+          ],
+          "index": 5,
+          "awards": [
+            {
+              "name": "AP scholar",
+              "level": "school"
+            },
+            {
+              "name": "PVSA",
+              "level": "school"
+            },
+            {
+              "name": "athletic scholar",
+              "level": "school"
+            }
+          ],
+          "gpa_uw": 3.98,
+          "outcome": "accepted",
+          "ap_count": 7,
+          "headline": "3.98 UW \u00b7 1510 SAT \u00b7 7 AP \u00b7 computer science \u00b7 T1:0 T2:0",
+          "act_score": 35,
+          "sat_score": 1510,
+          "cycle_year": 2026,
+          "source_url": "https://www.reddit.com/r/collegeresults/comments/1s4wq4m/lazy_bay_area_asian_becomes_waitlist_warrior/",
+          "hybrid_score": 0.88035933912099,
+          "spike_summary": "No research, no internships, and no competitions.",
+          "intended_major": "Cogsci",
+          "major_category": "computer_science",
+          "matched_school": "uiuc",
+          "stat_proximity": 0.85910692294244,
+          "top_activities": [
+            {
+              "role": "leadership",
+              "tier": 3,
+              "description": "3 leadership positions"
+            },
+            {
+              "role": "volunteer",
+              "tier": 3,
+              "description": "~4 volunteering roles"
+            },
+            {
+              "role": "work",
+              "tier": 3,
+              "description": "part-time job"
+            },
+            {
+              "role": "athletics",
+              "tier": 3,
+              "description": "school sport"
+            }
+          ],
+          "ec_tier_summary": {
+            "tier1": 0,
+            "tier2": 0,
+            "tier3": 5,
+            "tier4": 0,
+            "ec_score": 3.75,
+            "tier_derived_ec_rating": 3.14
+          },
+          "semantic_similarity": 0.889467517483225
+        }
+      ],
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "peer_schools": [],
+      "widened_to_peers": false
+    },
+    {
+      "k": 50,
+      "ts": 1793047548.437,
+      "seq": 15,
+      "node": "twins",
+      "tool": "rpc.twin_neighborhood_stats",
+      "event": "tool_call",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "started"
+    },
+    {
+      "ts": 1793047548.637,
+      "seq": 16,
+      "node": "institutional",
+      "tool": "zetaris.profile",
+      "event": "tool_call",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "source": "zetaris",
+      "status": "done",
+      "cds_year": "2024-2025",
+      "c7_source": "cds"
+    },
+    {
+      "ts": 1793047548.637,
+      "seq": 17,
+      "event": "school_rubric",
+      "stage": "cds",
+      "rubric": {
+        "name": "University of Illinois Urbana-Champaign",
+        "slug": "uiuc",
+        "notes": [
+          "In-state applicant at a public university."
+        ],
+        "sat_25": 1390,
+        "sat_75": 1520,
+        "major_n": 132,
+        "test_policy": "optional",
+        "test_weight": 0.33,
+        "direct_admit": null,
+        "hook_effects": {
+          "rural": 0.099,
+          "legacy": 0.0,
+          "veteran": 0.3,
+          "first_gen": 0.33,
+          "low_income": 0.3,
+          "recruited_athlete": 1.98,
+          "faculty_staff_child": 0.0,
+          "questbridge_finalist": 0.4
+        },
+        "ed_admit_rate": null,
+        "factor_levels": {
+          "essay": "important",
+          "rigor": "very_important",
+          "character": "important",
+          "interview": "not_considered",
+          "class_rank": "not_considered",
+          "test_scores": "considered",
+          "academic_gpa": "very_important",
+          "talent_ability": "important",
+          "volunteer_work": "considered",
+          "alumni_relation": "not_considered",
+          "recommendations": "not_considered",
+          "state_residency": "considered",
+          "work_experience": "considered",
+          "extracurriculars": "important",
+          "first_generation": "important",
+          "applicant_interest": "not_considered",
+          "geographic_residence": "considered",
+          "religious_affiliation": "not_considered"
+        },
+        "major_college": null,
+        "rd_admit_rate": null,
+        "major_category": "computer_science",
+        "pillar_weights": {
+          "academic": 0.3353,
+          "athletic": 0.1899,
+          "personal": 0.1899,
+          "extracurricular": 0.2849
+        },
+        "base_admit_rate": 0.4237,
+        "major_multiplier": 0.9,
+        "residency_effect": 0.264,
+        "major_multiplier_source": "reddit_smoothed"
+      },
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047548.735,
+      "seq": 18,
+      "node": "institutional",
+      "tool": "tavily.search",
+      "event": "tool_call",
+      "query": "University of Illinois Urbana-Champaign admissions class of 2031 profile priorities dean announcement",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "started"
+    },
+    {
+      "ts": 1793047548.748,
+      "seq": 19,
+      "node": "institutional",
+      "tool": "tavily.search",
+      "event": "tool_call",
+      "query": "University of Illinois Urbana-Champaign computer science major admission direct admit capped internal transfer",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "started"
+    },
+    {
+      "ts": 1793047548.75,
+      "seq": 20,
+      "node": "institutional",
+      "tool": "tavily.search",
+      "event": "tool_call",
+      "query": "University of Illinois Urbana-Champaign undergraduate admissions 2027 test policy SAT ACT requirement",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "started"
+    },
+    {
+      "ts": 1793047551.619,
+      "seq": 21,
+      "node": "institutional",
+      "tool": "tavily.search",
+      "event": "tool_call",
+      "query": "University of Illinois Urbana-Champaign undergraduate admissions 2027 test policy SAT ACT requirement",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "done",
+      "result_count": 4
+    },
+    {
+      "ts": 1793047552.62,
+      "seq": 22,
+      "node": "institutional",
+      "tool": "tavily.search",
+      "event": "tool_call",
+      "query": "University of Illinois Urbana-Champaign computer science major admission direct admit capped internal transfer",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "done",
+      "result_count": 4
+    },
+    {
+      "ts": 1793047553.291,
+      "seq": 23,
+      "node": "institutional",
+      "tool": "tavily.search",
+      "event": "tool_call",
+      "query": "University of Illinois Urbana-Champaign admissions class of 2031 profile priorities dean announcement",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "done",
+      "result_count": 4
+    },
+    {
+      "n": 50,
+      "ts": 1793047554.973,
+      "seq": 24,
+      "node": "twins",
+      "tool": "rpc.twin_neighborhood_stats",
+      "event": "tool_call",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "done"
+    },
+    {
+      "ts": 1793047554.973,
+      "seq": 25,
+      "event": "baseline",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "baseline": {
+        "sum_w": 10.3245159604066,
+        "sum_w2": 2.32015000296847,
+        "n_accepted": 26,
+        "n_rejected": 16,
+        "wilson_low": 0.4065576087793747,
+        "n_effective": 45.94,
+        "n_neighbors": 50,
+        "sum_w_admit": 5.15638301381759,
+        "wilson_high": 0.5923436117261425,
+        "n_waitlisted": 8,
+        "peer_schools": [],
+        "odds_inflation": 1.5920251512487444,
+        "widened_to_peers": false,
+        "deflated_admit_rate": 0.38525952008131376,
+        "weighted_admit_rate": 0.499430969315344
+      }
+    },
+    {
+      "ts": 1793047554.973,
+      "seq": 26,
+      "event": "radar",
+      "radar": {
+        "axes": [
+          {
+            "key": "gpa",
+            "you": 88.0,
+            "label": "GPA",
+            "assumed": false,
+            "you_raw": 3.94,
+            "admitted_raw": 3.98,
+            "admitted_median": 96.0
+          },
+          {
+            "key": "test",
+            "you": 73.3,
+            "label": "Testing",
+            "assumed": false,
+            "you_raw": 1520,
+            "admitted_raw": 1540.0,
+            "admitted_median": 80.0
+          },
+          {
+            "key": "rigor",
+            "you": 85.7,
+            "label": "Rigor",
+            "assumed": false,
+            "you_raw": 12,
+            "admitted_raw": 11.0,
+            "admitted_median": 78.6
+          },
+          {
+            "key": "activities",
+            "you": 51.9,
+            "label": "Activities",
+            "assumed": false,
+            "you_raw": 3.165,
+            "admitted_raw": 1.6,
+            "admitted_median": 86.7
+          },
+          {
+            "key": "spike",
+            "you": 25.0,
+            "label": "Spike (T1/T2)",
+            "assumed": false,
+            "you_raw": 1,
+            "admitted_raw": 4.0,
+            "admitted_median": 100.0
+          },
+          {
+            "key": "personal",
+            "you": 80.0,
+            "label": "Essay & Personal",
+            "assumed": true,
+            "you_raw": 2.0,
+            "admitted_raw": 3.0,
+            "admitted_median": 60.0
+          }
+        ],
+        "n_admitted": 103
+      },
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "id": "Z1",
+      "ts": 1793047556.641,
+      "seq": 27,
+      "sql": "SELECT slug, name, state, control, peer_group, admit_rate, ed_admit_rate, rd_admit_rate, sat_composite_25, sat_composite_75, test_policy, c7_source, cds_year, undergrad_enrollment\nFROM ADCOM.v_school_profile\nWHERE slug = 'uiuc'",
+      "node": "institutional",
+      "tool": "zetaris.sql",
+      "event": "tool_call",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "started",
+      "purpose": "Get UIUC school profile: selectivity, test bands, peer group, control, admit rates, test policy"
+    },
+    {
+      "id": "Z1",
+      "ts": 1793047558.965,
+      "seq": 28,
+      "node": "institutional",
+      "tool": "zetaris.sql",
+      "event": "tool_call",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "done",
+      "result_count": 1
+    },
+    {
+      "ts": 1793047577.253,
+      "seq": 29,
+      "event": "twin_analysis",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "analysis": {
+        "comparisons": [
+          {
+            "twin_index": 1,
+            "key_difference": "Twin has five Tier-2 activities including an AI-firm internship and a co-founded business; applicant has only one Tier-2 (competitive programming) and three Tier-3/4 items.",
+            "key_similarity": "Near-identical stats (3.91 GPA, 1510 SAT, 10 APs, CS major) and no hooks.",
+            "plausible_deciding_factor": "The twin\u2019s deeper Tier-2 portfolio (internship + entrepreneurship) may have signaled stronger real-world CS experience, yet the twin was rejected, suggesting UIUC\u2019s CS cutline that year lay above both profiles."
+          },
+          {
+            "twin_index": 2,
+            "key_difference": "Twin carries three Tier-1 activities (published research, founded platform, nonprofit lead) plus multiple hooks (recruited athlete, first-gen, low-income, legacy); applicant has zero Tier-1 activities and no hooks.",
+            "key_similarity": "Same major, similar test score (1530 vs 1520), both have USACO Gold.",
+            "plausible_deciding_factor": "Despite the twin\u2019s extraordinary Tier-1 spike and four hooks, the outcome was waitlisted, implying that even elite research/entrepreneurship profiles faced capacity constraints in UIUC CS."
+          },
+          {
+            "twin_index": 3,
+            "key_difference": "Twin has four Tier-1 activities (7+ published ML papers, 850K-user privacy tool, two founded ventures) and multiple hooks; applicant has none.",
+            "key_similarity": "Identical AP count (12), matching GPA (3.96), both CS majors with USACO Gold.",
+            "plausible_deciding_factor": "An outlier Tier-1 research/entrepreneurship record still resulted in rejection, reinforcing that UIUC CS admissions that cycle appeared highly stochastic at the very top."
+          },
+          {
+            "twin_index": 4,
+            "key_difference": "Twin has three Tier-2 club presidencies and a hackathon lead; applicant\u2019s sole Tier-2 is competitive programming.",
+            "key_similarity": "Similar stats (3.90 GPA, 1520 SAT, CS major) and no Tier-1 activities.",
+            "plausible_deciding_factor": "Broader Tier-2 leadership across STEM clubs did not prevent rejection, suggesting UIUC valued something neither twin nor applicant possessed (e.g., specific course rigor signals or essays)."
+          },
+          {
+            "twin_index": 5,
+            "key_difference": "Admitted twin has zero Tier-1/2 activities \u2014 only five Tier-3 entries (leadership, volunteering, job, sport) \u2014 plus four hooks; applicant has one Tier-2 and three Tier-3/4 but no hooks.",
+            "key_similarity": "Closest stat match among admits (3.98 GPA, 1510 SAT, CS major).",
+            "plausible_deciding_factor": "The admit\u2019s hook stack (recruited athlete, first-gen, low-income, legacy) likely provided a non-academic boost that outweighed the applicant\u2019s stronger EC tiers but absent hooks."
+          }
+        ],
+        "applicant_gaps": [
+          "No Tier-1 research publication, founded product, or scaled project \u2014 admitted neighbor (twin 5) lacked these too, but waitlisted/rejected twins 2 and 3 had them, so a Tier-1 spike is one admitted pathway the applicant lacks. [[twin:2]][[twin:3]]",
+          "No hook status (recruited athlete, first-gen, low-income, legacy) \u2014 the sole admitted twin (5) carried all four hooks. [[twin:5]]",
+          "Only one Tier-2 activity (competitive programming) vs. three-to-five Tier-2s in rejected twins 1 and 4; breadth of Tier-2 leadership appears common but not sufficient. [[twin:1]][[twin:4]]"
+        ],
+        "applicant_edges": [
+          "Higher AP count (12) than admitted twin 5 (7 APs) and rejected twin 1 (10 APs). [[twin:5]][[twin:1]]",
+          "USACO Gold + competitive programming focus provides a coherent CS spike; admitted twin 5 listed no competitions or spike. [[twin:5]]",
+          "No hook dependencies \u2014 profile stands on academics/ECs alone, avoiding potential hook-related variance."
+        ],
+        "pattern_summary": "Among 50 nearest neighbors (\u224846 effective), weighted admit rate is ~50 % (deflated ~38 %). Admitted neighbors cluster in two modes: (a) hook-rich profiles with modest ECs (Tier-3/4 only), and (b) profiles with at least one Tier-1 research/entrepreneurship spike. Rejected/waitlisted neighbors often have multiple Tier-2 activities but lack either Tier-1 spikes or hook combinations. Test scores (1500\u20131530) and AP counts (7\u201315) show wide overlap across outcomes. Rigor is uniformly \u201cmost_demanding.\u201d With ~46 effective neighbors, pattern_strength is moderate.",
+        "pattern_strength": "moderate"
+      }
+    },
+    {
+      "ts": 1793047577.253,
+      "seq": 30,
+      "node": "twins",
+      "event": "node_end",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "elapsed_ms": 29473
+    },
+    {
+      "ts": 1793047577.254,
+      "seq": 31,
+      "node": "twins",
+      "event": "node_complete",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047760.075,
+      "seq": 32,
+      "brief": {
+        "fact_checks": [],
+        "fit_signals": [],
+        "major_notes": "Cohort caps per college; no internal transfer into CS for students admitted Fall 2022 onward.",
+        "analyst_summary": "...",
+        "current_test_policy": "optional",
+        "misalignment_signals": [],
+        "strategic_priorities": [],
+        "major_admission_model": "direct_admit_capped"
+      },
+      "event": "fact_checks",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "snippets": [
+        {
+          "id": "W1",
+          "url": "https://siebelschool.illinois.edu/admissions/undergraduate/transfer-students",
+          "title": "Transfer Students | Siebel School of Computing and Data Science | Illinois",
+          "content": "Transfer into CS in The Grainger College of Engineering\n Transfer into CS + X\n\n## Transferring to Computer Science programs in The Grainger College of Engineering\n\nFirst-year students admitted to the following computer science majors in The Grainger College of Engineering at the University of Illinois in the fall of 2022 and thereafter are direct admit only and closed to on-campus transfer (ICT/IDT):\n\n B.S. Computer Science\n B.S. CS + Physics\n B.S. CS + Bioengineering\n\nStudents who began at the University of Illinois at Urbana-Champaign as undergraduates before Fall 2022 should review The Grainger College of Engineering's undergraduate advising website for eligibility and procedures to transfer to a major in The Grainger College of Engineering. [...] University of Illinois Urbana-Champaign\n\n Alumni\n Corporate\n People\n My.SiebelSchool\n\nThe Grainger College of Engineering\n\nSiebel School of Computing and Data Science\n\n# Transfer Students\n\n## Transferring to Illinois\n\nThe Office of Admissions provides Steps to Transfer: Your How-To Guide for undergraduate students interested in transferring to Illinois from another institution\u2014the detailed Transfer Handbook covers specific transfer req",
+          "published": null
+        },
+        {
+          "id": "W2",
+          "url": "https://transferhandbook.illinois.edu/eng/computer-science",
+          "title": "Computer Science | Transfer Handbook | Office of Undergraduate Admissions | Illinois",
+          "content": "### Coursework\n\nYou must complete transfer coursework equivalent to the following University of Illinois Urbana-Champaign courses before the term you\u2019re submitting your application. You\u2019ll need to earn a B or better (3.0/4.0) in each required/technical course; you should repeat any courses in which you\u2019ve earned a grade lower than a B before you apply. The most up-to-date course articulation information is available on Transferology.\n\n CHEM 102 and CHEM 103, General Chemistry I and General Chemistry Lab I\n CS 124, Intro to Computer Science I\n MATH 220, Calculus\n  + or MATH 221, Calculus I\n MATH 231, Calculus II\n MATH 241, Calculus III\n PHYS 211, University Physics: Mechanics\n PHYS 212, University Physics: Electricity & Magnetism [...] ## Admissions Recommendations\n\n### Coursework\n\nAlthough it isn\u2019t required that you do so in order to be admitted, we also recommend that you complete transfer coursework equivalent to the following University of Illinois Urbana-Champaign courses before or during the term you\u2019re submitting your application:\n\n CS 128, Intro to Computer Science II\n CS 173, Discrete Structures\n  + or MATH 213, Introduction to Discrete Mathematics\n CS 225, Data structures\n",
+          "published": null
+        },
+        {
+          "id": "W3",
+          "url": "https://www.admissions.illinois.edu/class-profile",
+          "title": "Class Profile | Undergraduate Admissions | Illinois",
+          "content": "### College of Liberal Arts and Sciences\n\nGPA: 3.73\u20134.00\n\nSAT: 1440\u20131540\n\nACT: 31\u201335\n\nDuolingo: 135\u2013145\n\nTest Score Submission: 66%\n\n### College of Media\n\nGPA: 3.55\u20133.91\n\nSAT: 1380\u20131520\n\nACT: 29\u201333\n\nDuolingo: 135\u2013145\n\nTest Score Submission: 40%\n\n### Division of Exploratory Studies\n\nGPA: 3.41\u20133.83\n\nSAT: 1310\u20131500\n\nACT: 27\u201332\n\nDuolingo: 130\u2013140\n\nTest Score Submission: 35%\n\n### Gies College of Business\n\nGPA: 3.81\u20134.00\n\nSAT: 1440\u20131520\n\nACT: 32\u201334\n\nDuolingo: 135\u2013145\n\nTest Score Submission: 67%\n\n### Grainger College of Engineering\n\nGPA: 3.90\u20134.00\n\nSAT: 1490\u20131550\n\nACT: 33\u201335\n\nDuolingo: 140\u2013150\n\nTest Score Submission: 84%\n\n### School of Information Sciences\n\nGPA: 3.60\u20133.95\n\nSAT: 1440\u20131530\n\nACT: 31\u201335\n\nDuolingo: 135\u2013145\n\nTest Score Submission: 70%\n\n### School of Social Work\n\nGPA: 3.39\u20133.82 [...] 25% had scores lower than this range\n 25% had scores higher\n\nFalling outside the range does not mean you will be admitted or denied. Your full application matters, not just your numbers.\n\n## Class Profile by College\n\n### College of Agricultural, Consumer, and Environmental Sciences\n\nGPA: 3.55\u20133.93\n\nSAT: 1330\u20131500\n\nACT: 29\u201333\n\nDuolingo: 131\u2013145\n\nTest Score Submission: 48%\n\n### College of Applied Heal",
+          "published": null
+        },
+        {
+          "id": "W4",
+          "url": "https://chance-me.ai/colleges/uiuc",
+          "title": "UIUC Admissions 2026-27: What UIUC Values",
+          "content": "Chance-Me.ai \n\nSign in See my chances: free \u2192\n\nHow it works What's inside Pricing Sign in See my chances: free \u2192\n\nCollege profile \u00b7 2026-27 cycle\n\n# University of Illinois Urbana-Champaign\n\nAdmissions data, deadlines, essays, and what this school values, in one place. Updated for the 2026-27 application cycle.\n\nAdmit rate\n\nED admit rate\n\nEA admit rate\n\nGPA middle 50%\n\n3.55 to 4.00\n\nSAT middle 50%\n\n1280 to 1500\n\nTest policy\n\nTest optional\n\nUrbana-Champaign, Illinois\n\n\u00b7\n\nPublic\n\n\u00b7\n\nRounds offered:\n\nEA, RD [...] Computer Science (Grainger): 7.4%. Most selective program at UIUC. Cannot be reached by internal transfer. CS+X blended programs (CS+Math, CS+Statistics, CS+Linguistics, CS+Anthropology, and others) admit at 17.4% and sit within the College of Liberal Arts and Sciences.\n Gies College of Business: 20.9%. Direct admission. Strong quantitative expectations. Internal transfer is highly restricted.\n Grainger College of Engineering (excluding CS): 21.2%. Direct admission by specific engineering major. Listing a second-choice major meaningfully improves odds. Internal transfer is highly restricted.\n College of Applied Health Sciences: 28.0%. Programs include Kinesiology, Speech and H",
+          "published": null
+        },
+        {
+          "id": "W5",
+          "url": "https://www.deweysmart.com/admissions/test-policy-tracker",
+          "title": "SAT & ACT Policy Tracker: Top 100 Colleges 2026-27 | Dewey Smart",
+          "content": "| University of Georgia Public | Required | \u2014 | Oct 15, 2026 (materials due Oct 29, 2026) (EA) | Jan 1, 2027 (materials due Jan 15, 2027) | Details \"All first-year and dual enrollment applicants are required to submit official test scores from either ACT or SAT. There is no test optional pathway to UGA.\" Consistent with Georgia's public-system-wide testing requirement. Source \u2192 |\n| University of Illinois Urbana-Champaign Top Public | Test-Optional | \u2014 | Nov 1, 2026 (EA) | Jan 5, 2027 | Details 'Illinois is test-optional. You can choose whether to include ACT or SAT scores.' Applicants who omit test scores may need to submit an English-language proficiency test instead (international applicants). Source \u2192 |",
+          "published": null
+        },
+        {
+          "id": "W6",
+          "url": "https://www.usnews.com/best-colleges/university-of-illinois-urbanachampaign-1775/applying",
+          "title": "University of Illinois Urbana-Champaign Admissions - US News Best Colleges",
+          "content": "My Dashboard\n\n---\n\nMy Schools\n\nSchools You Might Also Like\n\nCompare Schools\n\nMy Scholarships\n\nReading List\n\nAdvice\n\nGet Premium\n\nOverview\n\nRankings\n\nAdmissions\n\nCost\n\nAcademics\n\nStudent Body\n\nCampus Life\n\nSummer Programs\n\nShare\n\n# University of Illinois Urbana-Champaign Admissions\n\nUniversity of Illinois Urbana-Champaign has an acceptance rate of 37%. Half the applicants admitted to University of Illinois Urbana-Champaign who submitted test scores have an SAT score between 1390 and 1540 or an ACT score of 31 and 34. However, one quarter of admitted applicants achieved scores above these ranges and one quarter scored below these ranges. The application deadline at University of Illinois Urbana-Champaign is Jan. 5. [...] My Fit Score\n\n#### My Fit Custom College Ranking\n\nDoes this school fit your college needs? Receive a personalized ranking provided by U.S. News College Compass and find out. Try it now\n\n## University of Illinois Urbana-Champaign Admissions Requirements\n\nAdmission interview\n:   N/A\n\nRequired Standardized Tests\n:   Not required for admission, but considered if submitted\n\nSAT/ACT Scores Must Be Received By\n:   July 1\n\nUnlock these and 71 other University of Illinois Urb",
+          "published": null
+        },
+        {
+          "id": "W7",
+          "url": "https://nextadmit.com/blog/university-of-illinois-urbana-champaign-sat-scores",
+          "title": "University of Illinois Urbana-Champaign SAT Scores: Full Breakdown",
+          "content": "From these statistics, we can see that 25% of UIUC students achieved a 640 or below on their SAT math section. Further, 25% of UIUC students achieved a 780 or above on their SAT math section, likely with a considerable number of perfect scores included in that percentage. While perfect scores are rare, a high score in the Math section can significantly boost your application. Nevertheless, such high scores are not necessary for admission.\n\n## What are UIUC\u2019s SAT requirements?\n\nUIUC follows a test-optional policy, meaning that SAT or ACT scores are not mandatory for all first-year applicants. This includes international students, home-schooled students, and recruited student-athletes. However, standardized test scores can help strengthen your application if they are competitive. [...] The University considers the highest total or composite score you achieved in a single sitting, along with the highest sub-scores from different test dates. Although this seems similar to the superscoring policies of other schools, there is a slightly stronger emphasis on the scores achieved on a single test day.\n\n## What\u2019s a good SAT score for UIUC?\n\nUIUC does not have specific SAT score requirements ",
+          "published": null
+        },
+        {
+          "id": "W8",
+          "url": "https://www.facebook.com/fb-answers/uiuc-computer-science-admission-requirements",
+          "title": "UIUC Computer Science Admission Requirements",
+          "content": "a 35 ACT Math score is recommended and \u2026 direct admission is required since on-campus transfers into pure CS are closed. UIUC has about a 2% admit rate. CS",
+          "published": null
+        },
+        {
+          "id": "W9",
+          "url": "https://talk.collegeconfidential.com/t/direct-admit-to-cs/1786586",
+          "title": "Direct Admit to CS - Science Majors",
+          "content": "Both Washington and UIUC may admit students to the school, but not the CS major. If that happens to you, and you enroll, you will have to face a",
+          "published": null
+        },
+        {
+          "id": "W10",
+          "url": "https://www.facebook.com/educationatillinois/posts/the-deadline-to-apply-to-illinois-via-early-action-is-coming-up-on-november-1if-/1711981020654906",
+          "title": "University of Illinois early action deadline Nov 1 for class ...",
+          "content": "Urbana-Champaign. The priority admission deadline is November 1. Apply before 11:59pm CT. This post is a public service announcement from the",
+          "published": null
+        }
+      ],
+      "zetaris_queries": []
+    },
+    {
+      "ts": 1793047760.075,
+      "seq": 33,
+      "event": "school_rubric",
+      "stage": "fact_checked",
+      "rubric": {
+        "name": "University of Illinois Urbana-Champaign",
+        "slug": "uiuc",
+        "notes": [
+          "In-state applicant at a public university.",
+          "Major confirmed as capped direct-admit by fact-checker."
+        ],
+        "sat_25": 1390,
+        "sat_75": 1520,
+        "major_n": 132,
+        "test_policy": "optional",
+        "test_weight": 0.33,
+        "direct_admit": true,
+        "hook_effects": {
+          "rural": 0.099,
+          "legacy": 0.0,
+          "veteran": 0.3,
+          "first_gen": 0.33,
+          "low_income": 0.3,
+          "recruited_athlete": 1.98,
+          "faculty_staff_child": 0.0,
+          "questbridge_finalist": 0.4
+        },
+        "ed_admit_rate": null,
+        "factor_levels": {
+          "essay": "important",
+          "rigor": "very_important",
+          "character": "important",
+          "interview": "not_considered",
+          "class_rank": "not_considered",
+          "test_scores": "considered",
+          "academic_gpa": "very_important",
+          "talent_ability": "important",
+          "volunteer_work": "considered",
+          "alumni_relation": "not_considered",
+          "recommendations": "not_considered",
+          "state_residency": "considered",
+          "work_experience": "considered",
+          "extracurriculars": "important",
+          "first_generation": "important",
+          "applicant_interest": "not_considered",
+          "geographic_residence": "considered",
+          "religious_affiliation": "not_considered"
+        },
+        "major_college": null,
+        "rd_admit_rate": null,
+        "major_category": "computer_science",
+        "pillar_weights": {
+          "academic": 0.3353,
+          "athletic": 0.1899,
+          "personal": 0.1899,
+          "extracurricular": 0.2849
+        },
+        "base_admit_rate": 0.4237,
+        "major_multiplier": 0.9,
+        "residency_effect": 0.264,
+        "major_multiplier_source": "reddit_smoothed"
+      },
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047760.075,
+      "seq": 34,
+      "node": "institutional",
+      "event": "node_end",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "elapsed_ms": 212296
+    },
+    {
+      "ts": 1793047760.077,
+      "seq": 35,
+      "node": "institutional",
+      "event": "node_complete",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047760.092,
+      "seq": 36,
+      "event": "probability",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "probability": {
+        "p_low": 0.4338,
+        "p_high": 0.6582,
+        "p_final": 0.5467,
+        "p_model": 0.8157,
+        "components": [
+          {
+            "key": "base",
+            "label": "School admit rate",
+            "detail": "Overall admit rate 42.4%",
+            "delta_pp": 42.37,
+            "delta_logit": 0.0
+          },
+          {
+            "key": "major",
+            "label": "Major competitiveness",
+            "detail": "multiplier \u00d70.90",
+            "delta_pp": -2.55,
+            "delta_logit": -0.1054
+          },
+          {
+            "key": "academic",
+            "label": "Academic rating",
+            "detail": "rating 2.00 vs pool 3.0, school weight 0.34",
+            "delta_pp": 16.59,
+            "delta_logit": 0.6706
+          },
+          {
+            "key": "extracurricular",
+            "label": "Extracurricular rating",
+            "detail": "rating 3.00 vs pool 3.5, school weight 0.28",
+            "delta_pp": 6.83,
+            "delta_logit": 0.2849
+          },
+          {
+            "key": "personal",
+            "label": "Personal rating",
+            "detail": "rating 2.00 vs pool 3.5, school weight 0.19",
+            "delta_pp": 12.01,
+            "delta_logit": 0.5697
+          },
+          {
+            "key": "athletic",
+            "label": "Athletic rating",
+            "detail": "rating 4.00 vs pool 4.0, school weight 0.19",
+            "delta_pp": 0.0,
+            "delta_logit": 0.0
+          },
+          {
+            "key": "test",
+            "label": "Test score position",
+            "detail": "z=+0.67 in school's 25\u201375 band",
+            "delta_pp": 2.01,
+            "delta_logit": 0.1113
+          },
+          {
+            "key": "hooks",
+            "label": "Hooks (C7-gated)",
+            "detail": "none",
+            "delta_pp": 0.0,
+            "delta_logit": 0.0
+          },
+          {
+            "key": "residency",
+            "label": "Residency",
+            "detail": "public-university residency effect",
+            "delta_pp": 4.3,
+            "delta_logit": 0.264
+          },
+          {
+            "key": "early",
+            "label": "Application round",
+            "detail": "EA",
+            "delta_pp": 0.0,
+            "delta_logit": 0.0
+          },
+          {
+            "key": "interest",
+            "label": "Demonstrated interest",
+            "detail": "counts only where C7 considers applicant interest",
+            "delta_pp": 0.0,
+            "delta_logit": 0.0
+          },
+          {
+            "key": "twins",
+            "label": "Applicant-twin evidence",
+            "detail": "20.0 effective twins; raw Reddit admit rate 50% deflated \u00d71.6 odds \u2192 39%",
+            "delta_pp": -26.9,
+            "delta_logit": -1.3003
+          }
+        ],
+        "disposition": "LIKELY ADMIT",
+        "base_admit_rate": 0.4237
+      },
+      "scoring_inputs": {
+        "sat": 1520,
+        "hooks": [],
+        "sat_25": 1390,
+        "sat_75": 1520,
+        "ratings": {
+          "academic": 2.0,
+          "athletic": 4.0,
+          "personal": 2.0,
+          "extracurricular": 3.0
+        },
+        "twin_sum_w": 10.3245159604066,
+        "early_round": "EA",
+        "test_policy": "optional",
+        "test_weight": 0.33,
+        "twin_sum_w2": 2.32015000296847,
+        "hook_effects": {
+          "rural": 0.099,
+          "legacy": 0.0,
+          "veteran": 0.3,
+          "first_gen": 0.33,
+          "low_income": 0.3,
+          "recruited_athlete": 1.98,
+          "faculty_staff_child": 0.0,
+          "questbridge_finalist": 0.4
+        },
+        "ea_admit_rate": null,
+        "ed_admit_rate": null,
+        "rd_admit_rate": null,
+        "odds_inflation": 1.5920251512487444,
+        "pillar_weights": {
+          "academic": 0.3353,
+          "athletic": 0.1899,
+          "personal": 0.1899,
+          "extracurricular": 0.2849
+        },
+        "base_admit_rate": 0.4237,
+        "major_multiplier": 0.9,
+        "residency_effect": 0.264,
+        "twin_sum_w_admit": 5.15638301381759,
+        "demonstrated_interest": false,
+        "applicant_interest_weight": 0.0
+      }
+    },
+    {
+      "ts": 1793047760.093,
+      "seq": 37,
+      "node": "committee_docket",
+      "event": "node_complete",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047760.095,
+      "seq": 38,
+      "turn": 1,
+      "event": "debate_turn_start",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.656,
+      "seq": 39,
+      "turn": 1,
+      "delta": "This applicant presents a clear, coherent spike in competitive progra",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.663,
+      "seq": 40,
+      "turn": 1,
+      "delta": "mming and applied machine learning [[dossier:spike]].\n\nFirst, academi",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.67,
+      "seq": 41,
+      "turn": 1,
+      "delta": "c rigor and GPA are \"very important\" factors [[cds:c7.academic_gpa]][",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.679,
+      "seq": 42,
+      "turn": 1,
+      "delta": "[cds:c7.rigor]]: they earned a 3.94 unweighted GPA across 12 advanced",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.686,
+      "seq": 43,
+      "turn": 1,
+      "delta": " courses, with a 0.545 rigor index topping their school, paired with ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.695,
+      "seq": 44,
+      "turn": 1,
+      "delta": "a 1520 SAT hitting our 75th percentile [[dossier:metrics.gpa_uw_4]][[",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.704,
+      "seq": 45,
+      "turn": 1,
+      "delta": "dossier:metrics.advanced_course_count]][[dossier:metrics.rigor_index]",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.711,
+      "seq": 46,
+      "turn": 1,
+      "delta": "][[dossier:metrics.sat_equivalent]][[cds:sat_75]]. Second, extracurri",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.719,
+      "seq": 47,
+      "turn": 1,
+      "delta": "culars are \"important\" [[cds:c7.extracurriculars]]: USACO Gold status",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.728,
+      "seq": 48,
+      "turn": 1,
+      "delta": " and school CS club leadership anchor a solid Harvard EC rating of 3 ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.735,
+      "seq": 49,
+      "turn": 1,
+      "delta": "[[dossier:activities.0]][[dossier:harvard.extracurricular.rating]]. T",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.743,
+      "seq": 50,
+      "turn": 1,
+      "delta": "hird, essay and character are \"important\" [[cds:c7.essay]][[cds:c7.ch",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.752,
+      "seq": 51,
+      "turn": 1,
+      "delta": "aracter]]: a strong central debugging metaphor (\"The cat didn't move ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.76,
+      "seq": 52,
+      "turn": 1,
+      "delta": "because I hadn't told it how to listen\") drives a Harvard personal ra",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.77,
+      "seq": 53,
+      "turn": 1,
+      "delta": "ting of 2 [[dossier:essay_assessment.strongest_line]][[dossier:harvar",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.777,
+      "seq": 54,
+      "turn": 1,
+      "delta": "d.personal.rating]]. Contextually, as an in-state Illinois public sch",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.786,
+      "seq": 55,
+      "turn": 1,
+      "delta": "ool student, they receive our residency bump [[dossier:context.reside",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.794,
+      "seq": 56,
+      "turn": 1,
+      "delta": "ncy_state]][[dossier:context.school_type]][[model:components.residenc",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.803,
+      "seq": 57,
+      "turn": 1,
+      "delta": "y.delta_pp]].\n\nThe Chair will rightly point to the lack of a Tier-1 r",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.811,
+      "seq": 58,
+      "turn": 1,
+      "delta": "esearch publication and zero hooks [[dossier:harvard.extracurricular.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.819,
+      "seq": 59,
+      "turn": 1,
+      "delta": "rationale]][[dossier:hooks]], but unlike unhooked rejected twins with",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.827,
+      "seq": 60,
+      "turn": 1,
+      "delta": " broad Tier-2 activity [[twin:1]][[twin:4]], this student combines hi",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.836,
+      "seq": 61,
+      "turn": 1,
+      "delta": "gh rigor with a focused CS trajectory that makes them a compelling fi",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.843,
+      "seq": 62,
+      "turn": 1,
+      "delta": "t [[dossier:metrics.rigor_index]][[dossier:spike]].",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793047858.873,
+      "seq": 63,
+      "refs": [
+        "model:components.residency.delta_pp"
+      ],
+      "turn": 1,
+      "event": "citation_warning",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047858.873,
+      "seq": 64,
+      "turn": 1,
+      "event": "debate_turn_end",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "content": "This applicant presents a clear, coherent spike in competitive programming and applied machine learning [[dossier:spike]].\n\nFirst, academic rigor and GPA are \"very important\" factors [[cds:c7.academic_gpa]][[cds:c7.rigor]]: they earned a 3.94 unweighted GPA across 12 advanced courses, with a 0.545 rigor index topping their school, paired with a 1520 SAT hitting our 75th percentile [[dossier:metrics.gpa_uw_4]][[dossier:metrics.advanced_course_count]][[dossier:metrics.rigor_index]][[dossier:metrics.sat_equivalent]][[cds:sat_75]]. Second, extracurriculars are \"important\" [[cds:c7.extracurriculars]]: USACO Gold status and school CS club leadership anchor a solid Harvard EC rating of 3 [[dossier:activities.0]][[dossier:harvard.extracurricular.rating]]. Third, essay and character are \"important\" [[cds:c7.essay]][[cds:c7.character]]: a strong central debugging metaphor (\"The cat didn't move because I hadn't told it how to listen\") drives a Harvard personal rating of 2 [[dossier:essay_assessment.strongest_line]][[dossier:harvard.personal.rating]]. Contextually, as an in-state Illinois public school student, they receive our residency bump [[dossier:context.residency_state]][[dossier:context.school_type]][[model:components.residency.delta_pp]].\n\nThe Chair will rightly point to the lack of a Tier-1 research publication and zero hooks [[dossier:harvard.extracurricular.rationale]][[dossier:hooks]], but unlike unhooked rejected twins with broad Tier-2 activity [[twin:1]][[twin:4]], this student combines high rigor with a focused CS trajectory that makes them a compelling fit [[dossier:metrics.rigor_index]][[dossier:spike]].",
+      "speaker": "advocate",
+      "degraded": false,
+      "citations": [
+        {
+          "ref": "spike",
+          "kind": "dossier",
+          "span": [
+            104,
+            121
+          ],
+          "valid": true
+        },
+        {
+          "ref": "c7.academic_gpa",
+          "kind": "cds",
+          "span": [
+            183,
+            206
+          ],
+          "valid": true
+        },
+        {
+          "ref": "c7.rigor",
+          "kind": "cds",
+          "span": [
+            206,
+            222
+          ],
+          "valid": true
+        },
+        {
+          "ref": "metrics.gpa_uw_4",
+          "kind": "dossier",
+          "span": [
+            384,
+            412
+          ],
+          "valid": true
+        },
+        {
+          "ref": "metrics.advanced_course_count",
+          "kind": "dossier",
+          "span": [
+            412,
+            453
+          ],
+          "valid": true
+        },
+        {
+          "ref": "metrics.rigor_index",
+          "kind": "dossier",
+          "span": [
+            453,
+            484
+          ],
+          "valid": true
+        },
+        {
+          "ref": "metrics.sat_equivalent",
+          "kind": "dossier",
+          "span": [
+            484,
+            518
+          ],
+          "valid": true
+        },
+        {
+          "ref": "sat_75",
+          "kind": "cds",
+          "span": [
+            518,
+            532
+          ],
+          "valid": true
+        },
+        {
+          "ref": "c7.extracurriculars",
+          "kind": "cds",
+          "span": [
+            575,
+            602
+          ],
+          "valid": true
+        },
+        {
+          "ref": "activities.0",
+          "kind": "dossier",
+          "span": [
+            690,
+            714
+          ],
+          "valid": true
+        },
+        {
+          "ref": "harvard.extracurricular.rating",
+          "kind": "dossier",
+          "span": [
+            714,
+            756
+          ],
+          "valid": true
+        },
+        {
+          "ref": "c7.essay",
+          "kind": "cds",
+          "span": [
+            801,
+            817
+          ],
+          "valid": true
+        },
+        {
+          "ref": "c7.character",
+          "kind": "cds",
+          "span": [
+            817,
+            837
+          ],
+          "valid": true
+        },
+        {
+          "ref": "essay_assessment.strongest_line",
+          "kind": "dossier",
+          "span": [
+            976,
+            1019
+          ],
+          "valid": true
+        },
+        {
+          "ref": "harvard.personal.rating",
+          "kind": "dossier",
+          "span": [
+            1019,
+            1054
+          ],
+          "valid": true
+        },
+        {
+          "ref": "context.residency_state",
+          "kind": "dossier",
+          "span": [
+            1149,
+            1184
+          ],
+          "valid": true
+        },
+        {
+          "ref": "context.school_type",
+          "kind": "dossier",
+          "span": [
+            1184,
+            1215
+          ],
+          "valid": true
+        },
+        {
+          "ref": "components.residency.delta_pp",
+          "kind": "model",
+          "span": [
+            1215,
+            1254
+          ],
+          "valid": false
+        },
+        {
+          "ref": "harvard.extracurricular.rationale",
+          "kind": "dossier",
+          "span": [
+            1346,
+            1391
+          ],
+          "valid": true
+        },
+        {
+          "ref": "hooks",
+          "kind": "dossier",
+          "span": [
+            1391,
+            1408
+          ],
+          "valid": true
+        },
+        {
+          "ref": "1",
+          "kind": "twin",
+          "span": [
+            1472,
+            1482
+          ],
+          "valid": true
+        },
+        {
+          "ref": "4",
+          "kind": "twin",
+          "span": [
+            1482,
+            1492
+          ],
+          "valid": true
+        },
+        {
+          "ref": "metrics.rigor_index",
+          "kind": "dossier",
+          "span": [
+            1589,
+            1620
+          ],
+          "valid": true
+        },
+        {
+          "ref": "spike",
+          "kind": "dossier",
+          "span": [
+            1620,
+            1637
+          ],
+          "valid": true
+        }
+      ],
+      "recommendation": null
+    },
+    {
+      "ts": 1793047858.874,
+      "seq": 65,
+      "node": "advocate",
+      "event": "node_complete",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047858.877,
+      "seq": 66,
+      "turn": 2,
+      "event": "debate_turn_start",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.24,
+      "seq": 67,
+      "turn": 2,
+      "delta": "First, the CS major is a capped direct\u2011admit pathway: the CDS list",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.247,
+      "seq": 68,
+      "turn": 2,
+      "delta": "s direct_admit:true and a cohort multiplier of\u202f\u00d7\u202f0.90 [[school_cds",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.256,
+      "seq": 69,
+      "turn": 2,
+      "delta": ":major.computer_science.direct_admit]][[school_cds:major.computer_",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.263,
+      "seq": 70,
+      "turn": 2,
+      "delta": "science.multiplier]], the model applies a \u20132.55\u202fpp penalty [[model",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.271,
+      "seq": 71,
+      "turn": 2,
+      "delta": ":components.major.delta_pp]], and the fact\u2011checker notes no intern",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.28,
+      "seq": 72,
+      "turn": 2,
+      "delta": "al transfer into CS after Fall\u202f2022 [[web:W1]][[web:W2]]. This str",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.287,
+      "seq": 73,
+      "turn": 2,
+      "delta": "uctural ceiling cuts against every applicant without a hook or ove",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.296,
+      "seq": 74,
+      "turn": 2,
+      "delta": "rride.\n\nSecond, the EC tier gap versus the twin set is decisive. T",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.305,
+      "seq": 75,
+      "turn": 2,
+      "delta": "he admitted twin\u202f5 was admitted with four hooks and zero Tier\u20111/2 ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.313,
+      "seq": 76,
+      "turn": 2,
+      "delta": "activities [[twin:5]], while rejected twins\u202f1 and\u202f4 each had three",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.321,
+      "seq": 77,
+      "turn": 2,
+      "delta": "\u2011to\u2011five Tier\u20112 activities and no hooks [[twin:1]][[twin:4]]. This",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.33,
+      "seq": 78,
+      "turn": 2,
+      "delta": " file carries only one Tier\u20112 (USACO\u202fGold) and no hooks [[dossier:",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.337,
+      "seq": 79,
+      "turn": 2,
+      "delta": "hooks]], placing it in the \u201chook\u2011rich\u201d admit mode that the applica",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.346,
+      "seq": 80,
+      "turn": 2,
+      "delta": "nt lacks.\n\nThird, the essay\u2019s personal rating is capped at 2 witho",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.353,
+      "seq": 81,
+      "turn": 2,
+      "delta": "ut recommendations. The assessment marks the voice as generic [[do",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.362,
+      "seq": 82,
+      "turn": 2,
+      "delta": "ssier:essay_assessment.voice]], the frame as familiar \u201cteaching co",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.369,
+      "seq": 83,
+      "turn": 2,
+      "delta": "ding to kids\u201d [[dossier:essay_assessment.weaknesses]], and the end",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.378,
+      "seq": 84,
+      "turn": 2,
+      "delta": "ing as aspirational rather than earned [[dossier:essay_assessment.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.386,
+      "seq": 85,
+      "turn": 2,
+      "delta": "weaknesses]]; the Harvard personal rating of 2 is the maximum poss",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.394,
+      "seq": 86,
+      "turn": 2,
+      "delta": "ible under the current rubric [[dossier:harvard.personal.rating]].",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.403,
+      "seq": 87,
+      "turn": 2,
+      "delta": "\n\nA genuine strength: the applicant\u2019s 3.94\u202fUW\u202fGPA and 0.545 rigor ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.41,
+      "seq": 88,
+      "turn": 2,
+      "delta": "index place them at the top of their school, a solid academic foun",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.419,
+      "seq": 89,
+      "turn": 2,
+      "delta": "dation. Given that profile, what distinguishes this file from the ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.427,
+      "seq": 90,
+      "turn": 2,
+      "delta": "rejected twins who possessed stronger EC breadth or hook stacks?",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793047899.449,
+      "seq": 91,
+      "refs": [
+        "model:components.major.delta_pp"
+      ],
+      "turn": 2,
+      "event": "citation_warning",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047899.449,
+      "seq": 92,
+      "turn": 2,
+      "event": "debate_turn_end",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "content": "First, the CS major is a capped direct\u2011admit pathway: the CDS lists direct_admit:true and a cohort multiplier of\u202f\u00d7\u202f0.90 [[school_cds:major.computer_science.direct_admit]][[school_cds:major.computer_science.multiplier]], the model applies a \u20132.55\u202fpp penalty [[model:components.major.delta_pp]], and the fact\u2011checker notes no internal transfer into CS after Fall\u202f2022 [[web:W1]][[web:W2]]. This structural ceiling cuts against every applicant without a hook or override.\n\nSecond, the EC tier gap versus the twin set is decisive. The admitted twin\u202f5 was admitted with four hooks and zero Tier\u20111/2 activities [[twin:5]], while rejected twins\u202f1 and\u202f4 each had three\u2011to\u2011five Tier\u20112 activities and no hooks [[twin:1]][[twin:4]]. This file carries only one Tier\u20112 (USACO\u202fGold) and no hooks [[dossier:hooks]], placing it in the \u201chook\u2011rich\u201d admit mode that the applicant lacks.\n\nThird, the essay\u2019s personal rating is capped at 2 without recommendations. The assessment marks the voice as generic [[dossier:essay_assessment.voice]], the frame as familiar \u201cteaching coding to kids\u201d [[dossier:essay_assessment.weaknesses]], and the ending as aspirational rather than earned [[dossier:essay_assessment.weaknesses]]; the Harvard personal rating of 2 is the maximum possible under the current rubric [[dossier:harvard.personal.rating]].\n\nA genuine strength: the applicant\u2019s 3.94\u202fUW\u202fGPA and 0.545 rigor index place them at the top of their school, a solid academic foundation. Given that profile, what distinguishes this file from the rejected twins who possessed stronger EC breadth or hook stacks?",
+      "speaker": "chair",
+      "degraded": false,
+      "citations": [
+        {
+          "ref": "components.major.delta_pp",
+          "kind": "model",
+          "span": [
+            257,
+            292
+          ],
+          "valid": false
+        },
+        {
+          "ref": "W1",
+          "kind": "web",
+          "span": [
+            366,
+            376
+          ],
+          "valid": true
+        },
+        {
+          "ref": "W2",
+          "kind": "web",
+          "span": [
+            376,
+            386
+          ],
+          "valid": true
+        },
+        {
+          "ref": "5",
+          "kind": "twin",
+          "span": [
+            605,
+            615
+          ],
+          "valid": true
+        },
+        {
+          "ref": "1",
+          "kind": "twin",
+          "span": [
+            700,
+            710
+          ],
+          "valid": true
+        },
+        {
+          "ref": "4",
+          "kind": "twin",
+          "span": [
+            710,
+            720
+          ],
+          "valid": true
+        },
+        {
+          "ref": "hooks",
+          "kind": "dossier",
+          "span": [
+            782,
+            799
+          ],
+          "valid": true
+        },
+        {
+          "ref": "essay_assessment.voice",
+          "kind": "dossier",
+          "span": [
+            986,
+            1020
+          ],
+          "valid": true
+        },
+        {
+          "ref": "essay_assessment.weaknesses",
+          "kind": "dossier",
+          "span": [
+            1070,
+            1109
+          ],
+          "valid": true
+        },
+        {
+          "ref": "essay_assessment.weaknesses",
+          "kind": "dossier",
+          "span": [
+            1161,
+            1200
+          ],
+          "valid": true
+        },
+        {
+          "ref": "harvard.personal.rating",
+          "kind": "dossier",
+          "span": [
+            1284,
+            1319
+          ],
+          "valid": true
+        }
+      ],
+      "recommendation": null
+    },
+    {
+      "ts": 1793047899.45,
+      "seq": 93,
+      "node": "chair",
+      "event": "node_complete",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793047899.453,
+      "seq": 94,
+      "turn": 3,
+      "event": "debate_turn_start",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.825,
+      "seq": 95,
+      "turn": 3,
+      "delta": "You are right that zero hooks and a single Tier-",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.832,
+      "seq": 96,
+      "turn": 3,
+      "delta": "2 leave this file outside the hook-rich admit mo",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.841,
+      "seq": 97,
+      "turn": 3,
+      "delta": "de seen in twin 5 [[twin:5]][[dossier:hooks]]. W",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.849,
+      "seq": 98,
+      "turn": 3,
+      "delta": "hat distinguishes this file from rejected twins ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.857,
+      "seq": 99,
+      "turn": 3,
+      "delta": "1 and 4 is top-of-school academic rigor paired w",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.866,
+      "seq": 100,
+      "turn": 3,
+      "delta": "ith a laser-focused CS spike rather than scatter",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.873,
+      "seq": 101,
+      "turn": 3,
+      "delta": "ed Tier-2 breadth [[dossier:spike]][[twin:1]][[t",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.881,
+      "seq": 102,
+      "turn": 3,
+      "delta": "win:4]]. Where twin 1 split focus across car det",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.89,
+      "seq": 103,
+      "turn": 3,
+      "delta": "ailing and lifeguarding [[twin:1]], this applica",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.897,
+      "seq": 104,
+      "turn": 3,
+      "delta": "nt carries 12 AP courses and a 0.545 rigor index",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.907,
+      "seq": 105,
+      "turn": 3,
+      "delta": " topping their school [[dossier:metrics.advanced",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.916,
+      "seq": 106,
+      "turn": 3,
+      "delta": "_course_count]][[dossier:metrics.rigor_index]]\u2014o",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.924,
+      "seq": 107,
+      "turn": 3,
+      "delta": "utpacing twin 1's 10 APs and admitted twin 5's 7",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.933,
+      "seq": 108,
+      "turn": 3,
+      "delta": " APs [[twin:1]][[twin:5]]. On UIUC's pillar weig",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.941,
+      "seq": 109,
+      "turn": 3,
+      "delta": "hts, academics (0.335) and personal (0.19) heavi",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.949,
+      "seq": 110,
+      "turn": 3,
+      "delta": "ly drive decisions [[school_cds:pillar_weights]]",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.958,
+      "seq": 111,
+      "turn": 3,
+      "delta": ": rating 2s on both yield +16.59 pp academic and",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.965,
+      "seq": 112,
+      "turn": 3,
+      "delta": " +12.01 pp personal deltas [[model:components.ac",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.973,
+      "seq": 113,
+      "turn": 3,
+      "delta": "ademic.detail]][[model:components.personal.detai",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.982,
+      "seq": 114,
+      "turn": 3,
+      "delta": "l]]. Coupled with our +4.3 pp in-state residency",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.989,
+      "seq": 115,
+      "turn": 3,
+      "delta": " bump [[model:components.residency.delta_pp]], t",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048054.998,
+      "seq": 116,
+      "turn": 3,
+      "delta": "he model projects a 54.7% admit probability and ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048055.005,
+      "seq": 117,
+      "turn": 3,
+      "delta": "LIKELY ADMIT disposition [[model:p_final]][[mode",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048055.014,
+      "seq": 118,
+      "turn": 3,
+      "delta": "l:disposition]]. I recommend we admit.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "advocate"
+    },
+    {
+      "ts": 1793048055.041,
+      "seq": 119,
+      "refs": [
+        "model:components.academic.detail",
+        "model:components.personal.detail",
+        "model:components.residency.delta_pp"
+      ],
+      "turn": 3,
+      "event": "citation_warning",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793048055.041,
+      "seq": 120,
+      "turn": 3,
+      "event": "debate_turn_end",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "content": "You are right that zero hooks and a single Tier-2 leave this file outside the hook-rich admit mode seen in twin 5 [[twin:5]][[dossier:hooks]]. What distinguishes this file from rejected twins 1 and 4 is top-of-school academic rigor paired with a laser-focused CS spike rather than scattered Tier-2 breadth [[dossier:spike]][[twin:1]][[twin:4]]. Where twin 1 split focus across car detailing and lifeguarding [[twin:1]], this applicant carries 12 AP courses and a 0.545 rigor index topping their school [[dossier:metrics.advanced_course_count]][[dossier:metrics.rigor_index]]\u2014outpacing twin 1's 10 APs and admitted twin 5's 7 APs [[twin:1]][[twin:5]]. On UIUC's pillar weights, academics (0.335) and personal (0.19) heavily drive decisions [[school_cds:pillar_weights]]: rating 2s on both yield +16.59 pp academic and +12.01 pp personal deltas [[model:components.academic.detail]][[model:components.personal.detail]]. Coupled with our +4.3 pp in-state residency bump [[model:components.residency.delta_pp]], the model projects a 54.7% admit probability and LIKELY ADMIT disposition [[model:p_final]][[model:disposition]]. I recommend we admit.",
+      "speaker": "advocate",
+      "degraded": false,
+      "citations": [
+        {
+          "ref": "5",
+          "kind": "twin",
+          "span": [
+            114,
+            124
+          ],
+          "valid": true
+        },
+        {
+          "ref": "hooks",
+          "kind": "dossier",
+          "span": [
+            124,
+            141
+          ],
+          "valid": true
+        },
+        {
+          "ref": "spike",
+          "kind": "dossier",
+          "span": [
+            306,
+            323
+          ],
+          "valid": true
+        },
+        {
+          "ref": "1",
+          "kind": "twin",
+          "span": [
+            323,
+            333
+          ],
+          "valid": true
+        },
+        {
+          "ref": "4",
+          "kind": "twin",
+          "span": [
+            333,
+            343
+          ],
+          "valid": true
+        },
+        {
+          "ref": "1",
+          "kind": "twin",
+          "span": [
+            408,
+            418
+          ],
+          "valid": true
+        },
+        {
+          "ref": "metrics.advanced_course_count",
+          "kind": "dossier",
+          "span": [
+            502,
+            543
+          ],
+          "valid": true
+        },
+        {
+          "ref": "metrics.rigor_index",
+          "kind": "dossier",
+          "span": [
+            543,
+            574
+          ],
+          "valid": true
+        },
+        {
+          "ref": "1",
+          "kind": "twin",
+          "span": [
+            629,
+            639
+          ],
+          "valid": true
+        },
+        {
+          "ref": "5",
+          "kind": "twin",
+          "span": [
+            639,
+            649
+          ],
+          "valid": true
+        },
+        {
+          "ref": "components.academic.detail",
+          "kind": "model",
+          "span": [
+            843,
+            879
+          ],
+          "valid": false
+        },
+        {
+          "ref": "components.personal.detail",
+          "kind": "model",
+          "span": [
+            879,
+            915
+          ],
+          "valid": false
+        },
+        {
+          "ref": "components.residency.delta_pp",
+          "kind": "model",
+          "span": [
+            966,
+            1005
+          ],
+          "valid": false
+        },
+        {
+          "ref": "p_final",
+          "kind": "model",
+          "span": [
+            1081,
+            1098
+          ],
+          "valid": true
+        },
+        {
+          "ref": "disposition",
+          "kind": "model",
+          "span": [
+            1098,
+            1119
+          ],
+          "valid": true
+        }
+      ],
+      "recommendation": null
+    },
+    {
+      "ts": 1793048055.042,
+      "seq": 121,
+      "node": "advocate",
+      "event": "node_complete",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793048055.045,
+      "seq": 122,
+      "turn": 4,
+      "event": "debate_turn_start",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048237.767,
+      "seq": 123,
+      "turn": 4,
+      "delta": "The",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048237.808,
+      "seq": 124,
+      "turn": 4,
+      "delta": " user wants me to",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048237.827,
+      "seq": 125,
+      "turn": 4,
+      "delta": " act as the Committee",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048237.831,
+      "seq": 126,
+      "turn": 4,
+      "delta": " Chair (",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048237.848,
+      "seq": 127,
+      "turn": 4,
+      "delta": "Skeptic)",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048237.868,
+      "seq": 128,
+      "turn": 4,
+      "delta": " and close the discussion",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048237.889,
+      "seq": 129,
+      "turn": 4,
+      "delta": ". I need to",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048237.912,
+      "seq": 130,
+      "turn": 4,
+      "delta": ":\n\n1. Sum",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048237.93,
+      "seq": 131,
+      "turn": 4,
+      "delta": "marize where the",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.16,
+      "seq": 132,
+      "turn": 4,
+      "delta": " committee landed in ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.41,
+      "seq": 133,
+      "turn": 4,
+      "delta": "2-3 sentences",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.476,
+      "seq": 134,
+      "turn": 4,
+      "delta": "\n2. We",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.494,
+      "seq": 135,
+      "turn": 4,
+      "delta": "igh the Advocate",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.516,
+      "seq": 136,
+      "turn": 4,
+      "delta": "'s rebuttal honestly",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.538,
+      "seq": 137,
+      "turn": 4,
+      "delta": " - did",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.557,
+      "seq": 138,
+      "turn": 4,
+      "delta": " it answer my concern",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.577,
+      "seq": 139,
+      "turn": 4,
+      "delta": "?\n3. Name",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.599,
+      "seq": 140,
+      "turn": 4,
+      "delta": " the single change that",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.62,
+      "seq": 141,
+      "turn": 4,
+      "delta": " would most move my",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.641,
+      "seq": 142,
+      "turn": 4,
+      "delta": " vote\n4.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.66,
+      "seq": 143,
+      "turn": 4,
+      "delta": " End with a RE",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.682,
+      "seq": 144,
+      "turn": 4,
+      "delta": "COMMENDATION line",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.701,
+      "seq": 145,
+      "turn": 4,
+      "delta": " matching the model's",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.722,
+      "seq": 146,
+      "turn": 4,
+      "delta": " disposition (LIK",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.744,
+      "seq": 147,
+      "turn": 4,
+      "delta": "ELY ADMIT",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.762,
+      "seq": 148,
+      "turn": 4,
+      "delta": ") unless I explain",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.783,
+      "seq": 149,
+      "turn": 4,
+      "delta": " why the committee reads",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.805,
+      "seq": 150,
+      "turn": 4,
+      "delta": " differently\n\nLet me",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.825,
+      "seq": 151,
+      "turn": 4,
+      "delta": " analyze the discussion:\n\n",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.845,
+      "seq": 152,
+      "turn": 4,
+      "delta": "Advocate's points",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.865,
+      "seq": 153,
+      "turn": 4,
+      "delta": " (Turn 1",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.885,
+      "seq": 154,
+      "turn": 4,
+      "delta": "):\n- Strong academics",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.909,
+      "seq": 155,
+      "turn": 4,
+      "delta": ": 3.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.926,
+      "seq": 156,
+      "turn": 4,
+      "delta": "94 UW",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.948,
+      "seq": 157,
+      "turn": 4,
+      "delta": " GPA, ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.969,
+      "seq": 158,
+      "turn": 4,
+      "delta": "12 advanced courses",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048238.99,
+      "seq": 159,
+      "turn": 4,
+      "delta": ", 0.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.023,
+      "seq": 160,
+      "turn": 4,
+      "delta": "545 rigor",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.03,
+      "seq": 161,
+      "turn": 4,
+      "delta": " index (top of",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.051,
+      "seq": 162,
+      "turn": 4,
+      "delta": " school), 1",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.071,
+      "seq": 163,
+      "turn": 4,
+      "delta": "520 SAT",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.101,
+      "seq": 164,
+      "turn": 4,
+      "delta": " (75th",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.111,
+      "seq": 165,
+      "turn": 4,
+      "delta": " percentile)\n- Co",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.135,
+      "seq": 166,
+      "turn": 4,
+      "delta": "herent CS spike:",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.156,
+      "seq": 167,
+      "turn": 4,
+      "delta": " USACO Gold",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.172,
+      "seq": 168,
+      "turn": 4,
+      "delta": " + CS club leadership",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.197,
+      "seq": 169,
+      "turn": 4,
+      "delta": " + ML project\n",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.51,
+      "seq": 170,
+      "turn": 4,
+      "delta": "- Essay with strong",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.749,
+      "seq": 171,
+      "turn": 4,
+      "delta": " metaphor, personal rating",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.779,
+      "seq": 172,
+      "turn": 4,
+      "delta": " 2\n-",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.793,
+      "seq": 173,
+      "turn": 4,
+      "delta": " In-state residency bump",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.815,
+      "seq": 174,
+      "turn": 4,
+      "delta": "\n- Model projects",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.837,
+      "seq": 175,
+      "turn": 4,
+      "delta": " 54.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.86,
+      "seq": 176,
+      "turn": 4,
+      "delta": "7% admit probability",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.883,
+      "seq": 177,
+      "turn": 4,
+      "delta": ", LIKEL",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.904,
+      "seq": 178,
+      "turn": 4,
+      "delta": "Y ADMIT disposition",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.927,
+      "seq": 179,
+      "turn": 4,
+      "delta": "\n\nChair's",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.949,
+      "seq": 180,
+      "turn": 4,
+      "delta": " concerns (Turn ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.97,
+      "seq": 181,
+      "turn": 4,
+      "delta": "2):\n- CS",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048239.993,
+      "seq": 182,
+      "turn": 4,
+      "delta": " is capped direct-ad",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.015,
+      "seq": 183,
+      "turn": 4,
+      "delta": "mit with 0",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.038,
+      "seq": 184,
+      "turn": 4,
+      "delta": ".90 multiplier",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.06,
+      "seq": 185,
+      "turn": 4,
+      "delta": " (-2.5",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.082,
+      "seq": 186,
+      "turn": 4,
+      "delta": "5 pp)\n-",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.105,
+      "seq": 187,
+      "turn": 4,
+      "delta": " Only one Tier-",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.15,
+      "seq": 188,
+      "turn": 4,
+      "delta": "2 activity, no hooks - unlike admitted",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.171,
+      "seq": 189,
+      "turn": 4,
+      "delta": " twin 5 (",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.191,
+      "seq": 190,
+      "turn": 4,
+      "delta": "4 hooks, zero",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.213,
+      "seq": 191,
+      "turn": 4,
+      "delta": " Tier-1/",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.235,
+      "seq": 192,
+      "turn": 4,
+      "delta": "2) and rejected",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.256,
+      "seq": 193,
+      "turn": 4,
+      "delta": " twins 1 &",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.278,
+      "seq": 194,
+      "turn": 4,
+      "delta": " 4 (3",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.3,
+      "seq": 195,
+      "turn": 4,
+      "delta": "-5 Tier-",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.321,
+      "seq": 196,
+      "turn": 4,
+      "delta": "2, no hooks",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.343,
+      "seq": 197,
+      "turn": 4,
+      "delta": ")\n- Essay personal",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.365,
+      "seq": 198,
+      "turn": 4,
+      "delta": " rating capped at ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.387,
+      "seq": 199,
+      "turn": 4,
+      "delta": "2 without recommendations,",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.409,
+      "seq": 200,
+      "turn": 4,
+      "delta": " voice generic, frame",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.43,
+      "seq": 201,
+      "turn": 4,
+      "delta": " familiar\n- Question",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.452,
+      "seq": 202,
+      "turn": 4,
+      "delta": ": what distinguishes from",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.474,
+      "seq": 203,
+      "turn": 4,
+      "delta": " rejected twins with stronger",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.495,
+      "seq": 204,
+      "turn": 4,
+      "delta": " EC breadth or hook",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.516,
+      "seq": 205,
+      "turn": 4,
+      "delta": " stacks?\n\nAdvocate",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.539,
+      "seq": 206,
+      "turn": 4,
+      "delta": "'s rebuttal (",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.56,
+      "seq": 207,
+      "turn": 4,
+      "delta": "Turn 3):\n",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.586,
+      "seq": 208,
+      "turn": 4,
+      "delta": "- Acknowledges",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.603,
+      "seq": 209,
+      "turn": 4,
+      "delta": " zero hooks and single",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.824,
+      "seq": 210,
+      "turn": 4,
+      "delta": " Tier-2 leave",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.877,
+      "seq": 211,
+      "turn": 4,
+      "delta": " file outside hook-rich",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.903,
+      "seq": 212,
+      "turn": 4,
+      "delta": " admit mode of twin",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.924,
+      "seq": 213,
+      "turn": 4,
+      "delta": " 5\n-",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.946,
+      "seq": 214,
+      "turn": 4,
+      "delta": " Distinguishes from",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048240.971,
+      "seq": 215,
+      "turn": 4,
+      "delta": " rejected twins 1",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.205,
+      "seq": 216,
+      "turn": 4,
+      "delta": " & 4:",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.469,
+      "seq": 217,
+      "turn": 4,
+      "delta": " top-of-school academic",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.658,
+      "seq": 218,
+      "turn": 4,
+      "delta": " rigor + laser-focused",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.681,
+      "seq": 219,
+      "turn": 4,
+      "delta": " CS spike vs scattered",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.703,
+      "seq": 220,
+      "turn": 4,
+      "delta": " Tier-2 breadth",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.727,
+      "seq": 221,
+      "turn": 4,
+      "delta": "\n- Twin ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.75,
+      "seq": 222,
+      "turn": 4,
+      "delta": "1 split focus across",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.773,
+      "seq": 223,
+      "turn": 4,
+      "delta": " car detailing and lif",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.795,
+      "seq": 224,
+      "turn": 4,
+      "delta": "eguarding; this",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.819,
+      "seq": 225,
+      "turn": 4,
+      "delta": " applicant has 1",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.845,
+      "seq": 226,
+      "turn": 4,
+      "delta": "2 APs,",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.869,
+      "seq": 227,
+      "turn": 4,
+      "delta": " 0.5",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.89,
+      "seq": 228,
+      "turn": 4,
+      "delta": "45 rigor index",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.909,
+      "seq": 229,
+      "turn": 4,
+      "delta": " topping school -",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.931,
+      "seq": 230,
+      "turn": 4,
+      "delta": " outpaces twin ",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048241.95,
+      "seq": 231,
+      "turn": 4,
+      "delta": "1's 1",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.028,
+      "seq": 232,
+      "turn": 4,
+      "delta": "0 APs and",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.029,
+      "seq": 233,
+      "turn": 4,
+      "delta": " twin 5's",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.029,
+      "seq": 234,
+      "turn": 4,
+      "delta": " 7 APs",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.034,
+      "seq": 235,
+      "turn": 4,
+      "delta": "\n- UIUC",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.053,
+      "seq": 236,
+      "turn": 4,
+      "delta": " pillar weights: academics",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.074,
+      "seq": 237,
+      "turn": 4,
+      "delta": " (0.3",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.094,
+      "seq": 238,
+      "turn": 4,
+      "delta": "35) and",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.115,
+      "seq": 239,
+      "turn": 4,
+      "delta": " personal (0.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.136,
+      "seq": 240,
+      "turn": 4,
+      "delta": "19) heavily",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.181,
+      "seq": 241,
+      "turn": 4,
+      "delta": " drive decisions; rating 2s on",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.198,
+      "seq": 242,
+      "turn": 4,
+      "delta": " both yield +1",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.218,
+      "seq": 243,
+      "turn": 4,
+      "delta": "6.59",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.243,
+      "seq": 244,
+      "turn": 4,
+      "delta": " pp academic and +",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.259,
+      "seq": 245,
+      "turn": 4,
+      "delta": "12.0",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.28,
+      "seq": 246,
+      "turn": 4,
+      "delta": "1 pp personal del",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.3,
+      "seq": 247,
+      "turn": 4,
+      "delta": "tas\n- +",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.32,
+      "seq": 248,
+      "turn": 4,
+      "delta": "4.3 pp",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.341,
+      "seq": 249,
+      "turn": 4,
+      "delta": " in-state residency bump",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.361,
+      "seq": 250,
+      "turn": 4,
+      "delta": "\n- Model projects",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.382,
+      "seq": 251,
+      "turn": 4,
+      "delta": " 54.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.407,
+      "seq": 252,
+      "turn": 4,
+      "delta": "7% admit probability",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.423,
+      "seq": 253,
+      "turn": 4,
+      "delta": ", LIKEL",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.442,
+      "seq": 254,
+      "turn": 4,
+      "delta": "Y ADMIT disposition",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.463,
+      "seq": 255,
+      "turn": 4,
+      "delta": "\n- Recomm",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.483,
+      "seq": 256,
+      "turn": 4,
+      "delta": "ends admit\n\nThe",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.51,
+      "seq": 257,
+      "turn": 4,
+      "delta": " Advocate's rebut",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.526,
+      "seq": 258,
+      "turn": 4,
+      "delta": "tal directly addresses the",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.546,
+      "seq": 259,
+      "turn": 4,
+      "delta": " Chair's concern about",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.775,
+      "seq": 260,
+      "turn": 4,
+      "delta": " distinguishing from rejected twins",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.836,
+      "seq": 261,
+      "turn": 4,
+      "delta": " by emphasizing the academic",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.887,
+      "seq": 262,
+      "turn": 4,
+      "delta": " rigor + focused spike combination, and cites",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.9,
+      "seq": 263,
+      "turn": 4,
+      "delta": " the model's quantitative",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.92,
+      "seq": 264,
+      "turn": 4,
+      "delta": " support. The model",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.941,
+      "seq": 265,
+      "turn": 4,
+      "delta": " does project LIK",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.962,
+      "seq": 266,
+      "turn": 4,
+      "delta": "ELY ADMIT",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048242.982,
+      "seq": 267,
+      "turn": 4,
+      "delta": ".\n\nAs Chair closing",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.016,
+      "seq": 268,
+      "turn": 4,
+      "delta": ", I should:\n",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.024,
+      "seq": 269,
+      "turn": 4,
+      "delta": "1. Summar",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.043,
+      "seq": 270,
+      "turn": 4,
+      "delta": "ize where committee landed",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.064,
+      "seq": 271,
+      "turn": 4,
+      "delta": " (2-3",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.084,
+      "seq": 272,
+      "turn": 4,
+      "delta": " sentences)\n2.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.104,
+      "seq": 273,
+      "turn": 4,
+      "delta": " Weigh Advocate",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.125,
+      "seq": 274,
+      "turn": 4,
+      "delta": "'s rebuttal honestly",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.145,
+      "seq": 275,
+      "turn": 4,
+      "delta": " - did it answer",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.166,
+      "seq": 276,
+      "turn": 4,
+      "delta": " the concern? Yes",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.187,
+      "seq": 277,
+      "turn": 4,
+      "delta": ", it distinguished on",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.207,
+      "seq": 278,
+      "turn": 4,
+      "delta": " academic rigor + focused",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.229,
+      "seq": 279,
+      "turn": 4,
+      "delta": " spike vs scattered breadth",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.248,
+      "seq": 280,
+      "turn": 4,
+      "delta": ", and cited model",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.268,
+      "seq": 281,
+      "turn": 4,
+      "delta": " support.\n3.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.289,
+      "seq": 282,
+      "turn": 4,
+      "delta": " Name single change that",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.309,
+      "seq": 283,
+      "turn": 4,
+      "delta": " would most move vote",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.328,
+      "seq": 284,
+      "turn": 4,
+      "delta": " - likely a Tier",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.358,
+      "seq": 285,
+      "turn": 4,
+      "delta": "-1 research publication",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.37,
+      "seq": 286,
+      "turn": 4,
+      "delta": " or a hook,",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.389,
+      "seq": 287,
+      "turn": 4,
+      "delta": " or perhaps a stronger",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.409,
+      "seq": 288,
+      "turn": 4,
+      "delta": " essay pushing personal to",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.431,
+      "seq": 289,
+      "turn": 4,
+      "delta": " 1 (but",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048243.452,
+      "seq": 290,
+      "turn": 4,
+      "delta": " capped at 2",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048244.164,
+      "seq": 291,
+      "turn": 4,
+      "delta": " without recs).",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048245.032,
+      "seq": 292,
+      "turn": 4,
+      "delta": " Given the context,",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048245.262,
+      "seq": 293,
+      "turn": 4,
+      "delta": " a Tier-1",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048245.487,
+      "seq": 294,
+      "turn": 4,
+      "delta": " research publication or deployment",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048245.724,
+      "seq": 295,
+      "turn": 4,
+      "delta": " would be the biggest",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048245.775,
+      "seq": 296,
+      "turn": 4,
+      "delta": " differentiator.\n4",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048245.794,
+      "seq": 297,
+      "turn": 4,
+      "delta": ". Recommendation should",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048245.816,
+      "seq": 298,
+      "turn": 4,
+      "delta": " match model's LI",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048245.836,
+      "seq": 299,
+      "turn": 4,
+      "delta": "KELY AD",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048245.856,
+      "seq": 300,
+      "turn": 4,
+      "delta": "MIT unless explaining difference",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048245.878,
+      "seq": 301,
+      "turn": 4,
+      "delta": ".\n\nI",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048246.098,
+      "seq": 302,
+      "turn": 4,
+      "delta": " need to write in",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048246.343,
+      "seq": 303,
+      "turn": 4,
+      "delta": " the",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048247.561,
+      "seq": 304,
+      "turn": 4,
+      "delta": " voice of an",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048248.926,
+      "seq": 305,
+      "turn": 4,
+      "delta": " experienced admissions officer:",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.183,
+      "seq": 306,
+      "turn": 4,
+      "delta": " specific, brisk",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.183,
+      "seq": 307,
+      "turn": 4,
+      "delta": ", collegial,",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.183,
+      "seq": 308,
+      "turn": 4,
+      "delta": " occasionally wry.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.183,
+      "seq": 309,
+      "turn": 4,
+      "delta": " Plain prose only,",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.183,
+      "seq": 310,
+      "turn": 4,
+      "delta": " 110",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.221,
+      "seq": 311,
+      "turn": 4,
+      "delta": "-170",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.254,
+      "seq": 312,
+      "turn": 4,
+      "delta": " words. No head",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.254,
+      "seq": 313,
+      "turn": 4,
+      "delta": "ings, bullet points",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.268,
+      "seq": 314,
+      "turn": 4,
+      "delta": ", or stage directions",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.387,
+      "seq": 315,
+      "turn": 4,
+      "delta": ".\n\n",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.388,
+      "seq": 316,
+      "turn": 4,
+      "delta": "Let me craft the",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.388,
+      "seq": 317,
+      "turn": 4,
+      "delta": " response.</think>The",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048249.388,
+      "seq": 318,
+      "turn": 4,
+      "delta": " Advocate's rebut",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048250.025,
+      "seq": 319,
+      "turn": 4,
+      "delta": "tal answers the core",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048251.293,
+      "seq": 320,
+      "turn": 4,
+      "delta": " concern: this",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.132,
+      "seq": 321,
+      "turn": 4,
+      "delta": " file sits above the",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.602,
+      "seq": 322,
+      "turn": 4,
+      "delta": " rejected twins not through",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.623,
+      "seq": 323,
+      "turn": 4,
+      "delta": " EC breadth but through",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.651,
+      "seq": 324,
+      "turn": 4,
+      "delta": " top\u2011of\u2011",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.678,
+      "seq": 325,
+      "turn": 4,
+      "delta": "school academic rigor (",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.704,
+      "seq": 326,
+      "turn": 4,
+      "delta": "12 APs",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.731,
+      "seq": 327,
+      "turn": 4,
+      "delta": ", 0.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.758,
+      "seq": 328,
+      "turn": 4,
+      "delta": "545 rigor",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.795,
+      "seq": 329,
+      "turn": 4,
+      "delta": " index) fused with",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.812,
+      "seq": 330,
+      "turn": 4,
+      "delta": " a coherent CS",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.839,
+      "seq": 331,
+      "turn": 4,
+      "delta": " spike that the model",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.865,
+      "seq": 332,
+      "turn": 4,
+      "delta": " rewards via the academic",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.892,
+      "seq": 333,
+      "turn": 4,
+      "delta": " and personal pillars.",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.918,
+      "seq": 334,
+      "turn": 4,
+      "delta": " The hook\u2011less",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.946,
+      "seq": 335,
+      "turn": 4,
+      "delta": ", single\u2011Tier",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.972,
+      "seq": 336,
+      "turn": 4,
+      "delta": "\u20112 profile remains",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048252.999,
+      "seq": 337,
+      "turn": 4,
+      "delta": " a vulnerability in a",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048253.024,
+      "seq": 338,
+      "turn": 4,
+      "delta": " capped major, but",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048253.049,
+      "seq": 339,
+      "turn": 4,
+      "delta": " the residency bump and",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048253.076,
+      "seq": 340,
+      "turn": 4,
+      "delta": " pillar\u2011weight del",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048253.1,
+      "seq": 341,
+      "turn": 4,
+      "delta": "tas push the projection",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048253.125,
+      "seq": 342,
+      "turn": 4,
+      "delta": " into LIKEL",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048253.152,
+      "seq": 343,
+      "turn": 4,
+      "delta": "Y ADMIT territory",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048253.179,
+      "seq": 344,
+      "turn": 4,
+      "delta": ". The single change",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048253.406,
+      "seq": 345,
+      "turn": 4,
+      "delta": " that would most move",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048253.652,
+      "seq": 346,
+      "turn": 4,
+      "delta": " my vote is a",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048253.783,
+      "seq": 347,
+      "turn": 4,
+      "delta": " Tier\u20111 research",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.001,
+      "seq": 348,
+      "turn": 4,
+      "delta": " artifact \u2014 publication,",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.05,
+      "seq": 349,
+      "turn": 4,
+      "delta": " deployment, or verified",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.08,
+      "seq": 350,
+      "turn": 4,
+      "delta": " impact \u2014 that converts",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.107,
+      "seq": 351,
+      "turn": 4,
+      "delta": " the spike from moderate",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.14,
+      "seq": 352,
+      "turn": 4,
+      "delta": " to strong and ins",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.163,
+      "seq": 353,
+      "turn": 4,
+      "delta": "ulates the file against",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.189,
+      "seq": 354,
+      "turn": 4,
+      "delta": " cohort volatility.\n\nRE",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.215,
+      "seq": 355,
+      "turn": 4,
+      "delta": "COMMENDATION:",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.241,
+      "seq": 356,
+      "turn": 4,
+      "delta": " LIKELY",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.269,
+      "seq": 357,
+      "turn": 4,
+      "delta": " ADMIT",
+      "event": "debate_token",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "speaker": "chair"
+    },
+    {
+      "ts": 1793048254.285,
+      "seq": 358,
+      "turn": 4,
+      "event": "debate_turn_end",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "content": "The user wants me to act as the Committee Chair (Skeptic) and close the discussion. I need to:\n\n1. Summarize where the committee landed in 2-3 sentences\n2. Weigh the Advocate's rebuttal honestly - did it answer my concern?\n3. Name the single change that would most move my vote\n4. End with a RECOMMENDATION line matching the model's disposition (LIKELY ADMIT) unless I explain why the committee reads differently\n\nLet me analyze the discussion:\n\nAdvocate's points (Turn 1):\n- Strong academics: 3.94 UW GPA, 12 advanced courses, 0.545 rigor index (top of school), 1520 SAT (75th percentile)\n- Coherent CS spike: USACO Gold + CS club leadership + ML project\n- Essay with strong metaphor, personal rating 2\n- In-state residency bump\n- Model projects 54.7% admit probability, LIKELY ADMIT disposition\n\nChair's concerns (Turn 2):\n- CS is capped direct-admit with 0.90 multiplier (-2.55 pp)\n- Only one Tier-2 activity, no hooks - unlike admitted twin 5 (4 hooks, zero Tier-1/2) and rejected twins 1 & 4 (3-5 Tier-2, no hooks)\n- Essay personal rating capped at 2 without recommendations, voice generic, frame familiar\n- Question: what distinguishes from rejected twins with stronger EC breadth or hook stacks?\n\nAdvocate's rebuttal (Turn 3):\n- Acknowledges zero hooks and single Tier-2 leave file outside hook-rich admit mode of twin 5\n- Distinguishes from rejected twins 1 & 4: top-of-school academic rigor + laser-focused CS spike vs scattered Tier-2 breadth\n- Twin 1 split focus across car detailing and lifeguarding; this applicant has 12 APs, 0.545 rigor index topping school - outpaces twin 1's 10 APs and twin 5's 7 APs\n- UIUC pillar weights: academics (0.335) and personal (0.19) heavily drive decisions; rating 2s on both yield +16.59 pp academic and +12.01 pp personal deltas\n- +4.3 pp in-state residency bump\n- Model projects 54.7% admit probability, LIKELY ADMIT disposition\n- Recommends admit\n\nThe Advocate's rebuttal directly addresses the Chair's concern about distinguishing from rejected twins by emphasizing the academic rigor + focused spike combination, and cites the model's quantitative support. The model does project LIKELY ADMIT.\n\nAs Chair closing, I should:\n1. Summarize where committee landed (2-3 sentences)\n2. Weigh Advocate's rebuttal honestly - did it answer the concern? Yes, it distinguished on academic rigor + focused spike vs scattered breadth, and cited model support.\n3. Name single change that would most move vote - likely a Tier-1 research publication or a hook, or perhaps a stronger essay pushing personal to 1 (but capped at 2 without recs). Given the context, a Tier-1 research publication or deployment would be the biggest differentiator.\n4. Recommendation should match model's LIKELY ADMIT unless explaining difference.\n\nI need to write in the voice of an experienced admissions officer: specific, brisk, collegial, occasionally wry. Plain prose only, 110-170 words. No headings, bullet points, or stage directions.\n\nLet me craft the response.</think>The Advocate's rebuttal answers the core concern: this file sits above the rejected twins not through EC breadth but through top\u2011of\u2011school academic rigor (12 APs, 0.545 rigor index) fused with a coherent CS spike that the model rewards via the academic and personal pillars. The hook\u2011less, single\u2011Tier\u20112 profile remains a vulnerability in a capped major, but the residency bump and pillar\u2011weight deltas push the projection into LIKELY ADMIT territory. The single change that would most move my vote is a Tier\u20111 research artifact \u2014 publication, deployment, or verified impact \u2014 that converts the spike from moderate to strong and insulates the file against cohort volatility.\n\nRECOMMENDATION: LIKELY ADMIT",
+      "speaker": "chair",
+      "degraded": false,
+      "citations": [],
+      "recommendation": "LIKELY ADMIT"
+    },
+    {
+      "ts": 1793048254.286,
+      "seq": 359,
+      "node": "chair",
+      "event": "node_complete",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793048254.291,
+      "seq": 360,
+      "node": "delta_engine",
+      "event": "node_start",
+      "label": "Actionable Delta & Major Arbitrage",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793048254.291,
+      "seq": 361,
+      "node": "delta_engine",
+      "tool": "rpc.major_arbitrage_candidates",
+      "event": "tool_call",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "school": "uiuc",
+      "status": "started"
+    },
+    {
+      "ts": 1793048254.857,
+      "seq": 362,
+      "node": "delta_engine",
+      "tool": "rpc.major_arbitrage_candidates",
+      "event": "tool_call",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "done",
+      "result_count": 2
+    },
+    {
+      "ts": 1793048254.857,
+      "seq": 363,
+      "event": "counterfactuals",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "counterfactuals": [
+        {
+          "id": "cf_add_tier2",
+          "kind": "add_activity",
+          "label": "Add one Tier 2 activity (regional/state distinction)",
+          "p_new": 0.5754,
+          "delta_pp": 2.87,
+          "evidence": "EC rating anchor from tier mix",
+          "overrides": {
+            "ratings": {
+              "academic": 2.0,
+              "athletic": 4.0,
+              "personal": 2.0,
+              "extracurricular": 1.9
+            }
+          },
+          "confidence": "model_estimate"
+        },
+        {
+          "id": "cf_promote_t3",
+          "kind": "add_activity",
+          "label": "Elevate 'Crop-disease classifier' from Tier 3 to Tier 2 with measurable outcomes",
+          "p_new": 0.5661,
+          "delta_pp": 1.94,
+          "evidence": "EC rating anchor from tier mix",
+          "overrides": {
+            "ratings": {
+              "academic": 2.0,
+              "athletic": 4.0,
+              "personal": 2.0,
+              "extracurricular": 2.3125
+            }
+          },
+          "confidence": "model_estimate"
+        }
+      ]
+    },
+    {
+      "ts": 1793048280.842,
+      "seq": 364,
+      "event": "final_report",
+      "report": {
+        "disclaimer": "This report is a statistical simulation based on public and self\u2011reported data, not a prediction from any admissions office.",
+        "ranked_pivots": [
+          {
+            "title": "Elevate the crop\u2011disease CNN to a Tier\u20112 result",
+            "effort": "weeks",
+            "tradeoffs": "Requires 15\u201120 focused hours; does not conflict with senior\u2011year coursework.",
+            "why_it_works": "The model shows this single change yields a measurable gain and is achievable before the November 1 deadline by adding a deployment, verification, or publication step.",
+            "concrete_steps": [
+              "Deploy the model as a simple web demo (Streamlit/Gradio) and share the link in your application or supplementary materials.",
+              "Collect a small set of farmer or extension\u2011agent feedback screenshots to document real\u2011world relevance.",
+              "Submit a 2\u2011page technical note to a high\u2011school research journal or the science\u2011fair abstract repository before the EA deadline."
+            ],
+            "counterfactual_id": "cf_promote_t3"
+          },
+          {
+            "title": "Add one new Tier\u20112 distinction",
+            "effort": "weeks",
+            "tradeoffs": "Contest dates are fixed; verify registration deadlines now.",
+            "why_it_works": "A regional/state award in CS, math, or engineering would raise the EC pillar without needing a year\u2011long project.",
+            "concrete_steps": [
+              "Enter the ACM\u2011ICPC regional qualifier (if your school fields a team) or the USACO December contest for a Platinum push.",
+              "Lead a 2\u2011day hackathon project and win a category prize; document the win with a screenshot and organizer email.",
+              "Submit the crop\u2011disease project to the Illinois Junior Academy of Science state exposition for a possible state award."
+            ],
+            "counterfactual_id": "cf_add_tier2"
+          }
+        ],
+        "risks_to_watch": [
+          "Senior\u2011year grade dip: the model assumes a flat 3.94 UW trend; a B+ in multivariable calculus or physics would shrink the academic delta.",
+          "Test\u2011policy shift: UIUC remains test\u2011optional for 2026\u201127, but a surprise reinstatement of required scores could affect borderline files.",
+          "Cohort volatility: the twin analysis shows UIUC CS admit rates swing sharply year\u2011over\u2011year; the 0.90 major multiplier is a structural ceiling that could tighten further."
+        ],
+        "headline_verdict": "LIKELY ADMIT \u2013 Your academic foundation is elite; the capped CS major and single Tier\u20112 activity are the only levers keeping the probability from being higher.",
+        "essay_adjustments": [
+          {
+            "issue": "Familiar \u201cteaching kids to code\u201d frame lacks tension beyond the opening cat sprite.",
+            "direction": "Zoom in on one specific student moment that forced you to rethink how you explain recursion, loops, or debugging \u2014 show the struggle, not just the setup.",
+            "current_excerpt": "The first program I taught at the library had four instructions and a cat that refused to move.",
+            "example_rewrite": "When Maya\u2019s sprite cloned itself endlessly, I almost fixed it for her. Instead I asked, \u2018What would the code need to hear to stop?\u2019 She whispered, \u2018A base case.\u2019 That silence taught me more than any lecture."
+          },
+          {
+            "issue": "Ending feels aspirational rather than earned.",
+            "direction": "Tie the closing line to a concrete next step you\u2019re already taking \u2014 the deployed crop\u2011disease demo, a new workshop curriculum, a research question you\u2019re chasing.",
+            "current_excerpt": "I want to build tools that make CS feel less like magic and more like something anyone can debug.",
+            "example_rewrite": "This fall I\u2019m turning the leaf\u2011CNN into a phone\u2011ready demo for the county extension office \u2014 because the best debugging lesson is watching real users break your assumptions."
+          }
+        ],
+        "major_arbitrage_note": "UIUC Computer Science is a direct\u2011admit, capped major (multiplier 0.90). Internal transfer after Fall 2022 is not permitted. If CS is core to your identity \u2014 USACO Gold, club leadership, independent ML \u2014 staying in CS is the right call. Switching to a related uncapped major (e.g., CS\u202f+\u202fX, Data Science, or Statistics) would raise the admit probability but means giving up the Siebel School\u2019s curriculum, career pipelines, and the cohort you\u2019ve been preparing to join. Only pivot if you are genuinely open to those alternatives.",
+        "committee_disposition": "LIKELY ADMIT"
+      },
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793048281.138,
+      "seq": 365,
+      "node": "delta_engine",
+      "event": "node_end",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "elapsed_ms": 26851
+    },
+    {
+      "ts": 1793048281.139,
+      "seq": 366,
+      "node": "delta_engine",
+      "event": "node_complete",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71"
+    },
+    {
+      "ts": 1793048281.144,
+      "seq": 367,
+      "event": "done",
+      "run_id": "df799fa2-e804-4d5f-878a-b0cc84c5ff71",
+      "status": "complete",
+      "elapsed_ms": 854833
+    }
+  ],
+  "context": {
+    "scoring_inputs": {
+      "sat": 1520,
+      "hooks": [],
+      "sat_25": 1390,
+      "sat_75": 1520,
+      "ratings": {
+        "academic": 2.0,
+        "athletic": 4.0,
+        "personal": 2.0,
+        "extracurricular": 3.0
+      },
+      "twin_sum_w": 10.3245159604066,
+      "early_round": "EA",
+      "test_policy": "optional",
+      "test_weight": 0.33,
+      "twin_sum_w2": 2.32015000296847,
+      "hook_effects": {
+        "rural": 0.099,
+        "legacy": 0.0,
+        "veteran": 0.3,
+        "first_gen": 0.33,
+        "low_income": 0.3,
+        "recruited_athlete": 1.98,
+        "faculty_staff_child": 0.0,
+        "questbridge_finalist": 0.4
+      },
+      "ea_admit_rate": null,
+      "ed_admit_rate": null,
+      "rd_admit_rate": null,
+      "odds_inflation": 1.5920251512487444,
+      "pillar_weights": {
+        "academic": 0.3353,
+        "athletic": 0.1899,
+        "personal": 0.1899,
+        "extracurricular": 0.2849
+      },
+      "base_admit_rate": 0.4237,
+      "major_multiplier": 0.9,
+      "residency_effect": 0.264,
+      "twin_sum_w_admit": 5.15638301381759,
+      "demonstrated_interest": false,
+      "applicant_interest_weight": 0.0
+    },
+    "school": {
+      "slug": "uiuc",
+      "unitid": 145637,
+      "name": "University of Illinois Urbana-Champaign",
+      "short_name": "UIUC",
+      "city": "Champaign",
+      "state": "IL",
+      "control": "public",
+      "peer_group": "public_ivy",
+      "website": "www.illinois.edu/",
+      "applicants": 73742,
+      "admits": 31247,
+      "enrolled": 9008,
+      "admit_rate": 0.4237,
+      "ed_applicants": null,
+      "ed_admits": null,
+      "ed_admit_rate": null,
+      "ea_admit_rate": null,
+      "rd_admit_rate": null,
+      "yield_rate": 0.2883,
+      "in_state_admit_rate": null,
+      "out_state_admit_rate": null,
+      "test_policy": "optional",
+      "sat_composite_25": 1390,
+      "sat_composite_50": 1470,
+      "sat_composite_75": 1520,
+      "sat_ebrw_25": 680,
+      "sat_ebrw_75": 750,
+      "sat_math_25": 700,
+      "sat_math_75": 790,
+      "act_composite_25": 30,
+      "act_composite_75": 34,
+      "pct_submitting_sat": 0.4128,
+      "pct_submitting_act": 0.1433,
+      "avg_hs_gpa": null,
+      "gpa_distribution": [
+        {
+          "pct": 0.0,
+          "bucket": "N/A"
+        }
+      ],
+      "pct_top10_class": 0.5608,
+      "c7_weights": {
+        "essay": "important",
+        "rigor": "very_important",
+        "character": "important",
+        "interview": "not_considered",
+        "class_rank": "not_considered",
+        "test_scores": "considered",
+        "academic_gpa": "very_important",
+        "talent_ability": "important",
+        "volunteer_work": "considered",
+        "alumni_relation": "not_considered",
+        "recommendations": "not_considered",
+        "state_residency": "considered",
+        "work_experience": "considered",
+        "extracurriculars": "important",
+        "first_generation": "important",
+        "applicant_interest": "not_considered",
+        "geographic_residence": "considered",
+        "religious_affiliation": "not_considered"
+      },
+      "early_plans": {
+        "ea": true,
+        "ed": false,
+        "ed2": null,
+        "rea": false
+      },
+      "transfer_profile": {
+        "admits": null,
+        "enrolled": null,
+        "applicants": null,
+        "min_college_gpa": null,
+        "accepts_transfers": true
+      },
+      "major_competitiveness": {
+        "computer_science": {
+          "n": 132,
+          "source": "reddit_smoothed",
+          "multiplier": 0.9,
+          "reddit_admit_rate": 0.477
+        }
+      },
+      "strategic_priorities": [],
+      "institutional_notes": null,
+      "cds_year": "2024-2025",
+      "source_urls": {
+        "cds": "https://uofi.box.com/shared/static/1m3p4sedkotywoec55zbnodc4oci5ctf.xlsx",
+        "scorecard": "https://collegescorecard.ed.gov/school/?145637"
+      },
+      "data_quality": {
+        "notes": [],
+        "extractor": "gemma4:e2b",
+        "base_source": "cds"
+      },
+      "updated_at": "2026-10-26T12:27:22.803215+00:00"
+    },
+    "major_category": "computer_science",
+    "tiers": [
+      2,
+      3,
+      3,
+      4
+    ],
+    "has_recommendations": false,
+    "counterfactuals": [
+      {
+        "id": "cf_add_tier2",
+        "kind": "add_activity",
+        "label": "Add one Tier 2 activity (regional/state distinction)",
+        "p_new": 0.5754,
+        "delta_pp": 2.87,
+        "evidence": "EC rating anchor from tier mix",
+        "overrides": {
+          "ratings": {
+            "academic": 2.0,
+            "athletic": 4.0,
+            "personal": 2.0,
+            "extracurricular": 1.9
+          }
+        },
+        "confidence": "model_estimate"
+      },
+      {
+        "id": "cf_promote_t3",
+        "kind": "add_activity",
+        "label": "Elevate 'Crop-disease classifier' from Tier 3 to Tier 2 with measurable outcomes",
+        "p_new": 0.5661,
+        "delta_pp": 1.94,
+        "evidence": "EC rating anchor from tier mix",
+        "overrides": {
+          "ratings": {
+            "academic": 2.0,
+            "athletic": 4.0,
+            "personal": 2.0,
+            "extracurricular": 2.3125
+          }
+        },
+        "confidence": "model_estimate"
+      }
+    ]
+  },
+  "fictional": true,
+  "provenance": "Recorded completed run of a fictional persona"
+}

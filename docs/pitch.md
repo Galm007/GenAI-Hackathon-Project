@@ -102,14 +102,16 @@ Backtesting, deployment and Meterless evidence remain open."
 |---|---|---|
 | Real applicant count and school coverage | 947 profiles; 265 universities; all five demo schools meet the reported coverage targets | A15 data report, 2026-10-26 |
 | Real CDS and Zetaris federation coverage | 5 CDS schools, 260 IPEDS fallback; gold refreshed | A12/A15 data report |
-| Calibrated demo probability and pivot sizes | No live recording yet | Recorded fictional-persona run with real institutional data |
+| Calibrated demo probability and pivot sizes | Live Maya at UIUC run, 2026-10-26: **54.7%** (range 43.4–65.8%, LIKELY ADMIT), base rate 42.4%. Best pivots: promote the Tier 3 crop-disease project to Tier 2, +1.9 pp; add one Tier 2 activity, +2.9 pp. SAT: Maya's 1520 is already UIUC's 75th percentile, so `{DELTA_SAT}` = 0.0 pp (1600 would add +0.7 pp). Major arbitrage: none supported, because UIUC has major data only for CS (n=132), so `{P_ARB}`, `{DELTA_MAJOR}` and `{N_MAJOR}` are not claimed | `data/demo_runs/maya-uiuc-live.json` (recorded run, Meterless/Nemotron, Zetaris on) |
 | Typical odds correction | Median 3.24× across 88 schools with at least 15 outcomes | A15 calibration table summary |
 | Model and base-rate Brier scores; bias audit | Brier 0.232 vs 0.303 base rate; weak within-school ranking; subgroup gaps reported | A16 backtest, `docs/data-report.md` |
 | Real Nemotron request and World Model conformance | Not captured | D10 evidence |
 
 `data/data-report.json` now contains the reported corpus, coverage and odds
 adjustment figures, with a dated source link, and now the A16 Brier scores
-(0.232 model, 0.303 base rate). D09 still lacks the final recorded-run figures.
+(0.232 model, 0.303 base rate). The recorded-run figures come from `data/demo_runs/maya-uiuc-live.json` (see the table).
+
+**Script change for the recorded run:** the 2:05 "major arbitrage" and 2:30 "SAT to the 75th percentile" lines must not quote numbers. Say instead: "Her best lever is turning the crop-disease project into a Tier 2 result, worth about two points; the agents say plainly that UIUC's data doesn't support a major pivot, so they don't invent one." The authored `maya-uiuc` replay still shows fixture pivots (+8.3 pp) and stays labeled illustrative.
 
 ## Judge questions about the current data
 
