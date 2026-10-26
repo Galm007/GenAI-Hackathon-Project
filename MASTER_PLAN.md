@@ -430,7 +430,7 @@ How the switch works (B01 owns `llm.py`; steps B17a–B17c add this, D-043):
 - OpenAI-compatible `parse`: `POST /chat/completions` with `response_format` set to a strict JSON schema built from the Pydantic model **(verify that Nightshift lanes and Gemini's compatibility layer accept the plan's schemas, which use `$defs` and nullable fields)**. If the provider rejects the schema or the reply fails validation, put the schema in the system prompt, parse the reply, and retry once on `ValidationError`. `finish_reason == "length"` raises `LLMTruncated`; `content_filter` or a refusal raises `LLMRefusal`, so callers see the same exceptions as with Claude.
 - Messages are converted from the Anthropic shape: text blocks are joined and `cache_control` is dropped (Gemini caches implicitly). Node 1's PDF document blocks become text extracted locally with `pypdf`, because Google's compatibility layer does not document PDF input and Nemotron lanes are text-only. A PDF with no text layer adds an extraction warning.
 - `effort` maps to `reasoning_effort` (low / medium / high); if a model rejects the level, the request is retried once without it **(verify per Gemini model)**. On Gemini, `effort="low"` calls (the four debate turns and the SQL loop) use `GEMINI_FAST_MODEL` and the rest use `GEMINI_MODEL`, which keeps the main model to about 5 requests per evaluation. Gemini counts thinking tokens in the output budget, so the nodes' `max_tokens` values stay as they are.
-- Errors are provider-neutral: `LLMUnavailable` (connection, 5xx, timeout), `LLMRateLimited` (per-minute 429, retried after `Retry-After`), `LLMQuotaExhausted` (daily 429, not retried) and `LLMAuthError` (401/403). `llm.PROVIDER_ERRORS` replaces bare `anthropic.APIError` in the nodes, and the graph's `LLM_RETRY` also retries `LLMUnavailable` and `LLMRateLimited`.
+- Errors are provider-neutral: `LLMUnavailable` (connection, 5xx, timeout), `LLMRateLimited` (per-minute 429, retried after `Retry-After`), `LLMQuotaExhausted` (daily 429, not retried), `LLMAuthError` (401/403), `LLMBadRequest` (any other 4xx) and `LLMInvalidOutput` (still invalid after the retry). `llm.PROVIDER_ERRORS` replaces bare `anthropic.APIError` in the nodes, and the graph's `LLM_RETRY` also retries `LLMUnavailable` and `LLMRateLimited`.
 - `stream_text`: `stream: true` server-sent events, concatenating `delta.content`. There are no fallback blocks, so `on_reset` is never called.
 - Anthropic-only features (prompt caching, server-side fallbacks, adaptive thinking) are ignored on this path. Node prompts are unchanged; numbers still come only from `app/scoring/` (§0.1).
 - A startup check calls `GET /v1/models` on Meterless; `/api/health` replaces `anthropic_key` with `llm_provider` and `llm_key`, and reports `"meterless": true|false` next to `"zetaris"` (B17c). If the Runtime is unreachable at demo time, set `LLM_PROVIDER=gemini` (a rung of the fallback ladder in §6.3). If Gemini's daily quota is also used up, serve the recorded replay.
@@ -4067,7 +4067,9 @@ Rules
 
 ```python
 from pathlib import Path
+from typing import Literal, Self
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 API_DIR = Path(__file__).resolve().parents[1]
@@ -4076,7 +4078,9 @@ ROOT = API_DIR.parents[1]
 
 class Settings(BaseSettings):
     # Repo-root .env (README), with services/api/.env as an override; independent of the working directory.
-    model_config = SettingsConfigDict(env_file=(ROOT / ".env", API_DIR / ".env"), extra="ignore")
+    # hide_input_in_errors: a failed check must never echo keys from .env into logs.
+    model_config = SettingsConfigDict(env_file=(ROOT / ".env", API_DIR / ".env"), extra="ignore",
+                                      hide_input_in_errors=True)
 
     anthropic_api_key: str | None = None        # the SDK also reads ANTHROPIC_API_KEY directly
     tavily_api_key: str | None = None
@@ -4092,6 +4096,24 @@ class Settings(BaseSettings):
     embedding_dim: int = 768
     demo_mode: bool = False
 
+    # §1.7.2, D-043: Meterless primary, Gemini's free tier as the alternative, Claude paid and off by default
+    llm_provider: Literal["meterless", "gemini", "anthropic"] = "meterless"
+    allow_paid_providers: bool = False
+    meterless_base_url: str = "http://127.0.0.1:8088/v1"
+    meterless_runtime_token: str | None = None            # Nightshift Console; never the NVIDIA key
+    meterless_model: str = "meterless/auto"
+    meterless_app: str = "adcom"
+    gemini_api_key: str | None = None                     # AI Studio key from a Cloud project with no billing account
+    gemini_model: str = "gemini-3.8-flash"                # extraction, grading, briefs, delta
+    gemini_fast_model: str = "gemini-3.5-flash-lite"      # effort="low": debate turns and the SQL loop
+
+    @model_validator(mode="after")
+    def _paid_provider_needs_consent(self) -> Self:
+        if self.llm_provider == "anthropic" and not self.allow_paid_providers:
+            raise ValueError("LLM_PROVIDER=anthropic is paid: set ALLOW_PAID_PROVIDERS=true only after the team "
+                             "agrees (AGENTS.md §4), or use meterless or gemini")
+        return self
+
 
 settings = Settings()
 ```
@@ -4105,10 +4127,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+import anthropic
 from anthropic import AsyncAnthropic, Timeout
 from anthropic.types.beta import BetaMessage
 from pydantic import BaseModel
 
+from . import openai_compat
 from .config import settings
 
 # Server-side refusal fallback: if a safety classifier declines, the API re-runs the request on Anthropic's
@@ -4125,6 +4149,50 @@ class LLMRefusal(RuntimeError):
 
 class LLMTruncated(RuntimeError):
     """Output hit max_tokens before the structured output was complete."""
+
+
+class LLMProviderError(RuntimeError):
+    """A failed request to an OpenAI-compatible provider (Meterless, Gemini); see openai_compat.py."""
+
+
+class LLMUnavailable(LLMProviderError):
+    """Connection error, timeout or 5xx."""
+
+
+class LLMRateLimited(LLMProviderError):
+    """Per-minute 429; retried after Retry-After."""
+
+    def __init__(self, message: str, retry_after: float | None = None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class LLMQuotaExhausted(LLMProviderError):
+    """Daily free-tier quota used up; not retried."""
+
+
+class LLMAuthError(LLMProviderError):
+    """401/403: missing or wrong key or Runtime token."""
+
+
+class LLMBadRequest(LLMProviderError):
+    """Any other 4xx."""
+
+
+class LLMInvalidOutput(LLMProviderError):
+    """Structured output that still failed validation after the retry."""
+
+
+# What a node catches to degrade instead of failing, and what the graph's node-level RetryPolicy retries.
+PROVIDER_ERRORS = (anthropic.APIError, LLMProviderError)
+RETRYABLE = (anthropic.APIConnectionError, anthropic.InternalServerError, anthropic.RateLimitError,
+             LLMUnavailable, LLMRateLimited)
+
+
+def key_configured() -> bool:
+    """Whether the selected provider has its credential (reported by /api/health)."""
+    return bool({"meterless": settings.meterless_runtime_token, "gemini": settings.gemini_api_key,
+                 "anthropic": settings.anthropic_api_key}[settings.llm_provider])
 
 
 def cached_system(text: str) -> list[dict]:
@@ -4148,6 +4216,9 @@ async def parse[T: BaseModel](
     model: str | None = None,
 ) -> T:
     """Structured output validated into `schema`. Claude Opus 5.5 always thinks; `effort` sets the depth."""
+    if settings.llm_provider != "anthropic":                 # Meterless or Gemini (§1.7.2)
+        return await openai_compat.parse(schema, system=system, messages=messages, effort=effort,
+                                         max_tokens=max_tokens, model=model)
     # The SDK validates every text block eagerly, which raises a bare ValidationError on truncated output and on
     # the declined model's partial text before a fallback block. Read the unparsed message instead, branch on
     # stop_reason, then validate only the final answer (see DECISIONS D-012).
@@ -4192,6 +4263,9 @@ async def stream_text(
     model: str | None = None,
 ) -> str:
     """Stream plain text token-by-token. Returns the final text from the model that actually answered."""
+    if settings.llm_provider != "anthropic":
+        return await openai_compat.stream_text(system=system, messages=messages, on_text=on_text, effort=effort,
+                                               max_tokens=max_tokens, model=model)
     async with client.beta.messages.stream(
         model=model or settings.reasoning_model,
         max_tokens=max_tokens,
@@ -4215,6 +4289,8 @@ async def stream_text(
         raise LLMRefusal("debate turn refused")
     return _final_text(final.content)
 ```
+
+The Meterless and Gemini path lives in `app/openai_compat.py` (B17a). It follows the contract in §1.7.2 and is not copied here: one `httpx` client with a `meterless` and a `gemini` profile, Anthropic-shaped messages converted to OpenAI chat (PDFs to text with `pypdf`), strict `json_schema` output with the prompt-and-retry fallback, server-sent events for `stream_text`, and status codes mapped to the exceptions above. It imports `llm` back for those exceptions, which is safe because each module only reads the other's attributes at call time.
 
 #### 3.5.3 `app/agents/events.py`: custom stream events
 
@@ -5094,7 +5170,6 @@ import asyncio
 import time
 from datetime import date
 
-import anthropic
 import orjson
 
 from app import llm, zetaris_repo
@@ -5188,7 +5263,7 @@ async def institutional_node(state: AdComState) -> dict:
             return await asyncio.wait_for(run_zetaris_research(
                 slug=slug, major_category=grade.major_category,
                 applicant_summary=orjson.dumps(_applicant_summary(state, slug)).decode()), ZETARIS_BUDGET_S)
-        except (asyncio.TimeoutError, llm.LLMRefusal, anthropic.APIError) as exc:
+        except (asyncio.TimeoutError, llm.LLMRefusal, *llm.PROVIDER_ERRORS) as exc:
             warnings.append(f"zetaris research degraded: {type(exc).__name__}")
             return []
 
@@ -5204,7 +5279,7 @@ async def institutional_node(state: AdComState) -> dict:
             effort="medium", max_tokens=12000,
         )
         brief = _drop_unsourced(brief, {s.id for s in snippets} | {f["id"] for f in findings})
-    except (llm.LLMRefusal, llm.LLMTruncated, anthropic.APIError, asyncio.TimeoutError) as exc:
+    except (llm.LLMRefusal, llm.LLMTruncated, *llm.PROVIDER_ERRORS, asyncio.TimeoutError) as exc:
         warnings.append(f"institutional research degraded: {type(exc).__name__}")
         emit("error", node=NODE, message="Live fact-check unavailable — using Common Data Set only.", recoverable=True)
 
@@ -5227,7 +5302,6 @@ import math
 import time
 from collections import Counter
 
-import anthropic
 import orjson
 
 from app import db, llm, zetaris_repo
@@ -5352,7 +5426,7 @@ async def twins_node(state: AdComState) -> dict:
             )
             valid = {c.index for c in cards}
             analysis = analysis.model_copy(update={"comparisons": [c for c in analysis.comparisons if c.twin_index in valid]})
-        except (llm.LLMRefusal, llm.LLMTruncated, anthropic.APIError) as exc:
+        except (llm.LLMRefusal, llm.LLMTruncated, *llm.PROVIDER_ERRORS) as exc:
             warnings.append(f"twin analysis degraded: {type(exc).__name__}")
     emit("twin_analysis", analysis=analysis.model_dump() if analysis else None)
     emit("node_end", node=NODE, elapsed_ms=int((time.perf_counter() - t0) * 1000))
@@ -5518,8 +5592,6 @@ from __future__ import annotations
 
 import re
 
-import anthropic
-
 from app import llm
 from app.schemas.debate import DebateTurn, Speaker
 
@@ -5574,7 +5646,7 @@ def make_debate_node(speaker: Speaker):
                 on_reset=lambda: emit("debate_reset", turn=turn, speaker=speaker),
                 effort="low", max_tokens=4000,
             )
-        except (llm.LLMRefusal, anthropic.APIError):
+        except (llm.LLMRefusal, *llm.PROVIDER_ERRORS):
             text, degraded = fallback_turn(turn, speaker, state), True
             emit("debate_reset", turn=turn, speaker=speaker)
             emit("debate_token", turn=turn, speaker=speaker, delta=text)
@@ -5710,10 +5782,11 @@ async def delta_engine_node(state: AdComState) -> dict:
 ```python
 from __future__ import annotations
 
-import anthropic
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import RetryPolicy
+
+from app import llm
 
 from .nodes.debate import make_debate_node, route_debate
 from .nodes.delta_engine import delta_engine_node
@@ -5723,11 +5796,12 @@ from .nodes.institutional import institutional_node
 from .nodes.twins import twins_node
 from .state import AdComState
 
-# The SDK already retries 429/5xx/connection errors 4×; this is a second, node-level safety net.
+# The clients already retry 429/5xx/connection errors (SDK 4×, openai_compat 3×); this is a second,
+# node-level safety net.
 # Not applied to debate nodes: tokens already streamed to the browser can't be un-sent.
 LLM_RETRY = RetryPolicy(
     max_attempts=2,
-    retry_on=(anthropic.APIConnectionError, anthropic.InternalServerError, anthropic.RateLimitError),
+    retry_on=llm.RETRYABLE,
 )
 DOSSIER_KEYS = ("dossier", "grade", "metrics", "profile_embedding")
 
@@ -5975,7 +6049,7 @@ Adopt fitted values only if they are sane (`K_PILLAR` between 1 and 4, `K_TEST` 
 | `GET /api/schools?q=` | Intake autocomplete (`resolve_school` RPC) | `q` ≥ 2 chars | `[{slug, name, score}]` |
 | `GET /api/schools/{slug}` | School card: C7 grid, admit rates, test band | — | `SchoolSummary` |
 | `GET /api/demo/{name}/stream` | Replay a recorded run with original timing | `?speed=1.0` | `text/event-stream` |
-| `GET /api/health` | Liveness + dependency check | — | `{ok, db, anthropic_key, tavily, demo_mode, fake_llm}` |
+| `GET /api/health` | Liveness + dependency check | — | `{ok, db, zetaris, zetaris_enabled, llm_provider, llm_key, tavily, demo_mode, fake_llm, ts}` |
 
 ### 4.2 SSE wire format
 
@@ -6228,7 +6302,7 @@ async def health():
     except Exception:
         ok_zetaris = False
     return {"ok": ok_db, "db": ok_db, "zetaris": ok_zetaris, "zetaris_enabled": settings.zetaris_enabled,
-            "anthropic_key": bool(settings.anthropic_api_key) or settings.fake_llm,
+            "llm_provider": settings.llm_provider, "llm_key": llm.key_configured() or settings.fake_llm,
             "tavily": bool(settings.tavily_api_key), "demo_mode": settings.demo_mode,
             "fake_llm": settings.fake_llm, "ts": time.time()}
 ```

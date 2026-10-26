@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+import anthropic
 from anthropic import AsyncAnthropic, Timeout
 from anthropic.types.beta import BetaMessage
 from pydantic import BaseModel
 
+from . import openai_compat
 from .config import settings
 
 # Server-side refusal fallback: if a safety classifier declines, the API re-runs the request on Anthropic's
@@ -22,6 +24,50 @@ class LLMRefusal(RuntimeError):
 
 class LLMTruncated(RuntimeError):
     """Output hit max_tokens before the structured output was complete."""
+
+
+class LLMProviderError(RuntimeError):
+    """A failed request to an OpenAI-compatible provider (Meterless, Gemini); see openai_compat.py."""
+
+
+class LLMUnavailable(LLMProviderError):
+    """Connection error, timeout or 5xx."""
+
+
+class LLMRateLimited(LLMProviderError):
+    """Per-minute 429; retried after Retry-After."""
+
+    def __init__(self, message: str, retry_after: float | None = None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class LLMQuotaExhausted(LLMProviderError):
+    """Daily free-tier quota used up; not retried."""
+
+
+class LLMAuthError(LLMProviderError):
+    """401/403: missing or wrong key or Runtime token."""
+
+
+class LLMBadRequest(LLMProviderError):
+    """Any other 4xx."""
+
+
+class LLMInvalidOutput(LLMProviderError):
+    """Structured output that still failed validation after the retry."""
+
+
+# What a node catches to degrade instead of failing, and what the graph's node-level RetryPolicy retries.
+PROVIDER_ERRORS = (anthropic.APIError, LLMProviderError)
+RETRYABLE = (anthropic.APIConnectionError, anthropic.InternalServerError, anthropic.RateLimitError,
+             LLMUnavailable, LLMRateLimited)
+
+
+def key_configured() -> bool:
+    """Whether the selected provider has its credential (reported by /api/health)."""
+    return bool({"meterless": settings.meterless_runtime_token, "gemini": settings.gemini_api_key,
+                 "anthropic": settings.anthropic_api_key}[settings.llm_provider])
 
 
 def cached_system(text: str) -> list[dict]:
@@ -45,6 +91,9 @@ async def parse[T: BaseModel](
     model: str | None = None,
 ) -> T:
     """Structured output validated into `schema`. Claude Opus 5.5 always thinks; `effort` sets the depth."""
+    if settings.llm_provider != "anthropic":                 # Meterless or Gemini (§1.7.2)
+        return await openai_compat.parse(schema, system=system, messages=messages, effort=effort,
+                                         max_tokens=max_tokens, model=model)
     # The SDK validates every text block eagerly, which raises a bare ValidationError on truncated output and on
     # the declined model's partial text before a fallback block. Read the unparsed message instead, branch on
     # stop_reason, then validate only the final answer (see DECISIONS D-012).
@@ -89,6 +138,9 @@ async def stream_text(
     model: str | None = None,
 ) -> str:
     """Stream plain text token-by-token. Returns the final text from the model that actually answered."""
+    if settings.llm_provider != "anthropic":
+        return await openai_compat.stream_text(system=system, messages=messages, on_text=on_text, effort=effort,
+                                               max_tokens=max_tokens, model=model)
     async with client.beta.messages.stream(
         model=model or settings.reasoning_model,
         max_tokens=max_tokens,

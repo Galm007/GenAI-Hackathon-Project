@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import re
 
-import anthropic
-
 from app import llm
 from app.schemas.debate import DebateTurn, Speaker
 
@@ -58,7 +56,7 @@ def make_debate_node(speaker: Speaker):
                 on_reset=lambda: emit("debate_reset", turn=turn, speaker=speaker),
                 effort="low", max_tokens=4000,
             )
-        except (llm.LLMRefusal, anthropic.APIError):
+        except (llm.LLMRefusal, *llm.PROVIDER_ERRORS):
             text, degraded = fallback_turn(turn, speaker, state), True
             emit("debate_reset", turn=turn, speaker=speaker)
             emit("debate_token", turn=turn, speaker=speaker, delta=text)

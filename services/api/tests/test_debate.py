@@ -210,7 +210,8 @@ async def test_bad_citations_warn_and_a_missing_recommendation_defaults_to_the_m
 @pytest.mark.parametrize("error", [
     llm.LLMRefusal("debate turn refused"),
     anthropic.APIConnectionError(request=httpx.Request("POST", "https://api.anthropic.com/v1/messages")),
-], ids=["refusal", "api_error"])
+    llm.LLMQuotaExhausted("gemini daily quota used up"),
+], ids=["refusal", "api_error", "quota"])
 async def test_fallback_turns_are_degraded_grounded_and_cited(monkeypatch, docketed, events, error):
     install_stream(monkeypatch, [error] * MAX_TURNS)
     s = await run_debate(docketed)

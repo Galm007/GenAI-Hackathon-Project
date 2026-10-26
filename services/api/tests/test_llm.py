@@ -1,4 +1,6 @@
-"""app.llm against a real AsyncAnthropic whose HTTP transport is mocked (no network, no key)."""
+"""app.llm's Anthropic path against a real AsyncAnthropic whose HTTP transport is mocked (no network, no key).
+
+The Meterless/Gemini path is covered in test_openai_compat.py."""
 import json
 
 import httpx2
@@ -7,6 +9,7 @@ from anthropic import AsyncAnthropic, DefaultAsyncHttpxClient
 from pydantic import BaseModel
 
 from app import llm
+from app.config import settings
 
 
 class Verdict(BaseModel):
@@ -21,6 +24,11 @@ def _message(content: list[dict], stop_reason: str, stop_details: dict | None = 
 
 def _sse(events: list[dict]) -> bytes:
     return "".join(f"event: {e['type']}\ndata: {json.dumps(e)}\n\n" for e in events).encode()
+
+
+@pytest.fixture(autouse=True)
+def anthropic_provider(monkeypatch):
+    monkeypatch.setattr(settings, "llm_provider", "anthropic")
 
 
 @pytest.fixture

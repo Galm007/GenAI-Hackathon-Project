@@ -12,7 +12,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFi
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
-from . import db, zetaris_repo
+from . import db, llm, zetaris_repo
 from .api_models import IntakeForm
 from .config import settings
 from .demo import register_demo_runs
@@ -188,6 +188,6 @@ async def health():
     except Exception:
         ok_zetaris = False
     return {"ok": ok_db, "db": ok_db, "zetaris": ok_zetaris, "zetaris_enabled": settings.zetaris_enabled,
-            "anthropic_key": bool(settings.anthropic_api_key) or settings.fake_llm,
+            "llm_provider": settings.llm_provider, "llm_key": llm.key_configured() or settings.fake_llm,
             "tavily": bool(settings.tavily_api_key), "demo_mode": settings.demo_mode,
             "fake_llm": settings.fake_llm, "ts": time.time()}

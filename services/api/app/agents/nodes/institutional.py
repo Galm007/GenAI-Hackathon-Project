@@ -4,7 +4,6 @@ import asyncio
 import time
 from datetime import date
 
-import anthropic
 import orjson
 
 from app import llm, zetaris_repo
@@ -102,7 +101,7 @@ async def institutional_node(state: AdComState) -> dict:
             return await asyncio.wait_for(run_zetaris_research(
                 slug=slug, major_category=grade.major_category,
                 applicant_summary=orjson.dumps(_applicant_summary(state, slug)).decode()), ZETARIS_BUDGET_S)
-        except (TimeoutError, llm.LLMRefusal, anthropic.APIError) as exc:
+        except (TimeoutError, llm.LLMRefusal, *llm.PROVIDER_ERRORS) as exc:
             warnings.append(f"zetaris research degraded: {type(exc).__name__}")
             return []
 
@@ -118,7 +117,7 @@ async def institutional_node(state: AdComState) -> dict:
             effort="medium", max_tokens=12000,
         )
         brief = _drop_unsourced(brief, {s.id for s in snippets} | {f["id"] for f in findings})
-    except (llm.LLMRefusal, llm.LLMTruncated, anthropic.APIError, TimeoutError) as exc:
+    except (llm.LLMRefusal, llm.LLMTruncated, *llm.PROVIDER_ERRORS, TimeoutError) as exc:
         warnings.append(f"institutional research degraded: {type(exc).__name__}")
         emit("error", node=NODE, message="Live fact-check unavailable — using Common Data Set only.",
              recoverable=True)

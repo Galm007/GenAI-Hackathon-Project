@@ -253,7 +253,8 @@ async def test_zetaris_disabled_skips_the_sql_loop(node):
 @pytest.mark.parametrize("error", [
     TimeoutError(), llm.LLMRefusal("zetaris research refused"),
     anthropic.APIConnectionError(request=httpx.Request("POST", "https://api.anthropic.com/v1/messages")),
-], ids=["timeout", "refusal", "api_error"])
+    llm.LLMUnavailable("gemini unreachable"),
+], ids=["timeout", "refusal", "api_error", "unavailable"])
 async def test_zetaris_failure_degrades_but_the_brief_still_runs(node, error):
     calls, _ = node(research_error=error)
     out = await N.institutional_node(node_state())

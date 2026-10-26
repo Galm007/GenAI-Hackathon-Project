@@ -461,4 +461,4 @@ async def test_health_probes_the_database_and_zetaris(client, monkeypatch, db_up
     monkeypatch.setattr(main.zetaris, "query", query)
     h = (await client.get("/api/health")).json()
     assert (h["ok"], h["db"], h["zetaris"]) == (db_up, db_up, zetaris_up)
-    assert {"zetaris_enabled", "anthropic_key", "tavily", "demo_mode", "fake_llm", "ts"} <= set(h)
+    assert {"zetaris_enabled", "llm_provider", "llm_key", "tavily", "demo_mode", "fake_llm", "ts"} <= set(h)

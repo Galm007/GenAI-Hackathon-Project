@@ -5,7 +5,6 @@ import math
 import time
 from collections import Counter
 
-import anthropic
 import orjson
 
 from app import db, llm, zetaris_repo
@@ -134,7 +133,7 @@ async def twins_node(state: AdComState) -> dict:
             valid = {c.index for c in cards}
             analysis = analysis.model_copy(
                 update={"comparisons": [c for c in analysis.comparisons if c.twin_index in valid]})
-        except (llm.LLMRefusal, llm.LLMTruncated, anthropic.APIError) as exc:
+        except (llm.LLMRefusal, llm.LLMTruncated, *llm.PROVIDER_ERRORS) as exc:
             warnings.append(f"twin analysis degraded: {type(exc).__name__}")
     emit("twin_analysis", analysis=analysis.model_dump() if analysis else None)
     emit("node_end", node=NODE, elapsed_ms=int((time.perf_counter() - t0) * 1000))

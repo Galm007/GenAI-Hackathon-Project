@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import anthropic
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import RetryPolicy
+
+from app import llm
 
 from .nodes.debate import make_debate_node, route_debate
 from .nodes.delta_engine import delta_engine_node
@@ -13,11 +14,12 @@ from .nodes.institutional import institutional_node
 from .nodes.twins import twins_node
 from .state import AdComState
 
-# The SDK already retries 429/5xx/connection errors 4×; this is a second, node-level safety net.
+# The clients already retry 429/5xx/connection errors (SDK 4×, openai_compat 3×); this is a second,
+# node-level safety net.
 # Not applied to debate nodes: tokens already streamed to the browser can't be un-sent.
 LLM_RETRY = RetryPolicy(
     max_attempts=2,
-    retry_on=(anthropic.APIConnectionError, anthropic.InternalServerError, anthropic.RateLimitError),
+    retry_on=llm.RETRYABLE,
 )
 DOSSIER_KEYS = ("dossier", "grade", "metrics", "profile_embedding")
 

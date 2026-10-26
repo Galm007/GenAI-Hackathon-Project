@@ -250,7 +250,8 @@ async def test_no_twins_skips_the_analysis(node):
 @pytest.mark.parametrize("error", [
     N.llm.LLMRefusal("refused"), N.llm.LLMTruncated("TwinAnalysis hit max_tokens=10000"),
     anthropic.APIConnectionError(request=httpx.Request("POST", "https://api.anthropic.com/v1/messages")),
-], ids=["refusal", "truncated", "api_error"])
+    N.llm.LLMInvalidOutput("TwinAnalysis failed validation twice"),
+], ids=["refusal", "truncated", "api_error", "invalid_output"])
 async def test_analysis_failure_degrades_but_keeps_cards_and_baseline(node, error):
     node(POOL, parse_error=error)
     out = await N.twins_node(node_state())
