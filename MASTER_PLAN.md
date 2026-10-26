@@ -84,6 +84,9 @@ ALLOW_PAID_PROVIDERS=false                      # must be true before LLM_PROVID
 MAX_RUNS_PER_DAY=30                             # Flash Lite free tier: 500 requests/day ÷ 9–13 per evaluation, with headroom
 MAX_CONCURRENT_RUNS=2                           # two evaluations stay near Flash Lite's 15 requests/minute
 
+# World Model sidecar (§1.7.3): cd services/world-model && npm start. Empty → the docket comes from run state only.
+WORLD_MODEL_URL=http://127.0.0.1:8790
+
 # Tunables
 REASONING_MODEL=claude-opus-5-5
 ETL_MODEL=gemma4:e2b             # local Reddit extraction model (Ollama)
@@ -437,15 +440,16 @@ How the switch works (B01 owns `llm.py`; steps B17a–B17c add this, D-046):
 - Anthropic-only features (prompt caching, server-side fallbacks, adaptive thinking) are ignored on this path. Node prompts are unchanged; numbers still come only from `app/scoring/` (§0.1).
 - A startup check calls `GET /v1/models` on Meterless; `/api/health` replaces `anthropic_key` with `llm_provider` and `llm_key`, and reports `"meterless": true|false` next to `"zetaris"` (B17c). If the Runtime is unreachable at demo time, set `LLM_PROVIDER=gemini` (a rung of the fallback ladder in §6.3). If Gemini's daily quota is also used up, serve the recorded replay.
 
-#### 1.7.3 World Model engine: the committee's shared case file (step B18)
+#### 1.7.3 World Model engine: the committee's shared case file (steps B18a–B18b)
 
 What the engine is (upstream `engines/world-model/AGENTS.md`): an append-only, event-sourced shared state. Snapshots, events and observations are appended and canonical views are recomputed from the log; one running job per aggregate with a FIFO backlog; stable content-derived entity ids (`type:system:externalId`, or `ent_` + SHA-256 prefix); and a *read surface* (a context builder that takes an intent and returns a structured, budget-truncated payload). Its done-line is a green conformance scorecard: `WORLD_MODEL_IMPL=/abs/path/to/index.ts npx tsx conformance/runner.ts`, run from a clone of github.com/Meterless/Meterless.
 
 How AdCom uses it:
 - **Aggregate** = one evaluation run (`run:<id>`).
-- **Writers** (append observations, in parallel): Node 1 dossier facts and metrics, Node 2 institutional facts (each tagged with its Zetaris query id), Node 3 twin findings and baseline, the debate agents' claims, the delta engine's counterfactuals. Nodes 2 and 3 already run in parallel (§1.4); the engine is what keeps their shared state consistent instead of last-write-wins.
-- **Reader**: the committee docket (§3.8.1) is built from the engine's context builder (`intent` = "debate this school"), and citation tokens (`[[cds:…]]`, `[[twin:…]]`, `[[web:…]]`) resolve to World Model entity ids. `agents/docket.py` becomes a thin adapter over `app/world_model.py`.
-- **Process boundary**: the conformance suite loads a TypeScript module, so the engine is a small Node sidecar, `services/world-model/` (`src/index.ts` implementing the upstream interface, plus a minimal HTTP wrapper), and the Python graph talks to it through `app/world_model.py`. The upstream repository is cloned outside our repo (for example `~/meterless`) to run the suite and is not vendored. **(verify)** the exact interface the runner expects from `conformance/` and `reference/` when B18 starts.
+- **Writers** (append observations, in parallel; B18b writes each node's docket sections, D-053): Node 1 dossier facts and metrics, Node 2 institutional facts (each tagged with its Zetaris query id), Node 3 twin findings and baseline, the debate agents' claims, the delta engine's counterfactuals. Nodes 2 and 3 already run in parallel (§1.4); the engine is what keeps their shared state consistent instead of last-write-wins.
+- **Reader**: the docket node reads the run's `docket.section` observations back through the sidecar's `/context` read surface (§3.8.1) and builds the docket from them, taking any section the engine lacks (Node 1 skipped on a cached dossier) from the run state, so the text is byte-identical either way and the debate's prompt cache and citation index are unchanged. Citation tokens keep their current keys; resolving them to World Model entity ids is not built (D-053). Debate turns are appended as `debate.turn` observations and stay out of the docket.
+- **Process boundary**: the conformance suite loads a TypeScript module, so the engine is a small Node sidecar, `services/world-model/` (`src/index.ts` implementing the upstream interface, plus a minimal HTTP wrapper), and the Python graph talks to it through `app/world_model.py`. The upstream repository is cloned outside our repo (for example `~/meterless`) to run the suite and is not vendored.
+- **Upstream interface** (confirmed in B18a against `conformance/runner.ts` at upstream `1742dec`, D-052): the module exports `normalizeName(name)`, `entityIdFromName(type, name)`, `decide(similarity)` (`"auto-merge"` at ≥ 0.85, `"review"` at ≥ 0.82, else `"new"`) and a `WorldModel` class built with `{ storage: "memory", namespace, clock? }` that has `upsertEntity`, `ingest(observations) → { changed }`, `relate({ from, type, to, validFrom, source })`, `view("graph").neighborsOf(id, { via, at? })`, `stateShapeCanonical()` and `audit()`. Eight checks: stable ids (2), merge bands, provenance, idempotency (2), bitemporal edges and audit order. Ours (`services/world-model/src/index.ts`) passes 8/8 with zero dependencies; the sidecar runs with Node 24's built-in TypeScript support (`node src/server.ts`, default `127.0.0.1:8790`), one in-memory `WorldModel` per `run:<id>` namespace, under `/v1/<namespace>/…` (`entities`, `ingest`, `relate`, `state`, `audit`, `observations?since=`, `neighbors`, and `DELETE`).
 - **Degradation**: if the sidecar is down, `docket.py` falls back to the in-state docket and the run still completes (the feature is lost, the demo is not).
 - **Evidence** (what the guide asks for): the conformance scorecard saved to `docs/meterless-evidence/world-model-conformance.txt`; an integration test where Nodes 2 and 3 append concurrently and the docket contains both without loss; and a live demo moment where the debate shows a claim citing an entity written by a parallel node.
 
@@ -5092,13 +5096,14 @@ import time
 
 import orjson
 
-from app import llm
+from app import llm, world_model
 from app.embeddings import embed_one
 from app.profile_text import ProfileFacts, build_profile_text
 from app.schemas.dossier import ComputedMetrics, DossierGrade, ParsedDossier
 from app.schemas.inputs import RawApplicantInputs
 from app.scoring.metrics import compute_metrics, enforce_grade_invariants
 
+from ..docket import applicant_section
 from ..events import emit, progress
 from ..prompts.dossier import DOSSIER_EXTRACTOR_SYSTEM, RUBRIC_GRADER_SYSTEM
 from ..state import AdComState
@@ -5211,8 +5216,10 @@ async def dossier_parser_node(state: AdComState) -> dict:
     embedding = await embed_one(profile_text)
 
     emit("node_end", node=NODE, elapsed_ms=int((time.perf_counter() - t0) * 1000))
-    return {"dossier": dossier, "grade": grade, "metrics": metrics, "profile_text": profile_text,
-            "profile_embedding": embedding, "warnings": warnings}
+    out = {"dossier": dossier, "grade": grade, "metrics": metrics, "profile_text": profile_text,
+           "profile_embedding": embedding, "warnings": warnings}
+    await world_model.append(state.get("run_id"), NODE, applicant_section({**state, **out}))
+    return out
 ```
 
 #### 3.7.2 Node 2: `nodes/institutional.py` (Institutional Rubric & Fact-Checker)
@@ -5226,12 +5233,13 @@ from datetime import date
 
 import orjson
 
-from app import llm, zetaris_repo
+from app import llm, world_model, zetaris_repo
 from app.config import settings
 from app.schemas.institution import InstitutionalBrief, WebSnippet
 from app.scoring.rubric import apply_brief_adjustments, build_school_rubric
 from app.web_research import research_school
 
+from ..docket import institutional_sections
 from ..events import emit, tool_call
 from ..prompts.institutional import INSTITUTIONAL_SYSTEM
 from ..state import AdComState
@@ -5342,8 +5350,10 @@ async def institutional_node(state: AdComState) -> dict:
          zetaris_queries=findings)
     emit("school_rubric", stage="fact_checked", rubric=rubric.model_dump())
     emit("node_end", node=NODE, elapsed_ms=int((time.perf_counter() - t0) * 1000))
-    return {"school": school, "school_rubric": rubric, "institutional_brief": brief,
-            "web_snippets": snippets, "zetaris_queries": findings, "warnings": warnings}
+    out = {"school": school, "school_rubric": rubric, "institutional_brief": brief,
+           "web_snippets": snippets, "zetaris_queries": findings, "warnings": warnings}
+    await world_model.append(state.get("run_id"), NODE, institutional_sections({**state, **out}))
+    return out
 ```
 
 #### 3.7.3 Node 3: `nodes/twins.py` (Applicant Twins Hybrid RAG)
@@ -5358,10 +5368,11 @@ from collections import Counter
 
 import orjson
 
-from app import db, llm, zetaris_repo
+from app import db, llm, world_model, zetaris_repo
 from app.schemas.twins import EmpiricalBaseline, TwinAnalysis, TwinCard
 from app.scoring.probability import from_odds, odds
 
+from ..docket import twin_sections
 from ..events import emit, tool_call
 from ..prompts.twins import TWIN_ANALYST_SYSTEM
 from ..state import AdComState
@@ -5484,7 +5495,9 @@ async def twins_node(state: AdComState) -> dict:
             warnings.append(f"twin analysis degraded: {type(exc).__name__}")
     emit("twin_analysis", analysis=analysis.model_dump() if analysis else None)
     emit("node_end", node=NODE, elapsed_ms=int((time.perf_counter() - t0) * 1000))
-    return {"twins": cards, "baseline": baseline, "twin_analysis": analysis, "warnings": warnings}
+    out = {"twins": cards, "baseline": baseline, "twin_analysis": analysis, "warnings": warnings}
+    await world_model.append(state.get("run_id"), NODE, twin_sections({**state, **out}))
+    return out
 ```
 
 ### 3.8 Committee docket, Node 4 (debate) and Node 5 (delta)
@@ -5536,23 +5549,15 @@ def build_scoring_inputs(state: AdComState) -> ScoringInputs:
     )
 
 
-def build_docket(state: AdComState, prob: ProbabilityBreakdown) -> tuple[str, dict[str, list[str]]]:
-    school, r, g, d, m = state["school"], state["school_rubric"], state["grade"], state["dossier"], state["metrics"]
-    brief, snippets = state.get("institutional_brief"), state.get("web_snippets", [])
-    zq = [f for f in state.get("zetaris_queries", []) if not f.get("error")]
-    twins, b, ta = state["twins"], state["baseline"], state.get("twin_analysis")
+def _answered(state: AdComState) -> list[dict]:
+    return [f for f in state.get("zetaris_queries", []) if not f.get("error")]
 
-    cds = {
-        "name": school["name"], "cds_year": school.get("cds_year"), "admit_rate": school.get("admit_rate"),
-        "ed_admit_rate": school.get("ed_admit_rate"), "rd_admit_rate": school.get("rd_admit_rate"),
-        "sat_25": r.sat_25, "sat_75": r.sat_75, "test_policy": r.test_policy,
-        "early_plans": school.get("early_plans"),
-        "c7": r.factor_levels,
-        "major": {r.major_category: {"multiplier": r.major_multiplier, "source": r.major_multiplier_source,
-                                     "n": r.major_n, "college": r.major_college, "direct_admit": r.direct_admit}},
-        "pillar_weights": r.pillar_weights, "rubric_notes": r.notes,
-    }
-    applicant = {
+
+# Each node writes its own docket sections to the World Model as it finishes (B18b, §1.7.3).
+def applicant_section(state: AdComState) -> dict:
+    """Node 1's part of the docket."""
+    g, d, m = state["grade"], state["dossier"], state["metrics"]
+    return {"applicant": {
         "intended_major": state["inputs"].intended_major, "major_category": g.major_category,
         "metrics": m.model_dump(),
         "harvard": {p: {"rating": getattr(g.harvard, p).rating, "modifier": getattr(g.harvard, p).modifier,
@@ -5567,8 +5572,24 @@ def build_docket(state: AdComState, prob: ProbabilityBreakdown) -> tuple[str, di
         "reader_comments": g.reader_comments,
         "hooks": state["inputs"].hooks,
         "context": state["inputs"].context.model_dump(),
+    }}
+
+
+def institutional_sections(state: AdComState) -> dict:
+    """Node 2's part: the school's CDS facts, the brief, web evidence and Zetaris findings."""
+    school, r = state["school"], state["school_rubric"]
+    brief, snippets = state.get("institutional_brief"), state.get("web_snippets", [])
+    cds = {
+        "name": school["name"], "cds_year": school.get("cds_year"), "admit_rate": school.get("admit_rate"),
+        "ed_admit_rate": school.get("ed_admit_rate"), "rd_admit_rate": school.get("rd_admit_rate"),
+        "sat_25": r.sat_25, "sat_75": r.sat_75, "test_policy": r.test_policy,
+        "early_plans": school.get("early_plans"),
+        "c7": r.factor_levels,
+        "major": {r.major_category: {"multiplier": r.major_multiplier, "source": r.major_multiplier_source,
+                                     "n": r.major_n, "college": r.major_college, "direct_admit": r.direct_admit}},
+        "pillar_weights": r.pillar_weights, "rubric_notes": r.notes,
     }
-    packet = {
+    return {
         "school_cds": cds,
         "fact_checks": [fc.model_dump() for fc in brief.fact_checks] if brief else [],
         "priorities": [p.model_dump() for p in brief.strategic_priorities] if brief else [],
@@ -5576,17 +5597,38 @@ def build_docket(state: AdComState, prob: ProbabilityBreakdown) -> tuple[str, di
         "misalignment_signals": brief.misalignment_signals if brief else [],
         "web": [{"id": s.id, "title": s.title, "url": s.url} for s in snippets],
         "zetaris_queries": [{"id": f["id"], "purpose": f["purpose"], "sql": f["sql"], "rows": f["rows"][:8]}
-                            for f in zq],
-        "applicant": applicant,
+                            for f in _answered(state)],
+    }
+
+
+def twin_sections(state: AdComState) -> dict:
+    """Node 3's part: the comparable applicants, their baseline and the analysis."""
+    twins, b, ta = state["twins"], state["baseline"], state.get("twin_analysis")
+    return {
         "twins": [t.model_dump(include={"index", "outcome", "gpa_uw", "sat_score", "ap_count", "major_category",
                                         "ec_tier_summary", "top_activities", "spike_summary", "cycle_year",
                                         "hooks"}) for t in twins],
         "twin_baseline": b.model_dump(exclude={"sum_w", "sum_w2", "sum_w_admit"}),
         "twin_analysis": ta.model_dump() if ta else None,
-        "model": {"p_final": prob.p_final, "p_low": prob.p_low, "p_high": prob.p_high, "p_model": prob.p_model,
-                  "base": prob.base_admit_rate, "disposition": prob.disposition,
-                  "components": {c.key: {"delta_pp": c.delta_pp, "detail": c.detail} for c in prob.components}},
     }
+
+
+def model_section(prob: ProbabilityBreakdown) -> dict:
+    """The docket node's part: the deterministic probability (§0.1)."""
+    return {"model": {"p_final": prob.p_final, "p_low": prob.p_low, "p_high": prob.p_high, "p_model": prob.p_model,
+                      "base": prob.base_admit_rate, "disposition": prob.disposition,
+                      "components": {c.key: {"delta_pp": c.delta_pp, "detail": c.detail} for c in prob.components}}}
+
+
+def build_docket(state: AdComState, prob: ProbabilityBreakdown,
+                 engine: dict | None = None) -> tuple[str, dict[str, list[str]]]:
+    """The committee's packet. Sections the World Model holds (`engine`) are taken from it; any it lacks (Node 1
+    skipped on a cached dossier, the sidecar down) come from the run state, so the text is the same either way."""
+    r, g, d = state["school_rubric"], state["grade"], state["dossier"]
+    snippets, zq, twins = state.get("web_snippets", []), _answered(state), state["twins"]
+    packet = {**applicant_section(state), **institutional_sections(state), **twin_sections(state),
+              **model_section(prob)}
+    packet |= {name: payload for name, payload in (engine or {}).items() if name in packet}
     # Sorted keys → byte-identical across all four turns → prompt-cache hits on turns 2–4.
     docket = orjson.dumps(packet, option=orjson.OPT_SORT_KEYS | orjson.OPT_INDENT_2).decode()
 
@@ -5624,9 +5666,10 @@ def validate_citations(text: str, idx: dict[str, list[str]]) -> list[Citation]:
 #### 3.8.2 `nodes/docket_node.py`: the deterministic join
 
 ```python
+from app import world_model
 from app.scoring.probability import compute_probability
 
-from ..docket import build_docket, build_scoring_inputs
+from ..docket import build_docket, build_scoring_inputs, model_section
 from ..events import emit
 from ..state import AdComState
 
@@ -5635,8 +5678,15 @@ async def committee_docket_node(state: AdComState) -> dict:
     x = build_scoring_inputs(state)
     prob = compute_probability(x)
     emit("probability", probability=prob.model_dump(), scoring_inputs=x.model_dump())
-    docket, index = build_docket(state, prob)
-    return {"scoring_inputs": x, "probability": prob, "docket": docket, "docket_index": index, "debate_turn": 0}
+    # The shared case file (§1.7.3): Nodes 1-3 wrote their sections; this node adds the model and reads them back.
+    run_id = state.get("run_id")
+    await world_model.append(run_id, "docket", model_section(prob))
+    engine = await world_model.sections(run_id)
+    docket, index = build_docket(state, prob, engine)
+    down = world_model.enabled() and engine is None
+    warnings = ["world model unavailable: docket built from run state"] if down else []
+    return {"scoring_inputs": x, "probability": prob, "docket": docket, "docket_index": index, "debate_turn": 0,
+            "warnings": warnings}
 ```
 
 #### 3.8.3 Node 4: `nodes/debate.py` (Advocate ⇄ Chair, streamed token by token)
@@ -5646,7 +5696,7 @@ from __future__ import annotations
 
 import re
 
-from app import llm
+from app import llm, world_model
 from app.schemas.debate import DebateTurn, Speaker
 
 from ..docket import validate_citations
@@ -5717,6 +5767,7 @@ def make_debate_node(speaker: Speaker):
         dt = DebateTurn(turn=turn, speaker=speaker, content=text, citations=citations,
                         recommendation=recommendation, degraded=degraded)
         emit("debate_turn_end", **dt.model_dump())
+        await world_model.append(state.get("run_id"), speaker, {f"turn_{turn}": dt.model_dump()}, kind="debate.turn")
         return {"debate": [dt], "debate_turn": turn}
 
     debate_node.__name__ = f"{speaker}_node"

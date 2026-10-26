@@ -6,12 +6,13 @@ from datetime import date
 
 import orjson
 
-from app import llm, zetaris_repo
+from app import llm, world_model, zetaris_repo
 from app.config import settings
 from app.schemas.institution import InstitutionalBrief, WebSnippet
 from app.scoring.rubric import apply_brief_adjustments, build_school_rubric
 from app.web_research import research_school
 
+from ..docket import institutional_sections
 from ..events import emit, tool_call
 from ..prompts.institutional import INSTITUTIONAL_SYSTEM
 from ..state import AdComState
@@ -127,5 +128,7 @@ async def institutional_node(state: AdComState) -> dict:
          zetaris_queries=findings)
     emit("school_rubric", stage="fact_checked", rubric=rubric.model_dump())
     emit("node_end", node=NODE, elapsed_ms=int((time.perf_counter() - t0) * 1000))
-    return {"school": school, "school_rubric": rubric, "institutional_brief": brief,
+    out = {"school": school, "school_rubric": rubric, "institutional_brief": brief,
             "web_snippets": snippets, "zetaris_queries": findings, "warnings": warnings}
+    await world_model.append(state.get("run_id"), NODE, institutional_sections({**state, **out}))
+    return out

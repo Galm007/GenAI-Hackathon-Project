@@ -7,11 +7,12 @@ from collections import Counter
 
 import orjson
 
-from app import db, llm, zetaris_repo
+from app import db, llm, world_model, zetaris_repo
 from app.schemas.twins import EmpiricalBaseline, TwinAnalysis, TwinCard
 from app.scoring.probability import from_odds, odds
 from app.scoring.radar import build_radar
 
+from ..docket import twin_sections
 from ..events import emit, tool_call
 from ..prompts.twins import TWIN_ANALYST_SYSTEM
 from ..state import AdComState
@@ -137,4 +138,6 @@ async def twins_node(state: AdComState) -> dict:
             warnings.append(f"twin analysis degraded: {type(exc).__name__}")
     emit("twin_analysis", analysis=analysis.model_dump() if analysis else None)
     emit("node_end", node=NODE, elapsed_ms=int((time.perf_counter() - t0) * 1000))
-    return {"twins": cards, "baseline": baseline, "twin_analysis": analysis, "warnings": warnings}
+    out = {"twins": cards, "baseline": baseline, "twin_analysis": analysis, "warnings": warnings}
+    await world_model.append(state.get("run_id"), NODE, twin_sections({**state, **out}))
+    return out

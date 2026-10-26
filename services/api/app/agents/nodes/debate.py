@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from app import llm
+from app import llm, world_model
 from app.schemas.debate import DebateTurn, Speaker
 
 from ..docket import validate_citations
@@ -73,6 +73,7 @@ def make_debate_node(speaker: Speaker):
         dt = DebateTurn(turn=turn, speaker=speaker, content=text, citations=citations,
                         recommendation=recommendation, degraded=degraded)
         emit("debate_turn_end", **dt.model_dump())
+        await world_model.append(state.get("run_id"), speaker, {f"turn_{turn}": dt.model_dump()}, kind="debate.turn")
         return {"debate": [dt], "debate_turn": turn}
 
     debate_node.__name__ = f"{speaker}_node"
