@@ -1,9 +1,10 @@
 # AdCom deployment handoff
 
-Prepared by gridiii via Codex, 2026-10-24; refreshed 2026-10-25 after the Track B
-handoff. D08 is **not deployed**. B13's live graph is now implemented. A Vercel
-project, public API origin and working shared-database configuration are still
-unavailable on gridiii's machine. Local replay success is not a production
+Prepared by gridiii via Codex, 2026-10-24; verified container bring-up 2026-10-26.
+D08 is **not publicly deployed**. B13/B15/B16 are implemented. Aron's API image
+now runs alongside Zetaris on gridiii's Mac and serves the authored replay.
+A linked Vercel project, public API origin and working shared-database/agent
+credentials are still missing here. Local replay success is not a production
 integration result.
 
 ## Verified local path
@@ -17,8 +18,8 @@ integration result.
 
 ## Release prerequisites
 
-- Track B finishes B14 and B16, and the API reports actual DB/Zetaris health.
-  B13's graph and HTTP stream are implemented; this is no longer missing code.
+- Track B finishes B14, and the API reports actual DB/Zetaris health. B13/B15/B16
+  are implemented; the image was built and run on this Zetaris host on 2026-10-26.
 - Track A supplies the shared project connection and the demo-school/twin data.
   A12's semantic views and agent permissions were verified on Track A's stack;
   they must also exist on the chosen API/Zetaris host. Keep private values there.
@@ -26,6 +27,41 @@ integration result.
 - Choose the team's Vercel account/project and an API host co-located with Zetaris.
   The existing Zetaris bundle and its ports stay private. Do not deploy that bundle
   to Vercel or publish its `.env`.
+
+## Verified co-located API — 2026-10-26
+
+Done by gridiii via Codex, using Aron's B16 Dockerfile and Compose overlay.
+From the repository root, with the Zetaris stack already running:
+
+```bash
+docker compose --env-file zetaris-platform/.env -f zetaris-platform/docker-compose.yml -f docker-compose.adcom.yml build adcom-api
+docker compose --env-file zetaris-platform/.env -f zetaris-platform/docker-compose.yml -f docker-compose.adcom.yml up -d --no-deps adcom-api
+```
+
+The explicit bundle environment file supplies the vendor's image/stack variables;
+the API separately reads the ignored root `.env` through the overlay's `env_file`.
+`--no-deps` starts the API without recreating the healthy Zetaris services.
+Stop any previously started native API using port 8000 before this command.
+The web app's existing proxy still reaches `http://127.0.0.1:8000`.
+
+Actual checks:
+
+- The arm64 image built with frozen production dependencies and the API container
+  is running. Its host binding is **127.0.0.1:8000**, not a public interface.
+- Inside the container, `http://ui:3000/api/config` returns 200: the network path
+  to Zetaris works. This does not verify the least-privilege agent login or views.
+- The authored replay completes all 101 events; its what-if endpoint computes
+  the same fictional alternative-major result, 42.0%.
+- No private root or API `.env` file is present in the image filesystem.
+- The platform's separate `./verify.sh` passes all nine vendor checks.
+- `/api/health` currently reports **ok=false, db=false, zetaris=false** with
+  **fake_llm=true, demo_mode=true**. This is not a live-ready stack: project/agent
+  credentials remain placeholders and the local replay configuration disables
+  the project Zetaris integration.
+
+Do not expose this API publicly or call D08/B16 live acceptance complete on the
+basis of the replay. Configure the real team connection and the host's semantic
+layer first, then rerun the actual health, live-run and phone checks below.
 
 ## gridiii's local environment
 

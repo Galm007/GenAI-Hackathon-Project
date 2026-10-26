@@ -91,3 +91,24 @@ the default Maya fallback. The callback is stable across render updates.
 - The check used a temporary, clearly authored fictional fixture in the local
   container. It was removed afterwards and is not judging evidence or a live run.
 - 43 web tests, lint, TypeScript and production build passed after the fix.
+
+## Co-located API deployment preparation — 2026-10-26
+
+Done by gridiii via Codex, using Aron's B16 implementation without changing its
+source files. The arm64 image `zetaris-adcom-api:latest` built successfully
+(`sha256:3195a560a2fa412740be06101b6be7b0e4906d9deaca3a381fa228d58dd97f9c`).
+Container `zetaris-adcom-api-1` runs on the existing Zetaris network and exposes
+only `127.0.0.1:8000` to the host.
+
+- In-container HTTP request to `http://ui:3000/api/config`: **200**.
+- Container replay: **101 events**, successful `done`; what-if: **42.0%** for
+  the unchanged fictional alternative-major scenario.
+- Private root/API `.env` files: absent from the image filesystem.
+- Standalone Zetaris `./verify.sh`: **all 9 PASS** after API bring-up.
+- Actual project health: **ok=false, db=false, zetaris=false**;
+  **fake_llm=true, demo_mode=true**. Working authored replays do not verify live
+  data access. Team database and local agent credentials still need configuring.
+
+The temporary navigation-test recording was removed. No public tunnel, live
+model call, database mutation or volume reset was part of these checks. D08/X01
+and B16's live Zetaris acceptance are still open.
