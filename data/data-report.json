@@ -1,7 +1,7 @@
 {
   "status": "partial",
   "verified_at": "2026-10-26",
-  "source_url": "https://github.com/Galm007/GenAI-Hackathon-Project/blob/b6b3d37dd3b40c95c74b3f7d069947c60dc7cf7b/docs/data-report.md",
+  "source_url": "https://github.com/Galm007/GenAI-Hackathon-Project/blob/bf03906/docs/data-report.md",
   "n_twins": 947,
   "n_first_year_twins": 830,
   "n_transfer_twins": 117,
@@ -17,7 +17,7 @@
     { "slug": "georgia_tech", "name": "Georgia Tech", "first_year_outcomes": 212, "computer_science_outcomes": 163 },
     { "slug": "uc_berkeley", "name": "UC Berkeley", "first_year_outcomes": 288, "computer_science_outcomes": 160 }
   ],
-  "brier": null,
-  "brier_base": null,
-  "notes": "Corpus and coverage figures are from Track A's 2026-10-26 live data report. Fictional replay profiles are excluded. Reddit outcomes are self-reported and self-selected; the odds adjustment is approximate. Held-out accuracy and bias results remain pending A16."
+  "brier": 0.232,
+  "brier_base": 0.303,
+  "notes": "Corpus and coverage figures are from Track A's 2026-10-26 live data report. Fictional replay profiles are excluded. Reddit outcomes are self-reported and self-selected; the odds adjustment is approximate. Brier scores come from a held-out backtest of the latest 30% of posts (2341 admit/deny decisions), with the official admit rate as the base rate. Ranking within a school is weak (AUC about 0.53) and some income groups are poorly calibrated; see the report."
 }
