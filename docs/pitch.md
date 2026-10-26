@@ -2,10 +2,11 @@
 
 Prepared by gridiii via Codex, 2026-10-24; real-data update 2026-10-26.
 
-**Status:** ready to rehearse with the authored fictional replay. A15's corpus
-figures and A16's held-out backtest/bias audit are available. The shared database
-is now verified on gridiii's Mac. Final recorded-run figures, hosted live
-acceptance and Meterless/World Model judging proof remain open.
+**Status:** the fictional Maya evaluation completed live on 2026-10-26 with Gemini
+Free Tier, the shared database, local Zetaris and Aron's World Model. Run
+`cd712489-e9e2-4940-8e5b-6fed71adb07e`: 97 contiguous events, four non-degraded
+committee turns and final report. Raw captures stay private. Hosted physical-phone
+acceptance and the final Nemotron committee/capture check are recorded separately.
 Do not present the authored replay as a live agent run or as a recording using
 the real corpus. Its applicant comparisons and school inputs are fictional.
 
@@ -62,28 +63,31 @@ Select a twin citation and expand that card. Select a model-factor citation.
 “The scoring code starts with a school rate and accounts for major pressure,
 ratings, testing and comparable outcomes. The waterfall shows those changes
 adding up. The range makes uncertainty visible. In this fictional example, the
-estimate is about 33.7%; that is a calculation from illustrative inputs, not a
-claim about a real student's chances.”
+estimate is 56.66% using today's live fictional-Maya run against the shared
+institutional data. It remains a rough advisory estimate, not a prediction of
+a real student's admission outcome.”
 
 Open the evidence details and the comparison chart. Explain that the dashed
 Personal reference is assumed because the comparable profiles have no essays.
 
 **2:15–2:45 — A useful next move**
 
-“A suggestion should be something you can inspect. Trying the alternative-major
-scenario recalculates the same model, rather than asking an AI to invent a better
-percentage. Reset brings us back to the original file. Choosing that major still
-requires genuine interest and checking the university's curriculum and rules.”
+“A suggestion should be something you can inspect. Adding one hypothetical Tier 2
+activity changes the same deterministic calculation to 58.64%, a 1.98-point shift.
+An extra 50 SAT points moves it only 0.36 points. These scenarios are estimates
+about a fictional file, not promises that one change causes admission.”
 
-Click **Try it**, show the fictional result around 42.0% (+8.3 pp), then **Reset**.
-Use the currently displayed calculation if fixture inputs change.
+On the live run, try **Add one Tier 2 activity**, then reset. The authored
+`/room/demo/maya-uiuc` replay uses different illustrative inputs (33.7% baseline);
+announce replay mode and use its displayed figures if presenting that fallback.
 
 **2:45–3:00 — The engineering and remaining proof**
 
 "Our team has loaded 947 self-reported applicant profiles, 265 universities and
 five CDS rubrics. Our held-out Brier score is 0.232 versus 0.303 for official
 admit rates, but ranking within a school is weak and subgroup errors remain.
-Hosted live acceptance and Meterless/World Model evidence are still pending."
+The live Gemini run and World Model tests pass; the final phone and Nemotron
+committee evidence are tracked explicitly in our handoff."
 
 ## Answers we can support today
 
@@ -97,8 +101,8 @@ Hosted live acceptance and Meterless/World Model evidence are still pending."
   interface; universities make their own decisions.
 - **Is the partner integration finished?** The standalone Zetaris platform passes
   its checks locally. Track A verified AdCom semantic views and agent permissions
-  in A12 on its stack; the chosen demo host still needs its own working connection.
-  Meterless/World Model proof remains open.
+  in A12 and the same setup now works on this Mac. World Model conformance is
+  8/8; the final streamed Nemotron committee request remains open.
 
 ## Final pitch numbers: do not substitute fixture figures
 
@@ -106,14 +110,14 @@ Hosted live acceptance and Meterless/World Model evidence are still pending."
 |---|---|---|
 | Real applicant count and school coverage | 947 profiles; 265 universities; all five demo schools meet the reported coverage targets | A15 data report, 2026-10-26 |
 | Real CDS and Zetaris federation coverage | 5 CDS schools, 260 IPEDS fallback; gold refreshed | A12/A15 data report |
-| Calibrated demo probability and pivot sizes | No live recording yet | Recorded fictional-persona run with real institutional data |
+| Recorded fictional-Maya probability and pivot sizes | 56.66% baseline; Tier 2 activity 58.64% (+1.98 pp); SAT 1520→1570 gives 57.02% (+0.36 pp) | Live run and deterministic what-if, 2026-10-26 |
 | Typical odds correction | Median 3.24× across 88 schools with at least 15 outcomes | A15 calibration table summary |
 | Model and base-rate Brier scores; bias audit | Brier 0.232 vs 0.303 base rate; weak within-school ranking; subgroup gaps reported | A16 backtest, `docs/data-report.md` |
-| Real Nemotron request and World Model conformance | Not captured | D10 evidence |
+| Real Nemotron request and World Model conformance | Smoke/extraction requests captured; World Model 8/8; streamed committee check still open | D10 evidence |
 
 `data/data-report.json` now contains the reported corpus, coverage and odds
 adjustment figures, with a dated source link, and now the A16 Brier scores
-(0.232 model, 0.303 base rate). D09 still lacks the final recorded-run figures.
+(0.232 model, 0.303 base rate). The final run figures above now replace illustrative pitch values. No positive empirical major pivot was returned: Math/Stats yields 57.10% (+0.44 pp) only as a model experiment, with the explicit warning that major-specific data is unavailable. Do not sell it as a data-backed arbitrage recommendation.
 
 ## Judge questions about the current data
 
@@ -146,3 +150,17 @@ the inputs are fictional, but retrieved comparable profiles can contain real
 student data and must not enter fixtures, committed recordings or public video.
 Only report aggregate run figures until a shareable capture has been reviewed.
 Keep a final demo video on both presenting machines once evidence can be recorded.
+
+
+## Final §7.5 values from the live run
+
+- `P_UIUC`: **56.66%**.
+- `P_ARB`: **57.10%**, Math/Stats model experiment only; no empirical major pivot was returned.
+- `DELTA_MAJOR`: **+0.44 percentage points**, model estimate with the API's missing-major-data warning.
+- `N_MAJOR`: **0 qualifying major-pivot candidates**; the target-major neighborhood sample size is unavailable, so no applicant count is invented.
+- `DELTA_SAT`: **+0.36 percentage points** for 1520→1570, yielding 57.02%.
+- The recommended live scenario used in the pitch is the returned Tier 2 activity
+  counterfactual: **+1.98 percentage points**, yielding 58.64%.
+
+All deltas come from deterministic scoring, not the language model. Captured by
+gridiii via Codex, 2026-10-26. The private event log is retained outside Git.

@@ -8,7 +8,7 @@
 
 Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real probability via CLI · **H18** integration on the deployed stack · **H24** recorded replay · **H28** feature freeze · **H33** code freeze.
 
-> **gridiii's Track D status, 2026-10-26:** D01–D07 components and the explicit offline-replay fallback are implemented and verified. Today's work adds A15's reported figures to the panel/pitch, fixes named-recording restart, runs B16's API beside Zetaris and prepares the Vercel project. Shared database/agent access, A16, real recordings and provider evidence remain pending. D08–D10 retain their actual acceptance gates. See [the setup audit](gridiii-setup-status.md) for local checks and team dependencies.
+> **gridiii's Track D status, 2026-10-26:** D01–D07 components and the explicit offline-replay fallback are implemented and verified. Today's work adds A15's reported figures to the panel/pitch, fixes named-recording restart, runs B16's API beside Zetaris and prepares the Vercel project. Shared database and local agent access now work, A16 is published, and a real Nightshift smoke test passes. The full live recording and hosted phone acceptance are still being checked. D08–D10 retain their actual acceptance gates. See [the setup audit](gridiii-setup-status.md) for local checks and team dependencies.
 
 ---
 
@@ -116,6 +116,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Adds `llm.chat_with_tools(...)` and moves `agents/zetaris_tool.py` off direct `llm.client` calls: OpenAI-style function calling for Meterless and Gemini, today's Claude loop as the `anthropic` branch. Query budget, SQL guard and D-039 fallbacks unchanged.
   *Done when:* mocked-transport tests cover a tool call that runs a query and leads to a summary, budget exhaustion, rejected SQL and an unreachable stack; the fake-mode guard in `test_graph.py` also fails on any OpenAI-layer call; one real Gemini run shows a `[Zetaris Z#]` finding (needs the Zetaris stack).
 - [ ] **B17c — Meterless live check** · §1.7.2, §1.7.4 · Deps: B17a, S03
+  Implemented by gridiii via Codex, 2026-10-26: authenticated startup discovery and `meterless`/`meterless_status` health fields check the pinned model without making a billable completion. Real committee-turn acceptance remains open.
   Startup `GET /v1/models` check and `"meterless"` in `/api/health`; removes the **(verify)** markers in §1.7.2 that a real Runtime confirms.
   *Done when:* a real committee turn answers through a pinned Nemotron lane, confirmed in Nightshift's run details.
 - [x] **B18a — World Model engine sidecar + conformance** · §1.7.3 · Deps: B17a — done by Aron via Claude Code, 2026-10-26 (8/8 against upstream 1742dec; D-052)
@@ -173,7 +174,8 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Setup refreshed by gridiii via Codex, 2026-10-25: private local replay configuration imports successfully; production proxy replay/what-if and all 9 Zetaris platform checks pass. B13 is now implemented. Shared project credentials and host-specific Zetaris agent/views remain unavailable on this Mac; see the deployment handoff.
   Co-located API verified by gridiii via Codex, 2026-10-26: Aron's B16 image builds and runs on the Zetaris network, with loopback port 8000, working replay/what-if and HTTP reachability to `ui:3000`. All 9 platform checks pass. Project health remains db=false/zetaris=false until real credentials and local semantic views are configured; Vercel/public hosting and a live phone run remain open.
   Vercel project prepared by gridiii via Codex, 2026-10-26: `adcom` exists in gridiii's workspace with verified Next.js/root/build/install settings, Node 24 and default protection. No deployment exists; connect the repo and set the real public API origin after live health is working. D08 remains unchecked.
-- [ ] **D09 — Pitch assets** · §5.9 ("About the data"), §7.5 · Deps: A15, A16
+  Hosted by gridiii via Codex, 2026-10-26: Vercel build `dpl_AfuwHDnLXB5n1xS39WoDvAvtyfj6` is READY at `adcom-orpin.vercel.app`, with the public API tunnel and no frontend/Vercel model keys. Shared-file build inclusion is enabled. Final live-run/phone acceptance remains open; see deployment.md.
+- [x] **D09 — Pitch assets** · §5.9 ("About the data"), §7.5 · Deps: A15, A16 — done by gridiii via Codex, 2026-10-26 (real Gemini Maya run and deterministic what-if; no eligible empirical major pivot claimed)
   *Done when:* the About-the-data modal shows real numbers, and `docs/pitch.md` has every §7.5 placeholder filled from real data (never invented).
   Prepared by gridiii via Codex, 2026-10-24: accessible data disclosure, report manifest, three-minute prototype pitch and rehearsal notes. Real corpus/coverage/calibration fields remain explicitly unverified, so A15/A16-dependent acceptance stays open.
   Pitch status refreshed by gridiii via Codex, 2026-10-25: acknowledge Track A's verified A12 stack and Track B's implemented B13 graph; keep local connection, real recordings and A15/A16 claims separate. No unverified figures were filled in.
