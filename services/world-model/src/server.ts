@@ -1,5 +1,6 @@
 // Minimal HTTP wrapper around the World Model engine (plan §1.7.3). One in-memory WorldModel per namespace (an
-// evaluation run, `run:<id>`); the Python graph talks to it through app/world_model.py (step B18b).
+// evaluation run, `run:<id>`); the Python graph talks to it through app/world_model.py (step B18b), which reads
+// each run's docket sections back through `/context`.
 //
 //   node src/server.ts                 # WORLD_MODEL_HOST (127.0.0.1), WORLD_MODEL_PORT (8790)
 
@@ -73,6 +74,11 @@ export function createWorldModelServer() {
       if (req.method === "GET" && action === "audit") return send(res, 200, w.audit());
       if (req.method === "GET" && action === "observations") {
         return send(res, 200, w.observationsSince(Number(url.searchParams.get("since") ?? 0)));
+      }
+      if (req.method === "GET" && action === "context") {
+        const budget = url.searchParams.get("budget");
+        return send(res, 200, w.context({ kind: url.searchParams.get("kind") ?? undefined,
+                                          budget: budget === null ? undefined : Number(budget) }));
       }
       if (req.method === "GET" && action === "neighbors") {
         const id = url.searchParams.get("id");

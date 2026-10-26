@@ -66,6 +66,19 @@ test("http: ingest, state, observations, audit, delete", async () => {
   assert.deepEqual(await (await fetch(`${base}/v1/run%3Aabc`, { method: "DELETE" })).json(), { deleted: true });
 });
 
+test("http: context returns one kind in append order and honours the budget", async () => {
+  const section = (name: string, payload: unknown) => ({ externalId: `section:${name}`, kind: "docket.section",
+    section: name, payload, at: "2026-10-26T00:00:00.000Z", source: src("2026-10-26T00:00:00.000Z") });
+  await post("/v1/run%3Actx/ingest", { observations: [section("applicant", { a: 1 }), obs("debate", 1),
+                                                      section("twins", [1, 2, 3])] });
+  const all = await (await fetch(`${base}/v1/run%3Actx/context?kind=docket.section`)).json();
+  assert.deepEqual(all.observations.map((o: { section: string }) => o.section), ["applicant", "twins"]);
+  assert.equal(all.truncated, false);
+  const cut = await (await fetch(`${base}/v1/run%3Actx/context?kind=docket.section&budget=200`)).json();
+  assert.equal(cut.truncated, true);
+  assert.equal(cut.observations.length, 1);
+});
+
 test("http: relate and neighbors", async () => {
   const s = src("2026-10-26T00:00:00.000Z");
   await post("/v1/run%3Ag/entities", { type: "school", externalKey: { system: "adcom", id: "uiuc" }, source: s });

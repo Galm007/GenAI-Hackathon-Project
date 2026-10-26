@@ -5,13 +5,14 @@ import time
 
 import orjson
 
-from app import llm
+from app import llm, world_model
 from app.embeddings import embed_one
 from app.profile_text import ProfileFacts, build_profile_text
 from app.schemas.dossier import ComputedMetrics, DossierGrade, ParsedDossier
 from app.schemas.inputs import RawApplicantInputs
 from app.scoring.metrics import compute_metrics, enforce_grade_invariants
 
+from ..docket import applicant_section
 from ..events import emit, progress
 from ..prompts.dossier import DOSSIER_EXTRACTOR_SYSTEM, RUBRIC_GRADER_SYSTEM
 from ..state import AdComState
@@ -124,5 +125,7 @@ async def dossier_parser_node(state: AdComState) -> dict:
     embedding = await embed_one(profile_text)
 
     emit("node_end", node=NODE, elapsed_ms=int((time.perf_counter() - t0) * 1000))
-    return {"dossier": dossier, "grade": grade, "metrics": metrics, "profile_text": profile_text,
+    out = {"dossier": dossier, "grade": grade, "metrics": metrics, "profile_text": profile_text,
             "profile_embedding": embedding, "warnings": warnings}
+    await world_model.append(state.get("run_id"), NODE, applicant_section({**state, **out}))
+    return out

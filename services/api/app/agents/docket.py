@@ -42,23 +42,15 @@ def build_scoring_inputs(state: AdComState) -> ScoringInputs:
     )
 
 
-def build_docket(state: AdComState, prob: ProbabilityBreakdown) -> tuple[str, dict[str, list[str]]]:
-    school, r, g, d, m = state["school"], state["school_rubric"], state["grade"], state["dossier"], state["metrics"]
-    brief, snippets = state.get("institutional_brief"), state.get("web_snippets", [])
-    zq = [f for f in state.get("zetaris_queries", []) if not f.get("error")]
-    twins, b, ta = state["twins"], state["baseline"], state.get("twin_analysis")
+def _answered(state: AdComState) -> list[dict]:
+    return [f for f in state.get("zetaris_queries", []) if not f.get("error")]
 
-    cds = {
-        "name": school["name"], "cds_year": school.get("cds_year"), "admit_rate": school.get("admit_rate"),
-        "ed_admit_rate": school.get("ed_admit_rate"), "rd_admit_rate": school.get("rd_admit_rate"),
-        "sat_25": r.sat_25, "sat_75": r.sat_75, "test_policy": r.test_policy,
-        "early_plans": school.get("early_plans"),
-        "c7": r.factor_levels,
-        "major": {r.major_category: {"multiplier": r.major_multiplier, "source": r.major_multiplier_source,
-                                     "n": r.major_n, "college": r.major_college, "direct_admit": r.direct_admit}},
-        "pillar_weights": r.pillar_weights, "rubric_notes": r.notes,
-    }
-    applicant = {
+
+# Each node writes its own docket sections to the World Model as it finishes (B18b, §1.7.3).
+def applicant_section(state: AdComState) -> dict:
+    """Node 1's part of the docket."""
+    g, d, m = state["grade"], state["dossier"], state["metrics"]
+    return {"applicant": {
         "intended_major": state["inputs"].intended_major, "major_category": g.major_category,
         "metrics": m.model_dump(),
         "harvard": {p: {"rating": getattr(g.harvard, p).rating, "modifier": getattr(g.harvard, p).modifier,
@@ -73,8 +65,24 @@ def build_docket(state: AdComState, prob: ProbabilityBreakdown) -> tuple[str, di
         "reader_comments": g.reader_comments,
         "hooks": state["inputs"].hooks,
         "context": state["inputs"].context.model_dump(),
+    }}
+
+
+def institutional_sections(state: AdComState) -> dict:
+    """Node 2's part: the school's CDS facts, the brief, web evidence and Zetaris findings."""
+    school, r = state["school"], state["school_rubric"]
+    brief, snippets = state.get("institutional_brief"), state.get("web_snippets", [])
+    cds = {
+        "name": school["name"], "cds_year": school.get("cds_year"), "admit_rate": school.get("admit_rate"),
+        "ed_admit_rate": school.get("ed_admit_rate"), "rd_admit_rate": school.get("rd_admit_rate"),
+        "sat_25": r.sat_25, "sat_75": r.sat_75, "test_policy": r.test_policy,
+        "early_plans": school.get("early_plans"),
+        "c7": r.factor_levels,
+        "major": {r.major_category: {"multiplier": r.major_multiplier, "source": r.major_multiplier_source,
+                                     "n": r.major_n, "college": r.major_college, "direct_admit": r.direct_admit}},
+        "pillar_weights": r.pillar_weights, "rubric_notes": r.notes,
     }
-    packet = {
+    return {
         "school_cds": cds,
         "fact_checks": [fc.model_dump() for fc in brief.fact_checks] if brief else [],
         "priorities": [p.model_dump() for p in brief.strategic_priorities] if brief else [],
@@ -82,17 +90,38 @@ def build_docket(state: AdComState, prob: ProbabilityBreakdown) -> tuple[str, di
         "misalignment_signals": brief.misalignment_signals if brief else [],
         "web": [{"id": s.id, "title": s.title, "url": s.url} for s in snippets],
         "zetaris_queries": [{"id": f["id"], "purpose": f["purpose"], "sql": f["sql"], "rows": f["rows"][:8]}
-                            for f in zq],
-        "applicant": applicant,
+                            for f in _answered(state)],
+    }
+
+
+def twin_sections(state: AdComState) -> dict:
+    """Node 3's part: the comparable applicants, their baseline and the analysis."""
+    twins, b, ta = state["twins"], state["baseline"], state.get("twin_analysis")
+    return {
         "twins": [t.model_dump(include={"index", "outcome", "gpa_uw", "sat_score", "ap_count", "major_category",
                                         "ec_tier_summary", "top_activities", "spike_summary", "cycle_year",
                                         "hooks"}) for t in twins],
         "twin_baseline": b.model_dump(exclude={"sum_w", "sum_w2", "sum_w_admit"}),
         "twin_analysis": ta.model_dump() if ta else None,
-        "model": {"p_final": prob.p_final, "p_low": prob.p_low, "p_high": prob.p_high, "p_model": prob.p_model,
-                  "base": prob.base_admit_rate, "disposition": prob.disposition,
-                  "components": {c.key: {"delta_pp": c.delta_pp, "detail": c.detail} for c in prob.components}},
     }
+
+
+def model_section(prob: ProbabilityBreakdown) -> dict:
+    """The docket node's part: the deterministic probability (§0.1)."""
+    return {"model": {"p_final": prob.p_final, "p_low": prob.p_low, "p_high": prob.p_high, "p_model": prob.p_model,
+                      "base": prob.base_admit_rate, "disposition": prob.disposition,
+                      "components": {c.key: {"delta_pp": c.delta_pp, "detail": c.detail} for c in prob.components}}}
+
+
+def build_docket(state: AdComState, prob: ProbabilityBreakdown,
+                 engine: dict | None = None) -> tuple[str, dict[str, list[str]]]:
+    """The committee's packet. Sections the World Model holds (`engine`) are taken from it; any it lacks (Node 1
+    skipped on a cached dossier, the sidecar down) come from the run state, so the text is the same either way."""
+    r, g, d = state["school_rubric"], state["grade"], state["dossier"]
+    snippets, zq, twins = state.get("web_snippets", []), _answered(state), state["twins"]
+    packet = {**applicant_section(state), **institutional_sections(state), **twin_sections(state),
+              **model_section(prob)}
+    packet |= {name: payload for name, payload in (engine or {}).items() if name in packet}
     # Sorted keys → byte-identical across all four turns → prompt-cache hits on turns 2–4.
     docket = orjson.dumps(packet, option=orjson.OPT_SORT_KEYS | orjson.OPT_INDENT_2).decode()
 

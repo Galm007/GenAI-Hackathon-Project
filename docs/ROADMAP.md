@@ -121,7 +121,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [x] **B18a — World Model engine sidecar + conformance** · §1.7.3 · Deps: B17a — done by Aron via Claude Code, 2026-10-26 (8/8 against upstream 1742dec; D-052)
   `services/world-model/`: our TypeScript implementation of the upstream interface (in-memory store, stable ids, idempotent ingest, bitemporal edges, audit log, one FIFO write queue per run) and a minimal HTTP wrapper; no runtime dependencies.
   *Done when:* the upstream conformance suite prints 8/8 (scorecard saved to `docs/meterless-evidence/world-model-conformance.txt`); `npm test` in `services/world-model` passes.
-- [ ] **B18b — World Model committee integration** · §1.7.3, §3.8.1 · Deps: B11, B18a
+- [x] **B18b — World Model committee integration** · §1.7.3, §3.8.1 · Deps: B11, B18a — done by Aron via Claude Code, 2026-10-26 (integration tests run the real sidecar; compose image not built here; D-053)
   `app/world_model.py` (Python client); Nodes 1–3 and the debate append observations; `agents/docket.py` builds the docket from a sidecar context endpoint and falls back to the in-state docket when the sidecar is down; the sidecar joins the API host's compose setup.
   *Done when:* an integration test shows Nodes 2 and 3 appending concurrently without loss, and the sidecar being down degrades to the in-state docket.
 - [x] **C01 — Next.js scaffold + design tokens** · §5.1–5.3 · Deps: none — done by egli3 via Gemini CLI, 2026-10-24

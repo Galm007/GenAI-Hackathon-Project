@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.5-flash-lite"           # extraction, grading, briefs, delta; 3.8-flash stalls (D-049)
     gemini_fast_model: str = "gemini-3.5-flash-lite"      # effort="low": debate turns and the SQL loop
 
+    # §1.7.3: the World Model sidecar (services/world-model); unset → the docket is built from run state only
+    world_model_url: str | None = None
+
     @model_validator(mode="after")
     def _paid_provider_needs_consent(self) -> Self:
         if self.llm_provider == "anthropic" and not self.allow_paid_providers:

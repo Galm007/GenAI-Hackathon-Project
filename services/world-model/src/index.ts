@@ -213,6 +213,20 @@ export class WorldModel {
     return [...ids].map((id) => this.observations.get(id)!.observation);
   }
 
+  /** The read surface: observations of one kind in append order, cut off before `budget` characters. */
+  context(opts: { kind?: string; budget?: number } = {}): { observations: Observation[]; truncated: boolean } {
+    const observations: Observation[] = [];
+    let used = 0;
+    for (const { observation } of this.observations.values()) {
+      if (opts.kind && observation.kind !== opts.kind) continue;
+      const size = canonicalJson(observation).length;
+      if (opts.budget !== undefined && used + size > opts.budget) return { observations, truncated: true };
+      used += size;
+      observations.push(observation);
+    }
+    return { observations, truncated: false };
+  }
+
   view(name: "graph") {
     if (name !== "graph") throw new Error(`unknown view: ${name}`);
     return {
