@@ -130,3 +130,37 @@ async def test_evaluate_streams_the_real_graph_offline(client, offline):
     assert child.status == "complete" and child.events[0]["cached_dossier"] is True
     assert child_names[1:3] == ["dossier_parsed", "scorecard"]
     assert "dossier_parser" not in [e["node"] for e in child.events if e["event"] == "node_complete"]
+
+
+def node_one_ran(run) -> bool:
+    return "dossier_parser" in [e["node"] for e in run.events if e["event"] == "node_complete"]
+
+
+async def test_identical_upload_skips_node_one_but_still_fills_the_dossier_panel(client, offline):
+    from app.main import runs
+    intake = INTAKE | {"activities_text": "Robotics captain; cache-test file", "session_id": "graph-cache-1"}
+
+    async def evaluate(body: dict):
+        r = await client.post("/api/evaluate", data={"intake": json.dumps(body)})
+        assert r.status_code == 202, r.text
+        run = runs.get(r.json()["run_id"])
+        await run.task
+        assert run.status == "complete"
+        return run
+
+    first = await evaluate(intake)
+    second = await evaluate(intake | {"session_id": "graph-cache-2"})   # same files, another tab or device
+    assert node_one_ran(first) and not node_one_ran(second)
+    assert second.events[0]["cached_dossier"] is True
+    assert [e["event"] for e in second.events[1:3]] == ["dossier_parsed", "scorecard"]
+    by = {e["event"]: e for e in first.events}
+    replayed = {e["event"]: e for e in second.events[1:3]}
+    assert replayed["scorecard"]["grade"] == by["scorecard"]["grade"]           # same panel content as live
+    assert replayed["scorecard"]["metrics"] == by["scorecard"]["metrics"]       # live sends graded metrics here
+    assert replayed["dossier_parsed"]["dossier"] == by["dossier_parsed"]["dossier"]
+    assert "essay_text" not in replayed["dossier_parsed"]["dossier"]
+    assert second.final["probability"].p_final == first.final["probability"].p_final
+
+    # a different context changes what Node 1 grades and embeds, so it is not a cache hit
+    other = await evaluate(intake | {"session_id": "graph-cache-3", "context": {"first_gen": True}})
+    assert node_one_ran(other)

@@ -99,7 +99,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   *Done when:* `get_graph().draw_mermaid()` matches §3.1; the CLI completes for Maya at UIUC; the browser stream from `/api/evaluate` comes from the real graph. **H12 milestone.**
 - [ ] **B14 — Demo replay + `FAKE_LLM` mode** · §4.8–4.9 · Deps: B13
   *Done when:* `FAKE_LLM=1 ZETARIS_ENABLED=false` runs the whole graph offline; `/api/demo/<name>/stream` replays a recording; `/api/what-if` works on `demo-<name>`.
-- [ ] **B15 — Hardening** · §4.3 (health, prewarm), §4.4 (rate limits, watchdog), §7.4 (dossier cache + replaying Node 1 outputs for cached runs) · Deps: B13
+- [x] **B15 — Hardening** · §4.3 (health, prewarm), §4.4 (rate limits, watchdog), §7.4 (dossier cache + replaying Node 1 outputs for cached runs) · Deps: B13 — done by Aron via Claude Code, 2026-10-25
   *Done when:* a second identical upload skips Node 1 but still fills the dossier panel; `/api/health` reports DB and Zetaris; the 429 paths are tested.
 - [x] **B16 — API container + co-located compose** · §4.10 · Deps: B13 — done by Aron via Claude Code, 2026-10-25 (image built and smoke-tested offline; compose-up with Zetaris pending on the Zetaris host)
   *Done when:* `docker compose -f zetaris-platform/docker-compose.yml -f docker-compose.adcom.yml up -d adcom-api` serves `/api/health` with `zetaris: true`.

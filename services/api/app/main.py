@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import base64
+import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -18,23 +20,42 @@ from .demo import router as demo_router
 from .runs import RateLimited, RunManager, script_frames, sse_frames
 from .zetaris import zetaris
 
+log = logging.getLogger("main")
 MAX_PDF_BYTES = 10 * 1024 * 1024
 SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"}
 
 runs = RunManager()
 
 
+async def prewarm() -> None:
+    """First Spark query after a restart is the slow one: pay it before the judges arrive (plan §4.3)."""
+    try:
+        await db.sb()                          # warm the Supabase client
+    except Exception:
+        log.warning("supabase warm-up failed")
+    if not settings.zetaris_enabled:
+        return
+    for slug in settings.prewarm_schools:
+        try:
+            await zetaris_repo.school_profile(slug)
+            await zetaris_repo.reddit_calibration(slug)
+            await zetaris_repo.admitted_medians(slug)
+        except Exception:
+            log.warning("prewarm failed for %s", slug)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # B15 adds the Supabase warm-up and the Zetaris prewarm (plan §4.3).
     restore = None
-    register_demo_runs(runs)
+    register_demo_runs(runs)                   # recorded runs work even with DB/API offline (§4.8)
     if settings.fake_llm:
         from .fake_llm import install
-        restore = install()
+        restore = install()                    # offline dev: fixtures instead of model calls (§4.9)
+    warm = asyncio.create_task(prewarm())      # in the background, so a missing Zetaris never delays startup (D-036)
     try:
         yield
     finally:
+        warm.cancel()
         if restore:
             restore()
         await runs.shutdown()

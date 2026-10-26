@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import time
@@ -25,6 +26,8 @@ from .scoring.probability import ScoringInputs
 log = logging.getLogger("runs")
 CAPTURED = {"scorecard", "probability", "counterfactuals", "final_report"}
 PREFILL_KEYS = ("dossier", "grade", "metrics", "profile_text", "profile_embedding")
+DOSSIER_TTL_S = 86_400       # same 24 h privacy window as runs (§7.4)
+WATCHDOG_INTERVAL_S = 15
 
 # `/api/dev/fake-stream` still replays this hand-written script for Tracks C/D (plan §6.3; D06 replaces it).
 FAKE_STREAM = Path(__file__).resolve().parents[3] / "data" / "fixtures" / "fake_stream.json"
@@ -78,12 +81,24 @@ def _gap(prev: dict | None, ev: dict, speed: float) -> float:
     return 0.0 if prev is None else min(max(ev["ts"] - prev["ts"], 0.0), MAX_GAP_S) / speed
 
 
+def dossier_key(inputs: RawApplicantInputs) -> str:
+    """Everything Node 1 reads. Hooks and context shape the grade and the embedded profile (see DECISIONS D-036)."""
+    h = hashlib.sha256()
+    for part in (inputs.transcript_pdf_b64, inputs.resume_pdf_b64, inputs.resume_text, inputs.activities_text,
+                 inputs.essay_text, inputs.recommendation_text, inputs.intended_major,
+                 ",".join(sorted(inputs.hooks)), inputs.context.model_dump_json()):
+        h.update((part or "").encode())
+        h.update(b"\x00")
+    return h.hexdigest()
+
+
 class RunManager:
     def __init__(self) -> None:
         self._runs: dict[str, Run] = {}
         self._sem = asyncio.Semaphore(settings.max_concurrent_runs)
         self._day: tuple[date, int] = (date.today(), 0)
         self._active_sessions: set[str] = set()
+        self._dossier_cache: dict[str, tuple[float, dict[str, Any]]] = {}   # dossier_key → (time, Node 1 outputs)
 
     # ---------- lifecycle ----------
     def get(self, run_id: str) -> Run | None:
@@ -104,6 +119,8 @@ class RunManager:
     async def start(self, *, session_id: str, inputs: RawApplicantInputs, school_slug: str,
                     prefill: dict[str, Any] | None = None) -> Run:
         self._admit(session_id)
+        if prefill is None:                         # identical upload: reuse its parsed dossier, skip Node 1 (§7.4)
+            prefill = self._cached_dossier(dossier_key(inputs))
         run = Run(run_id=str(uuid.uuid4()), session_id=session_id, school_slug=school_slug,
                   has_recommendations=bool(inputs.recommendation_text))
         self._runs[run.run_id] = run
@@ -117,6 +134,15 @@ class RunManager:
         f = parent.final
         return await self.start(session_id=parent.session_id, inputs=f["inputs"], school_slug=slug,
                                 prefill={k: f[k] for k in PREFILL_KEYS})
+
+    def _cached_dossier(self, key: str) -> dict[str, Any] | None:
+        hit = self._dossier_cache.get(key)
+        if hit is None:
+            return None
+        if time.time() - hit[0] >= DOSSIER_TTL_S:
+            del self._dossier_cache[key]
+            return None
+        return hit[1]
 
     async def shutdown(self) -> None:
         for run in self._runs.values():
@@ -155,6 +181,9 @@ class RunManager:
                             await self.publish(run, "node_complete", node=node)
                 run.final = (await graph.aget_state(config)).values
                 run.status = "complete"
+                if all(run.final.get(k) is not None for k in PREFILL_KEYS):
+                    self._dossier_cache[dossier_key(state["inputs"])] = (
+                        time.time(), {k: run.final[k] for k in PREFILL_KEYS})
         except asyncio.CancelledError:
             run.status = "failed"
             await self.publish(run, "error", node=None, message="Run cancelled: no viewers.", recoverable=False)
@@ -179,7 +208,7 @@ class RunManager:
     async def _watchdog(self, run: Run) -> None:
         """Don't burn tokens on a run nobody is watching (closed tab, abandoned demo)."""
         while True:
-            await asyncio.sleep(15)
+            await asyncio.sleep(WATCHDOG_INTERVAL_S)
             if run.subscribers == 0 and time.monotonic() - run.last_seen > settings.run_idle_cancel_s:
                 if run.task:
                     run.task.cancel()

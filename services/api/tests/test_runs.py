@@ -191,6 +191,161 @@ async def test_second_submit_from_the_same_session_is_refused(stub):
     await (await mgr.start(session_id="s3", inputs=INPUTS, school_slug="uiuc")).task   # free again once done
 
 
+# ---------- dossier cache (§7.4) ----------
+FULL = RawApplicantInputs(intended_major="CS", target_schools=["uiuc"], transcript_pdf_b64="JVBERi0=",
+                          activities_text="USACO Gold", essay_text="An essay.")
+
+
+@pytest.mark.parametrize("change", [
+    {"transcript_pdf_b64": "JVBERi1="}, {"resume_pdf_b64": "JVBERi0="}, {"resume_text": "r"},
+    {"activities_text": "USACO Silver"}, {"essay_text": "Another essay."}, {"recommendation_text": "A letter."},
+    {"intended_major": "Mathematics"}, {"hooks": ["recruited_athlete"]},
+    {"context": {"first_gen": True}}, {"context": {"residency_state": "IL"}},
+], ids=lambda c: next(iter(c)))
+def test_dossier_key_covers_everything_node_one_reads(change):
+    assert runs_mod.dossier_key(FULL) == runs_mod.dossier_key(FULL.model_copy())
+    assert runs_mod.dossier_key(FULL.model_validate(FULL.model_dump() | change)) != runs_mod.dossier_key(FULL)
+
+
+def test_dossier_key_ignores_what_node_one_never_reads():
+    unused = ({"target_schools": ["cmu"]}, {"early_round": {"uiuc": "EA"}}, {"application_deadline": "2026-11-01"})
+    for change in unused:
+        assert runs_mod.dossier_key(FULL.model_validate(FULL.model_dump() | change)) == runs_mod.dossier_key(FULL)
+    # field boundaries matter: moving text between two fields is a different upload
+    a = FULL.model_copy(update={"activities_text": "ab", "essay_text": "c"})
+    b = a.model_copy(update={"activities_text": "a", "essay_text": "bc"})
+    assert runs_mod.dossier_key(a) != runs_mod.dossier_key(b)
+
+
+async def test_cache_hit_prefills_and_expires_after_a_day(stub, monkeypatch):
+    from . import test_debate as T
+    g = stub()
+    mgr = runs_mod.RunManager()
+    s = T.base_state(profile_embedding=[0.0] * 768)
+    cached = {"profile_text": "t", **{k: s[k] for k in ("dossier", "grade", "metrics", "profile_embedding")}}
+    now = 1_000_000.0
+    monkeypatch.setattr(runs_mod.time, "time", lambda: now)
+    mgr._dossier_cache[runs_mod.dossier_key(FULL)] = (now - runs_mod.DOSSIER_TTL_S + 1, cached)
+    assert mgr._cached_dossier(runs_mod.dossier_key(FULL)) == cached
+
+    run = await mgr.start(session_id="c1", inputs=FULL, school_slug="uiuc")
+    await run.task
+    assert {k: g.states[-1][k] for k in cached} == cached       # Node 1's outputs went into the graph state
+    assert run.events[0]["cached_dossier"] is True and [e["event"] for e in run.events[1:3]] == [
+        "dossier_parsed", "scorecard"]
+
+    now += 2
+    assert mgr._cached_dossier(runs_mod.dossier_key(FULL)) is None and not mgr._dossier_cache
+
+
+async def test_only_complete_runs_with_all_node_one_outputs_are_cached(stub):
+    stub()                                                      # its final state has no dossier
+    mgr = runs_mod.RunManager()
+    await _finished_run(mgr)
+    assert mgr._dossier_cache == {}
+    stub(fail=RuntimeError("boom"))
+    await _finished_run(mgr, session="s9")
+    assert mgr._dossier_cache == {}
+
+
+# ---------- watchdog and rate limits (§4.4) ----------
+async def test_watchdog_cancels_a_run_nobody_watches(monkeypatch):
+    class Hanging(StubGraph):
+        async def astream(self, state, config, stream_mode):
+            yield "custom", {"event": "node_start", "node": "dossier_parser"}
+            await runs_mod.asyncio.sleep(30)
+
+    monkeypatch.setattr(runs_mod, "graph", Hanging())
+    monkeypatch.setattr(runs_mod, "WATCHDOG_INTERVAL_S", 0.01)
+    monkeypatch.setattr(runs_mod.settings, "run_idle_cancel_s", 0)
+    run = await _finished_run()
+    assert run.status == "failed" and run.events[-1]["event"] == "done"
+    assert (run.events[-2]["event"], run.events[-2]["message"]) == ("error", "Run cancelled: no viewers.")
+
+
+async def test_watchdog_spares_a_watched_run(stub, monkeypatch):
+    stub()
+    monkeypatch.setattr(runs_mod, "WATCHDOG_INTERVAL_S", 0.01)
+    monkeypatch.setattr(runs_mod.settings, "run_idle_cancel_s", 0)
+    mgr = runs_mod.RunManager()
+    run = await mgr.start(session_id="w1", inputs=INPUTS, school_slug="uiuc")
+    frames = [f async for f in runs_mod.sse_frames(run, -1, _Req())]          # a live reader is attached
+    assert run.status == "complete" and frames[-1]["event"] == "done"
+
+
+@pytest.mark.parametrize(("setup", "message"), [
+    ("budget", "Today's evaluation budget is used up. Try the recorded demo."),
+    ("busy", "All committee rooms are busy. Retry in a minute."),
+    ("active", "You already have an evaluation in progress."),
+])
+async def test_evaluate_429_paths(client, stub, monkeypatch, setup, message):
+    import asyncio
+    from datetime import date
+
+    from app.main import runs
+    stub()
+    session = f"test-429-{setup}"
+    if setup == "budget":
+        monkeypatch.setattr(runs, "_day", (date.today(), runs_mod.settings.max_runs_per_day))
+    elif setup == "busy":
+        monkeypatch.setattr(runs, "_sem", asyncio.Semaphore(0))
+    else:
+        monkeypatch.setattr(runs, "_active_sessions", runs._active_sessions | {session})
+    r = await client.post("/api/evaluate", data={"intake": json.dumps(INTAKE | {"session_id": session})})
+    assert (r.status_code, r.json()["detail"]) == (429, message)
+
+
+async def test_another_school_429_when_the_budget_is_spent(client, stub, monkeypatch):
+    from datetime import date
+
+    from app.main import runs
+    stub()
+    r = await client.post("/api/evaluate", data={"intake": json.dumps(INTAKE | {"session_id": "test-429-child"})})
+    parent = runs.get(r.json()["run_id"])
+    await parent.task
+    parent.final = {"inputs": INPUTS, **{k: object() for k in runs_mod.PREFILL_KEYS}}
+    monkeypatch.setattr(runs, "_day", (date.today(), runs_mod.settings.max_runs_per_day))
+    r = await client.post(f"/api/evaluate/{parent.run_id}/schools/umich")
+    assert (r.status_code, r.json()["detail"]) == (429, "Today's evaluation budget is used up. Try the recorded demo.")
+
+
+def test_daily_budget_resets_on_a_new_day(monkeypatch):
+    from datetime import date, timedelta
+    mgr = runs_mod.RunManager()
+    mgr._day = (date.today() - timedelta(days=1), runs_mod.settings.max_runs_per_day)
+    mgr._admit("fresh-day")
+    assert mgr._day == (date.today(), 1)
+
+
+# ---------- startup prewarm (§4.3) ----------
+@pytest.mark.parametrize("enabled", [True, False])
+async def test_prewarm_touches_each_school_and_tolerates_failures(monkeypatch, enabled):
+    from app import main
+    calls: list[tuple[str, str]] = []
+
+    def probe(name):
+        async def f(slug):
+            calls.append((name, slug))
+            if slug == "cmu":
+                raise httpx.ConnectError("spark cold")
+        return f
+
+    async def sb():
+        calls.append(("sb", ""))
+
+    monkeypatch.setattr(main.settings, "zetaris_enabled", enabled)
+    monkeypatch.setattr(main.settings, "prewarm_schools", ["uiuc", "cmu", "umich"])
+    monkeypatch.setattr(main.db, "sb", sb)
+    for name in ("school_profile", "reddit_calibration", "admitted_medians"):
+        monkeypatch.setattr(main.zetaris_repo, name, probe(name))
+    await main.prewarm()
+    if not enabled:
+        assert calls == [("sb", "")]                           # nothing to warm without Zetaris
+        return
+    assert calls[0] == ("sb", "") and ("admitted_medians", "umich") in calls      # cmu's failure didn't stop it
+    assert [c for c in calls if c[1] == "cmu"] == [("school_profile", "cmu")]
+
+
 # ---------- scoring context (feeds /api/what-if) ----------
 async def test_scoring_context_from_a_live_run(stub, monkeypatch):
     stub()

@@ -6062,15 +6062,12 @@ async def lifespan(app: FastAPI):
         from . import fake_llm
         fake_llm.install()                 # offline dev: fixtures instead of Anthropic calls (§4.9)
     register_demo_runs(runs)               # recorded runs work even with DB/API offline (§4.8)
-    await db.sb()                          # warm the Supabase client
-    for slug in settings.prewarm_schools:  # first Spark query is the slow one: pay it before the judges arrive
-        try:
-            await zetaris_repo.school_profile(slug)
-            await zetaris_repo.reddit_calibration(slug)
-            await zetaris_repo.admitted_medians(slug)
-        except Exception:
-            pass
+    # Supabase warm-up + Zetaris prewarm of settings.prewarm_schools (first Spark query is the slow one).
+    # Runs as a background task and is skipped when ZETARIS_ENABLED=false, so a missing Zetaris never
+    # delays startup (D-036).
+    warm = asyncio.create_task(prewarm())
     yield
+    warm.cancel()
     await runs.shutdown()
     await zetaris.aclose()
 
@@ -8532,9 +8529,11 @@ Two people present. **Presenter (P)** talks and owns the story. **Driver (D)** r
 import hashlib
 
 def dossier_key(inputs: RawApplicantInputs) -> str:
+    """Everything Node 1 reads. Hooks and context shape the grade and the embedded profile (D-036)."""
     h = hashlib.sha256()
     for part in (inputs.transcript_pdf_b64, inputs.resume_pdf_b64, inputs.resume_text, inputs.activities_text,
-                 inputs.essay_text, inputs.recommendation_text, inputs.intended_major):
+                 inputs.essay_text, inputs.recommendation_text, inputs.intended_major,
+                 ",".join(sorted(inputs.hooks)), inputs.context.model_dump_json()):
         h.update((part or "").encode())
         h.update(b"\x00")
     return h.hexdigest()
