@@ -118,12 +118,12 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
 - [ ] **B17c — Meterless live check** · §1.7.2, §1.7.4 · Deps: B17a, S03
   Startup `GET /v1/models` check and `"meterless"` in `/api/health`; removes the **(verify)** markers in §1.7.2 that a real Runtime confirms.
   *Done when:* a real committee turn answers through a pinned Nemotron lane, confirmed in Nightshift's run details.
-- [ ] **B18 — World Model engine sidecar + committee integration** · §1.7.3, §3.8.1 · Deps: B11, B17a
-  `services/world-model/` (TypeScript, upstream interface), `app/world_model.py`, and `agents/docket.py` reading the engine's context builder; Nodes 1–3 and the debate append observations.
-  *Done when:* the upstream conformance suite is green (scorecard saved to `docs/meterless-evidence/world-model-conformance.txt`), an integration test shows Nodes 2 and 3 appending concurrently without loss, and the sidecar being down degrades to the in-state docket.
-
-## C: War Room UI
-
+- [x] **B18a — World Model engine sidecar + conformance** · §1.7.3 · Deps: B17a — done by Aron via Claude Code, 2026-10-26 (8/8 against upstream 1742dec; D-052)
+  `services/world-model/`: our TypeScript implementation of the upstream interface (in-memory store, stable ids, idempotent ingest, bitemporal edges, audit log, one FIFO write queue per run) and a minimal HTTP wrapper; no runtime dependencies.
+  *Done when:* the upstream conformance suite prints 8/8 (scorecard saved to `docs/meterless-evidence/world-model-conformance.txt`); `npm test` in `services/world-model` passes.
+- [ ] **B18b — World Model committee integration** · §1.7.3, §3.8.1 · Deps: B11, B18a
+  `app/world_model.py` (Python client); Nodes 1–3 and the debate append observations; `agents/docket.py` builds the docket from a sidecar context endpoint and falls back to the in-state docket when the sidecar is down; the sidecar joins the API host's compose setup.
+  *Done when:* an integration test shows Nodes 2 and 3 appending concurrently without loss, and the sidecar being down degrades to the in-state docket.
 - [x] **C01 — Next.js scaffold + design tokens** · §5.1–5.3 · Deps: none — done by egli3 via Gemini CLI, 2026-10-24
   *Done when:* `pnpm build` passes; the tokens, the 4 fonts and the shadcn components from §5.3 are installed; routes exist as stubs.
 - [x] **C02 — Types, API client, store, stream (CONTRACT)** · §5.4 · Deps: C01, B02 — done by egli3 via Gemini CLI, 2026-10-24
@@ -178,7 +178,7 @@ Milestones follow plan §6.2: **H6** fake SSE drives the UI · **H12** real prob
   Pitch status refreshed by gridiii via Codex, 2026-10-25: acknowledge Track A's verified A12 stack and Track B's implemented B13 graph; keep local connection, real recordings and A15/A16 claims separate. No unverified figures were filled in.
   Real-data disclosure done by gridiii via Codex, 2026-10-26: A15's 947 profiles, 265 universities, 5 CDS schools, per-demo coverage and 3.24× median odds inflation are integrated into the panel and pitch with a dated source link (D-038). Brier fields remain null; A16 and final recorded-run figures still gate completion.
   A16 figures filled by Jmar L. Pineda via Claude Code, 2026-10-26: `data/data-report.json` has `brier` 0.232 and `brier_base` 0.303 (held-out backtest, D-044), and `docs/pitch.md` states them with the weak-ranking and subgroup caveats. Every §7.5 placeholder except the recorded-run set (`{P_UIUC}`, `{P_ARB}`, `{DELTA_MAJOR}`, `{N_MAJOR}`, `{DELTA_SAT}`) is now filled from real data; D09 stays open until the final Maya at UIUC recording supplies those.
-- [ ] **D10 — Meterless judging evidence** · §1.7, §7.4 · Deps: B17c, B18, D07
+- [ ] **D10 — Meterless judging evidence** · §1.7, §7.4 · Deps: B17c, B18b, D07
   *Done when:* a short recorded demo shows the app, its Meterless provider connection, and one real request through Nightshift answered by a Nemotron lane (all keys and tokens hidden), plus the World Model conformance scorecard.
   Prepared by gridiii via Codex, 2026-10-24: evidence/capture handoff in `docs/meterless-evidence/README.md`. S03/B17/B18 and real capture are still unavailable; no mock conformance scorecard or fictional provider proof was substituted.
   Setup preparation done by gridiii via Codex, 2026-10-26: correct Mac installer downloaded and identified; macOS assessment rejection recorded in the evidence handoff. Runtime installation, provider usage, actual served-model proof and conformance capture remain open.
