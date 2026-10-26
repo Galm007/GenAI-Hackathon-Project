@@ -1,6 +1,6 @@
 # gridiii: current setup and Track D status
 
-Updated by gridiii via Codex, 2026-10-26. Main is integrated through `5798dbb`,
+Updated by gridiii via Codex, 2026-10-26. Main is integrated through `e73b568`,
 including Aron's B18a/B18b World Model implementation. Teammate work is retained.
 
 ## Verified on this Mac

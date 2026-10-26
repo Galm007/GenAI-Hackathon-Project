@@ -49,3 +49,13 @@ Capture only the fictional applicant, aggregate results and provider metadata.
 Individual retrieved profiles must not enter fixtures or a public video.
 The user's private handoff contains the exact next check and current hosting
 instructions. No credential is included in this public evidence record.
+
+## Team recording added while this PR was prepared
+
+Jmar's main commit `e73b568` includes a completed Meterless/Nemotron Maya run
+(`maya-uiuc-live`, 54.7%). It is retained. Its result is separate from gridiii's
+56.66% Gemini evaluation. The easiest remaining D10 capture can use Jmar's
+already working demo machine: show its actual served-model receipt and app
+feature, with keys hidden. This Mac's failed stream must not be generalized to
+Jmar's host or described as proof that his run failed. Review comparison-profile
+content before using any raw recording publicly.

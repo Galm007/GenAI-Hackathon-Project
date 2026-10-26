@@ -164,7 +164,7 @@ committed. D08/D09 provider/live gates remain separate.
 
 ## Final live checks — gridiii via Codex, 2026-10-26
 
-- Latest integrated main: `5798dbb` (Aron's B18a/B18b retained). API: 422 tests
+- Latest integrated main: `e73b568` (Aron's B18a/B18b retained). API: 422 tests
   and ruff pass; World Model: seven Node tests and genuine upstream 8/8.
 - Local least-privilege Zetaris agent reads UIUC and the gold table; direct
   `ADCOM_PG.universities` and `ADCOM.v_ipeds_c7` reads are denied. The shared
