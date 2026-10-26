@@ -21,6 +21,10 @@ live qualifications recorded in the roadmap. Jmar's A15 report has 947 profiles;
   HTTP 200; the 101-event replay and deterministic what-if work.
 - Zetaris passed **all 9 vendor checks** after API bring-up. This admin/platform
   check does not verify an AdCom agent's curated-view access.
+- Vercel's **adcom** project is created in gridiii's workspace. Next.js, root
+  `apps/web`, build/install commands and Node 24 are saved and verified. Default
+  deployment protection is retained; Git linking and the first deployment wait
+  for a working public API origin.
 - The container contains no private root/API environment file. The ignored local
   configuration remains for the authored replay: `FAKE_LLM=true`,
   `ZETARIS_ENABLED=false`, `DEMO_MODE=true`. Existing private values are preserved.
@@ -36,15 +40,15 @@ live qualifications recorded in the roadmap. Jmar's A15 report has 947 profiles;
 | Actual project health | The API responds with `ok=false, db=false, zetaris=false` in the current fake/replay configuration. HTTP reachability to the UI is not proof of working project SQL/data access. |
 | B14 offline graph | A15 now supplies UIUC and the other demo schools/twins on the team stack. Access is still needed here. Track B's CLI/direct-client fake-mode work and Track A's flag/transport fallbacks remain separate handoff items. |
 | Real fictional-persona recording | B13 persists event logs and D07's recorder exists. A real run still needs database data, provider setup and human approval for provider usage. The authored UI replay is not substituted as a real recording. |
-| D08 deployment | Local container and proxy are verified. A Vercel project/account connection, reachable public API host, green project health and a live phone run remain open. The Vercel dashboard was at sign-in when checked. |
+| D08 deployment | Local container/proxy and [Vercel project settings](https://vercel.com/gridiiis-projects/adcom/settings/build-and-deployment) are verified. The workspace connection is approved. Git linking, reachable public API host, green project health, first deployment and a live phone run remain open. |
 | D09 pitch | Real A15 figures are integrated. A16 backtest/bias results and final recorded-run figures remain missing; no accuracy number was invented. |
 | D10 judging evidence | The official Mac M1+ setup app is prepared in `~/Applications`, but macOS rejected its execution assessment (ad-hoc signature). It was not launched; vendor/install review is needed. S03 Runtime/NVIDIA setup, B17/B18 integration, a real served Nemotron request and a genuine World Model scorecard remain pending. |
 | Password rotation | Deferred at gridiii's earlier request. Keep private configuration coordinated when rotating it. |
 
 ## Next steps without overlapping teammates
 
-The available data-panel/pitch update, named-replay correction and local API
-bring-up are complete. Keep A16 and the data-service fixes with Track A, and
+The available data-panel/pitch update, named-replay correction, local API
+bring-up and Vercel project preparation are complete. Keep A16 and the data-service fixes with Track A, and
 B14/B17/B18 with Track B. Once project access is available, configure this Mac's
 private values, apply the host-specific Zetaris setup, and verify real health
 before public deployment or recording a provider-backed run.

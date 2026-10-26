@@ -3,9 +3,10 @@
 Prepared by gridiii via Codex, 2026-10-24; verified container bring-up 2026-10-26.
 D08 is **not publicly deployed**. B13/B15/B16 are implemented. Aron's API image
 now runs alongside Zetaris on gridiii's Mac and serves the authored replay.
-A linked Vercel project, public API origin and working shared-database/agent
-credentials are still missing here. Local replay success is not a production
-integration result.
+The `adcom` Vercel project is created and configured in gridiii's workspace;
+Git linking, the first deployment, a public API origin and working shared-
+database/agent credentials are still pending. Local replay success is not a
+production integration result.
 
 ## Verified local path
 
@@ -24,7 +25,8 @@ integration result.
   A12's semantic views and agent permissions were verified on Track A's stack;
   they must also exist on the chosen API/Zetaris host. Keep private values there.
 - The demo owner configures S03 and B17/B18 and captures D10 evidence.
-- Choose the team's Vercel account/project and an API host co-located with Zetaris.
+- Confirm the prepared Vercel project as the team's target and choose an API host
+  co-located with Zetaris.
   The existing Zetaris bundle and its ports stay private. Do not deploy that bundle
   to Vercel or publish its `.env`.
 
@@ -94,8 +96,27 @@ provider usage; B17 adds the planned Meterless provider switch.
 
 ## Vercel web project
 
-Import this repository and set **Root Directory** to `apps/web`, framework to
-Next.js, and use the checked-in build/install settings. Configure
+Prepared by gridiii via Codex, 2026-10-26, after gridiii approved workspace access:
+
+| Setting | Verified value |
+|---|---|
+| Workspace | gridiii's projects (`gridiiis-projects`, Hobby) |
+| Project | [adcom](https://vercel.com/gridiiis-projects/adcom) |
+| Project ID | `prj_ZddoCSUXdNOHs8DqcIOe26WOK9tj` |
+| Framework / root | Next.js / `apps/web` |
+| Build / install | `pnpm build` / `pnpm install --frozen-lockfile` |
+| Node.js | 24.x, matching the local verification runtime |
+| Protection | Workspace default retained: Vercel Authentication for all except custom domains |
+| Deployments / Git link | Zero deployments; repository not connected yet |
+
+Build/install/root settings were read back in the Vercel dashboard; project,
+runtime and protection were confirmed through its API. No paid plan, domain or
+extra build resource was selected. No backend credential was uploaded.
+
+Once the live API is ready, connect `Galm007/GenAI-Hackathon-Project` to this
+existing project (do not create a duplicate). GitHub app access to that repository
+may require its owner's approval. Confirm `main` as the production branch and
+retain the settings above. Configure
 `ADCOM_API_URL=https://<reachable-api-host>` for each intended environment before
 building. Its value is an API origin, not a secret token. Leave
 `NEXT_PUBLIC_API_URL` unset to use the same-origin proxy; if choosing a direct API

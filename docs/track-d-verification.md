@@ -25,10 +25,11 @@ unrelated parent-lockfile warning was removed by setting the web tracing root.
 
 ## Remaining acceptance gates
 
-- **D08:** choose hosting/project access; finish B13/B14/B16; verify a hosted live
-  run from a phone against the co-located API/Zetaris stack.
-- **D09:** A15/A16 supply real corpus, coverage, calibration and backtest results;
-  then update the data manifest and final pitch with those verified figures.
+- **D08:** Vercel project settings and B16's local image/network are verified;
+  configure shared DB/agent access, finish B14 and verify a hosted live run from
+  a phone against the co-located API/Zetaris stack.
+- **D09:** A15's reported corpus, coverage and odds calibration are integrated;
+  A16's backtest/bias results and final real-run figures remain missing.
 - **D10:** complete S03/B17/B18 and capture a real app request served by Nemotron
   plus the genuine World Model conformance scorecard.
 - Replace the authored replay with two real recordings of fictional-persona runs
@@ -124,3 +125,17 @@ macOS execution assessment rejected the ad-hoc-signed application; it was not
 launched. Gatekeeper/quarantine protections are unchanged. The Runtime is not
 installed, no token or NVIDIA lane is configured, and no smoke/provider request
 was made. S03/D10 remain open pending vendor/install review and genuine evidence.
+
+## Vercel project preparation — 2026-10-26
+
+Done by gridiii via Codex after gridiii approved the connection's workspace
+access. Created `adcom` (`prj_ZddoCSUXdNOHs8DqcIOe26WOK9tj`) in
+`gridiiis-projects`. Dashboard readback confirms Next.js, root `apps/web`,
+`pnpm build` and `pnpm install --frozen-lockfile`. Node 24 matches today's local
+runtime. The API confirms default deployment protection is retained and there
+are zero deployments. Git is not linked yet; the live backend/public API origin
+must be configured before the first build.
+
+No backend secret, paid upgrade or custom domain was added. D08/X01 remain open.
+Settings screenshot: `outputs/adcom-vercel-settings-2026-10-26.png` in gridiii's
+workspace, outside the repository.
