@@ -165,10 +165,45 @@ async def test_daily_quota_is_not_retried(api):
 
 
 async def test_server_errors_are_retried_then_raise_unavailable(api):
-    requests, sleeps = api(httpx.Response(503, text="overloaded"))
+    requests, sleeps = api(httpx.Response(500, text="internal"))
+    with pytest.raises(llm.LLMUnavailable, match="500"):
+        await llm.parse(Verdict, system="sys", messages=MSGS)
+    assert len(requests) == openai_compat.ATTEMPTS and sleeps == [1.0, 2.0]   # only 503 moves to the fast model
+
+
+OVERLOADED = httpx.Response(503, json={"error": {"code": 503, "status": "UNAVAILABLE",
+                                                 "message": "This model is currently experiencing high demand."}})
+
+
+async def test_overloaded_main_model_hands_the_call_to_the_fast_model(api):
+    requests, sleeps = api(OVERLOADED, OVERLOADED, OVERLOADED, ok('{"label": "admit"}'))
+    assert await llm.parse(Verdict, system="sys", messages=MSGS, effort="high") == Verdict(label="admit")
+    assert [body(r)["model"] for r in requests] == [settings.gemini_model] * 3 + [settings.gemini_fast_model]
+    assert sleeps == [1.0, 2.0]
+    assert body(requests[-1])["response_format"]["json_schema"]["name"] == "Verdict"   # same request otherwise
+
+
+async def test_fast_model_overloaded_too_raises_unavailable(api):
+    requests, _ = api(OVERLOADED)
     with pytest.raises(llm.LLMUnavailable, match="503"):
         await llm.parse(Verdict, system="sys", messages=MSGS)
-    assert len(requests) == openai_compat.ATTEMPTS and sleeps == [1.0, 2.0]
+    assert len(requests) == 2 * openai_compat.ATTEMPTS
+
+
+async def test_calls_already_on_the_fast_model_do_not_fall_back(api):
+    requests, _ = api(OVERLOADED)
+    with pytest.raises(llm.LLMUnavailable):
+        await llm.parse(Verdict, system="sys", messages=MSGS, effort="low")
+    assert {body(r)["model"] for r in requests} == {settings.gemini_fast_model}
+    assert len(requests) == openai_compat.ATTEMPTS
+
+
+async def test_meterless_has_no_fast_model_fallback(api, monkeypatch):
+    monkeypatch.setattr(settings, "llm_provider", "meterless")
+    requests, _ = api(OVERLOADED)
+    with pytest.raises(llm.LLMUnavailable):
+        await llm.parse(Verdict, system="sys", messages=MSGS)
+    assert len(requests) == openai_compat.ATTEMPTS
 
 
 async def test_connection_errors_raise_unavailable(api):
@@ -255,6 +290,13 @@ async def test_stream_text_content_filter_raises_refusal(api):
     api(_sse(_delta("Partial"), _delta(finish="content_filter")))
     with pytest.raises(llm.LLMRefusal):
         await llm.stream_text(system="sys", messages=MSGS, on_text=lambda _t: None)
+
+
+async def test_stream_text_falls_back_to_the_fast_model_when_overloaded(api):
+    requests, _ = api(OVERLOADED, OVERLOADED, OVERLOADED, _sse(_delta("Hello"), _delta(finish="stop")))
+    text = await llm.stream_text(system="sys", messages=MSGS, on_text=lambda _t: None, effort="medium")
+    assert text == "Hello"
+    assert [body(r)["model"] for r in requests] == [settings.gemini_model] * 3 + [settings.gemini_fast_model]
 
 
 async def test_stream_text_retries_only_before_the_first_token(api):

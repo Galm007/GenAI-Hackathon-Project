@@ -9,6 +9,7 @@ import asyncio
 import base64
 import io
 import json
+import logging
 import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
 ATTEMPTS = 3                          # per-minute 429s, 5xx and connection errors
 MAX_WAIT_S = 30.0
 
+log = logging.getLogger("openai_compat")
 http = httpx.AsyncClient()
 _sleep = asyncio.sleep                # replaced in tests
 
@@ -100,7 +102,7 @@ def _raise_for(resp: httpx.Response, p: Profile) -> None:
             retry_after = None
         raise llm.LLMRateLimited(f"{p.name} rate limit: {detail}", retry_after=retry_after)
     if status >= 500:
-        raise llm.LLMUnavailable(f"{p.name} returned {status}: {detail}")
+        raise llm.LLMUnavailable(f"{p.name} returned {status}: {detail}", status=status)
     raise llm.LLMBadRequest(f"{p.name} returned {status}: {detail}")
 
 
@@ -116,6 +118,12 @@ async def _retrying[T](call: Callable[[], Awaitable[T]], may_retry: Callable[[],
     raise AssertionError("unreachable")
 
 
+def _overloaded_main(p: Profile, body: dict, exc: llm.LLMUnavailable) -> bool:
+    """Gemini's free tier answers 503 "high demand" on the bigger Flash models while the fast model still has
+    capacity (D-048), so a call that still gets 503 after its retries moves to the fast model once."""
+    return p.name == "gemini" and exc.status == 503 and body["model"] != p.fast_model
+
+
 def _headers(p: Profile) -> dict[str, str]:
     return p.headers | ({"X-Request-ID": str(uuid.uuid4())} if p.name == "meterless" else {})
 
@@ -126,7 +134,8 @@ def _body(p: Profile, chat: list[dict], *, effort: str, max_tokens: int, model: 
 
 
 async def _complete(p: Profile, body: dict, name: str) -> str:
-    """One non-streamed completion; a rejected `reasoning_effort` level is retried once without it (verify)."""
+    """One non-streamed completion. A rejected `reasoning_effort` level is retried once without it, and an
+    overloaded Gemini main model hands the call to the fast model."""
     async def call() -> httpx.Response:
         try:
             resp = await http.post(f"{p.base_url}/chat/completions", json=body, headers=_headers(p),
@@ -136,13 +145,24 @@ async def _complete(p: Profile, body: dict, name: str) -> str:
         _raise_for(resp, p)
         return resp
 
+    async def send() -> httpx.Response:
+        nonlocal body
+        try:
+            return await _retrying(call)
+        except llm.LLMBadRequest as exc:
+            if "reasoning_effort" not in body or "reasoning" not in str(exc):
+                raise
+            body = {k: v for k, v in body.items() if k != "reasoning_effort"}
+            return await _retrying(call)
+
     try:
-        resp = await _retrying(call)
-    except llm.LLMBadRequest as exc:
-        if "reasoning_effort" not in body or "reasoning" not in str(exc):
+        resp = await send()
+    except llm.LLMUnavailable as exc:
+        if not _overloaded_main(p, body, exc):
             raise
-        body = {k: v for k, v in body.items() if k != "reasoning_effort"}
-        resp = await _retrying(call)
+        log.warning("%s overloaded for %s; retrying on %s", body["model"], name, p.fast_model)
+        body = body | {"model": p.fast_model}
+        resp = await send()
 
     choice = resp.json()["choices"][0]
     message = choice.get("message") or {}
@@ -227,6 +247,14 @@ async def stream_text(
             raise llm.LLMUnavailable(f"{p.name} unreachable: {type(exc).__name__}") from exc
         return finish
 
-    if await _retrying(call, may_retry=lambda: not parts) == "content_filter":
+    try:
+        finish = await _retrying(call, may_retry=lambda: not parts)
+    except llm.LLMUnavailable as exc:
+        if parts or not _overloaded_main(p, body, exc):
+            raise
+        log.warning("%s overloaded for a stream; retrying on %s", body["model"], p.fast_model)
+        body = body | {"model": p.fast_model}
+        finish = await _retrying(call, may_retry=lambda: not parts)
+    if finish == "content_filter":
         raise llm.LLMRefusal("debate turn refused")
     return "".join(parts)

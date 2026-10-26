@@ -31,7 +31,11 @@ class LLMProviderError(RuntimeError):
 
 
 class LLMUnavailable(LLMProviderError):
-    """Connection error, timeout or 5xx."""
+    """Connection error, timeout or 5xx (`status` is set for 5xx)."""
+
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
 
 
 class LLMRateLimited(LLMProviderError):
