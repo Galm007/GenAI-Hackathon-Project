@@ -46,6 +46,22 @@ def _json(body: dict):
 
 
 # ---------- parse ----------
+@pytest.mark.parametrize("max_tokens", [32000, 24000, 16000], ids=["node1_extract", "node1_grade", "default"])
+async def test_parse_long_requests_pass_the_sdks_own_streaming_check(mock_api, max_tokens):
+    # The real SDK (only its transport is mocked) refuses a non-streamed request over ~21K max_tokens unless the
+    # call sets a timeout. Node 1 asks for 32K and 24K; before D-040 every live run failed here with a ValueError.
+    requests = mock_api(_json(_message([{"type": "text", "text": '{"label": "admit"}'}], "end_turn")))
+    out = await llm.parse(Verdict, system="sys", messages=[{"role": "user", "content": "hi"}], max_tokens=max_tokens)
+    assert out == Verdict(label="admit")
+    assert json.loads(requests[0].content)["max_tokens"] == max_tokens
+    sent = requests[0].extensions["timeout"]
+    assert sent["read"] == pytest.approx(max(600.0, 3600.0 * max_tokens / 128_000)) and sent["connect"] == 5.0
+
+
+def test_parse_timeout_follows_the_sdk_estimate():
+    assert llm.parse_timeout(128_000).read == 3600.0
+    assert llm.parse_timeout(32_000).read == 900.0
+    assert llm.parse_timeout(4_000).read == 600.0          # never below the SDK's 10-minute default
 async def test_parse_returns_validated_model_and_sends_plan_shapes(mock_api):
     requests = mock_api(_json(_message([{"type": "text", "text": '{"label": "admit"}'}], "end_turn")))
     out = await llm.parse(Verdict, system="sys", messages=[{"role": "user", "content": "hi"}], effort="high")

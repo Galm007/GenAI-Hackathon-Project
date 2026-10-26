@@ -4094,7 +4094,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from anthropic import AsyncAnthropic
+from anthropic import AsyncAnthropic, Timeout
 from anthropic.types.beta import BetaMessage
 from pydantic import BaseModel
 
@@ -4120,6 +4120,13 @@ def cached_system(text: str) -> list[dict]:
     return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
 
 
+def parse_timeout(max_tokens: int) -> Timeout:
+    """Explicit per-request timeout for a non-streamed parse. Without one, the SDK refuses any request whose
+    max_tokens implies over 10 minutes (about 21K tokens), which Node 1's 32K/24K calls do (see DECISIONS D-040).
+    Uses the SDK's own estimate: an hour for 128K output tokens, never below its 10-minute default."""
+    return Timeout(max(600.0, 3600.0 * max_tokens / 128_000), connect=5.0)
+
+
 async def parse[T: BaseModel](
     schema: type[T],
     *,
@@ -4142,6 +4149,7 @@ async def parse[T: BaseModel](
         output_config={"effort": effort},
         betas=[FALLBACK_BETA],
         fallbacks="default",
+        timeout=parse_timeout(max_tokens),
     )
     resp = BetaMessage.model_validate(raw.http_response.json())
     if resp.stop_reason == "refusal":
