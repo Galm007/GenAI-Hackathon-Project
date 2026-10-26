@@ -35,8 +35,8 @@
 |---|---|---|
 | **Primary model provider for the live agents (hackathon partner)** | **Meterless Nightshift** (Meterless Runtime, OpenAI-compatible API at `METERLESS_BASE_URL`), model route `meterless/auto`, with at least one **NVIDIA Nemotron** lane | The default `LLM_PROVIDER`. NVIDIA's key lives only in Nightshift's Providers tab, never in our `.env`. Contract, switch and evidence: §1.7. |
 | **Meterless Engine (hackathon partner)** | **World Model**: event-sourced shared state for the committee agents | Implemented as a TypeScript sidecar that passes the upstream conformance suite (§1.7.3). |
-| **Free alternative for the live agents** (`LLM_PROVIDER=gemini`) | Google **Gemini API free tier** through its OpenAI-compatible endpoint: `GEMINI_MODEL` (default `gemini-3.8-flash`) for medium/high effort, `GEMINI_FAST_MODEL` (default `gemini-3.5-flash-lite`) for low effort | $0: the key comes from Google AI Studio in a Cloud project with no billing account, so going over quota returns 429 instead of a charge. Google may use free-tier prompts to improve its products. Shares `app/openai_compat.py` with Meterless (§1.7.2, D-043). |
-| All reasoning nodes when `LLM_PROVIDER=anthropic` (kept, off by default) | Anthropic `claude-opus-5-5` | Paid, so it stays unused without explicit team consensus (AGENTS.md §4, D-043), and the API refuses it unless `ALLOW_PAID_PROVIDERS=true`. Effort is set per node (see §1.5). Thinking is always on for this model and is controlled only by `output_config.effort`. |
+| **Free alternative for the live agents** (`LLM_PROVIDER=gemini`) | Google **Gemini API free tier** through its OpenAI-compatible endpoint: `GEMINI_MODEL` (default `gemini-3.8-flash`) for medium/high effort, `GEMINI_FAST_MODEL` (default `gemini-3.5-flash-lite`) for low effort | $0: the key comes from Google AI Studio in a Cloud project with no billing account, so going over quota returns 429 instead of a charge. Google may use free-tier prompts to improve its products. Shares `app/openai_compat.py` with Meterless (§1.7.2, D-046). |
+| All reasoning nodes when `LLM_PROVIDER=anthropic` (kept, off by default) | Anthropic `claude-opus-5-5` | Paid, so it stays unused without explicit team consensus (AGENTS.md §4, D-046), and the API refuses it unless `ALLOW_PAID_PROVIDERS=true`. Effort is set per node (see §1.5). Thinking is always on for this model and is controlled only by `output_config.effort`. |
 | Structured outputs (`anthropic` path; OpenAI-compatible path in §1.7.2) | `client.beta.messages.parse(..., output_format=PydanticModel)` | The result is validated into the Pydantic model and read from `.parsed_output`. |
 | Refusal safety net (`anthropic` path) | `fallbacks="default"` + beta `server-side-fallback-2026-07-01` | If a safety classifier declines a request, it is re-run server-side on Anthropic's recommended fallback model. It's enabled in the shared `llm.py` wrapper and is a one-line removal if you don't want it. |
 | Offline Reddit extraction | Local **Gemma 4 E2B** (`ETL_MODEL=gemma4:e2b`) served by Ollama on this machine | Free and offline. Structured output goes through Ollama's `format` JSON-schema constraint (`app/local_llm.py::chat_structured`). Quality tradeoff in §2.9.11. CDS PDF extraction (A10) uses the same local runtime through `CDS_MODEL` (default `gemma4:e2b`). |
@@ -48,7 +48,7 @@
 
 ```bash
 # LLM / embeddings / search
-ANTHROPIC_API_KEY=sk-ant-...     # paid: leave unset unless the team agrees to use Claude (AGENTS.md §4, D-043)
+ANTHROPIC_API_KEY=sk-ant-...     # paid: leave unset unless the team agrees to use Claude (AGENTS.md §4, D-046)
 TAVILY_API_KEY=tvly-...
 
 # Supabase (backend uses the service-role key; never ship it to the browser)
@@ -76,7 +76,7 @@ METERLESS_BASE_URL=http://127.0.0.1:8088/v1     # the Console's address; use the
 METERLESS_RUNTIME_TOKEN=...                     # the Console's Runtime API key; never the NVIDIA key, never the placeholder rt-local
 METERLESS_MODEL=meterless/auto                  # a routing mode, not an NVIDIA model id; pin a Nemotron lane for award evidence
 
-# Gemini free tier (alternative provider, §1.7.2, D-043). Same OpenAI-compatible client as Meterless.
+# Gemini free tier (alternative provider, §1.7.2, D-046). Same OpenAI-compatible client as Meterless.
 GEMINI_API_KEY=...                              # Google AI Studio, from a Cloud project with NO billing account (free tier only)
 GEMINI_MODEL=gemini-3.8-flash                   # extraction, grading, briefs, delta (effort medium/high)
 GEMINI_FAST_MODEL=gemini-3.5-flash-lite         # debate turns and the Zetaris SQL loop (effort low)
@@ -348,7 +348,7 @@ sequenceDiagram
 | **Upload** | `react-dropzone` | Drag-and-drop for PDFs. |
 | **Backend** | Python 3.12, FastAPI, `sse-starlette` (`EventSourceResponse`), uvicorn | Async-native and Pydantic end to end. SSE is simpler than WebSockets for one-way streaming. |
 | **Agent orchestration** | LangGraph ≥ 1.0 `StateGraph`: parallel fan-out/fan-in, a debate cycle, `get_stream_writer()` custom events, `InMemorySaver` checkpointer, per-node `RetryPolicy` | Real stateful graph semantics (cycles, joins, retries) with first-class streaming. |
-| **LLM SDK** | No LangChain chat-model wrapper. Nodes call `app/llm.py`, which dispatches to `app/openai_compat.py` (httpx, OpenAI-compatible chat for Meterless and Gemini) or to the Anthropic Python SDK (kept, off by default) | One doorway that raises the same exceptions for every provider, with fewer abstraction layers to debug at 3 a.m. (§1.7.2, D-043). |
+| **LLM SDK** | No LangChain chat-model wrapper. Nodes call `app/llm.py`, which dispatches to `app/openai_compat.py` (httpx, OpenAI-compatible chat for Meterless and Gemini) or to the Anthropic Python SDK (kept, off by default) | One doorway that raises the same exceptions for every provider, with fewer abstraction layers to debug at 3 a.m. (§1.7.2, D-046). |
 | **Database** | Supabase Postgres + `pgvector` (HNSW + exact filtered KNN), `pg_trgm` (fuzzy school names), `pg_cron` (TTL purge) | SQL filtering and vector ranking in one RPC call. Free tier is enough. |
 | **Data fabric** (hackathon partner) | **Zetaris Lightning**: federated Spark SQL over Supabase (JDBC) + Scorecard/IPEDS files (filestore tables) + an Iceberg gold table; schema-store views as the semantic layer; RBAC + audit log; REST query API | Joins three public datasets with the Reddit corpus without copy-ETL, and gives the agents one governed, audited SQL surface (§2.10). |
 | **Web research** | Tavily `AsyncTavilyClient.search(search_depth="advanced")` | One call returns clean snippets with URLs, which are needed for citations. |
@@ -377,7 +377,7 @@ sequenceDiagram
 | N5 Delta | 1 RPC + 1 parse | `high` | 10–15 s | `counterfactuals` first, then `final_report` |
 | **Total** | **10–14 LLM calls** | | **~65–90 s cold, ~45 s with cached dossier** | Something visibly happens every ~1.5 s |
 
-**Cost.** **$0 per evaluation** on the deployed stack (team rule, D-043). Nightshift routes to NVIDIA's free Nemotron credits, and the Gemini free tier bills nothing because its key comes from a Cloud project with no billing account. The real limit is quota: an evaluation makes 10–14 requests (about 5 on `GEMINI_MODEL`, the low-effort rest on `GEMINI_FAST_MODEL`), so set `MAX_RUNS_PER_DAY` to fit the per-model daily quotas shown in Google AI Studio. For comparison, the same run on Claude Opus 5.5 (roughly 70–90K input and 15–25K output tokens at $4 / $20 per MTok) would cost about $0.60–$1.00, which is why `anthropic` stays off. What-if calls are free.
+**Cost.** **$0 per evaluation** on the deployed stack (team rule, D-046). Nightshift routes to NVIDIA's free Nemotron credits, and the Gemini free tier bills nothing because its key comes from a Cloud project with no billing account. The real limit is quota: an evaluation makes 10–14 requests (about 5 on `GEMINI_MODEL`, the low-effort rest on `GEMINI_FAST_MODEL`), so set `MAX_RUNS_PER_DAY` to fit the per-model daily quotas shown in Google AI Studio. For comparison, the same run on Claude Opus 5.5 (roughly 70–90K input and 15–25K output tokens at $4 / $20 per MTok) would cost about $0.60–$1.00, which is why `anthropic` stays off. What-if calls are free.
 
 ### 1.6 Stream event taxonomy (wire format specified in Part II, §4)
 
@@ -406,7 +406,7 @@ Source: the Open Agent Hackathon 2026 Participant Setup Guide (21 Oct 2026) and 
 |---|---|
 | **Eligibility:** Zetaris and Meterless must be running on your machine. | Zetaris runs in Docker (§2.10). Nightshift must be running on the demo machine; it has **no Linux edition** (§1.7.5). |
 | **Build rule:** implement at least one Meterless Engine in a *working feature*, with a conformance suite, evaluation or reproducible test as evidence. Mentioning an engine, copying a prompt or adding an unused dependency does not count. | **World Model** (human decision, D-011): the committee's shared case file, written in parallel by Nodes 1–3 and the debate agents, read through the engine's context builder (§1.7.3). |
-| **Power rule:** the app must support Nightshift as a primary AI provider; keep other providers available. | `LLM_PROVIDER=meterless` is the default for the live agents; `gemini` (free tier) stays selectable, and `anthropic` is kept in code but off by default (§1.7.2, D-043). Offline ETL (Reddit and CDS extraction, embeddings) stays on local Ollama: it is a data pipeline, not the product answering at run time. |
+| **Power rule:** the app must support Nightshift as a primary AI provider; keep other providers available. | `LLM_PROVIDER=meterless` is the default for the live agents; `gemini` (free tier) stays selectable, and `anthropic` is kept in code but off by default (§1.7.2, D-046). Offline ETL (Reddit and CDS extraction, embeddings) stays on local Ollama: it is a data pipeline, not the product answering at run time. |
 | **NVIDIA Nemotron award:** a working feature visibly powered by a Nemotron model through Nightshift. | One Nightshift lane is pinned to a Nemotron model, and the committee debate runs on it in the demo (§1.7.4). |
 | **Keys:** the NVIDIA key goes in Nightshift's Providers tab only. Your coding tool's model settings must not hold the Meterless token or the NVIDIA key. | `.env` holds only the Nightshift URL and Runtime token. Cursor, Claude Code and other coding tools never get either key. |
 
@@ -423,7 +423,7 @@ Runtime contract (from the guide's Power prompt; **(verify)** each line on first
 | Timeouts | 180 s (model loads) |
 | Placeholder | The token `rt-local` is rejected. The token is the Console's real Runtime key. |
 
-How the switch works (B01 owns `llm.py`; steps B17a–B17c add this, D-043):
+How the switch works (B01 owns `llm.py`; steps B17a–B17c add this, D-046):
 - One OpenAI-compatible client, `app/openai_compat.py` (httpx, no new dependency), with two profiles. **meterless**: `METERLESS_BASE_URL`, the Runtime token and the headers above. **gemini**: `https://generativelanguage.googleapis.com/v1beta/openai/` with `Authorization: Bearer <GEMINI_API_KEY>`.
 - `Settings` gains `llm_provider: Literal["meterless", "gemini", "anthropic"] = "meterless"`, `meterless_base_url`, `meterless_runtime_token`, `meterless_model`, `meterless_app = "adcom"`, `gemini_api_key`, `gemini_model = "gemini-3.8-flash"`, `gemini_fast_model = "gemini-3.5-flash-lite"` and `allow_paid_providers = False`. With `anthropic` selected and `allow_paid_providers` false, the API refuses to start: Claude is paid and stays unused without team consensus (AGENTS.md §4).
 - `llm.parse(...)` and `llm.stream_text(...)` keep their signatures and dispatch on `settings.llm_provider`. The `anthropic` branch is the existing code, untouched. A new `llm.chat_with_tools(...)` runs one tool-calling round in a provider-neutral shape, so Node 2's Zetaris SQL loop (§2.10.7) works on every provider (B17b).
@@ -4096,7 +4096,7 @@ class Settings(BaseSettings):
     embedding_dim: int = 768
     demo_mode: bool = False
 
-    # §1.7.2, D-043: Meterless primary, Gemini's free tier as the alternative, Claude paid and off by default
+    # §1.7.2, D-046: Meterless primary, Gemini's free tier as the alternative, Claude paid and off by default
     llm_provider: Literal["meterless", "gemini", "anthropic"] = "meterless"
     allow_paid_providers: bool = False
     meterless_base_url: str = "http://127.0.0.1:8088/v1"
@@ -4120,7 +4120,7 @@ settings = Settings()
 
 #### 3.5.2 `app/llm.py`: the single doorway to the model
 
-Every live-agent call goes through this module, so models, fallbacks, refusal handling and caching are each configured in one place. The code below is the `anthropic` provider, kept but off by default because it is paid (D-043). With `LLM_PROVIDER=meterless` (the default) or `gemini` (the free alternative, §1.7.2), the same `parse` / `stream_text` functions dispatch to `app/openai_compat.py` and raise the same `LLMRefusal` / `LLMTruncated` exceptions.
+Every live-agent call goes through this module, so models, fallbacks, refusal handling and caching are each configured in one place. The code below is the `anthropic` provider, kept but off by default because it is paid (D-046). With `LLM_PROVIDER=meterless` (the default) or `gemini` (the free alternative, §1.7.2), the same `parse` / `stream_text` functions dispatch to `app/openai_compat.py` and raise the same `LLMRefusal` / `LLMTruncated` exceptions.
 
 ```python
 from __future__ import annotations
@@ -7024,7 +7024,7 @@ services:
 | Env | All of §0.3 plus `CORS_ORIGINS='["https://<app>.vercel.app","http://localhost:3000"]'` |
 | Frontend env | `NEXT_PUBLIC_API_URL=https://<api-host>` |
 | Proxies | `X-Accel-Buffering: no` is already set. Cloudflare in front: disable "Rocket Loader" and set a cache bypass for `/api/*`. |
-| Budget guard | No paid provider is configured: the Gemini key comes from a Cloud project with no billing account, `ALLOW_PAID_PROVIDERS=false` keeps Claude off, and `MAX_RUNS_PER_DAY` keeps usage inside the free quotas (D-043) |
+| Budget guard | No paid provider is configured: the Gemini key comes from a Cloud project with no billing account, `ALLOW_PAID_PROVIDERS=false` keeps Claude off, and `MAX_RUNS_PER_DAY` keeps usage inside the free quotas (D-046) |
 
 ### 4.11 "Never a blank spinner": guaranteed event cadence
 

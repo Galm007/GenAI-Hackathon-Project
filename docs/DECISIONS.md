@@ -334,7 +334,31 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - We did: both now push `/room/demo/maya-uiuc`. Verified: 48 web tests, lint, `tsc --noEmit` and `pnpm build` pass.
 - Impact on other tracks: none. If a second recording is added later, these links still point at Maya at UIUC.
 
-## D-043 — Zero-cost deployment: Gemini's free tier replaces Claude as the alternative provider; B17 split into B17a–c
+## D-043 — S03 on Linux: Nightshift runs under Wine
+- Step: S03 · Date: 2026-10-26 · By: Jmar L. Pineda via Claude Code
+- Plan said: Nightshift has no Linux edition, so the demo machine must be Windows, Mac or DGX Spark (§1.7.1, §1.7.5).
+- Found: the Windows edition runs on the Linux dev machine under Wine 11.19 Staging once Microsoft's WebView2 standalone runtime and `vcrun2022` are installed in an isolated prefix. The runtime serves `127.0.0.1:8088` on the host, the NVIDIA and Gemini keys were added in Nightshift's Providers tab, and the Runtime API key went into `.env` only. `scripts.smoke_meterless` prints three PASS lines and the chat answer came from `nvidia/nemotron-3.5-lightning-30b-a3b`. Nightshift also has a built-in Gemini provider, so a free Gemini lane needs no change to `llm.py`.
+- We did: documented the Wine route in `docs/meterless-setup.md`. No code changed.
+- Open: whether the organizers accept Wine as "running on your machine", and the visual check of Nightshift's run details (the smoke test names the model that answered, but the app's own run view was not inspected). Cosmetic quirks: invisible mouse cursor over the window under Wayland.
+- Impact on other tracks: B17 and B18 are unblocked on this machine; the provider keys stay in Nightshift and the app only needs `METERLESS_RUNTIME_TOKEN`.
+
+
+## D-044 — A16 backtest holds out the latest posts, not the latest cycle
+- Step: A16 · Date: 2026-10-26 · By: Jmar L. Pineda via Claude Code
+- Plan said: hold out the latest cycle and compare Brier and AUC with a base-rate baseline (§6.2 H16-24).
+- Found: 925 of 947 twins are the 2026 cycle, so a cycle split leaves 22 training rows. The ratings the live app gets from Node 1 (an LLM) do not exist for a Reddit post either.
+- We did: `services/api/scripts/backtest.py` holds out the latest 30% of posts by `post_created_at` and gives each held-out row twin evidence from earlier posts only. Ratings come from the same statistical anchors Node 1 clamps to (no LLM, no spend); personal and athletic are neutral; the stored major multiplier is held at 1.0 because it is learned from these same posts. Twin neighbours are chosen by GPA and SAT proximity, not embeddings. It adds a within-school AUC, because plain AUC is mostly the school's admit rate. First-gen audit groups use explicit self-report only: the extractor sets a `first_gen` hook on 507 of 947 twins but only 125 state it.
+- Result, written to `docs/data-report.md` and `data/backtest.json` as it came out: held-out Brier 0.232 for the app, 0.303 for the official admit rate, 0.216 for the earlier Reddit rate at the school; within-school AUC 0.535. The profile ranks applicants only slightly better than chance, and subgroup gaps are large (for example <$30k income: predicted 28% vs observed 59%).
+- Impact on other tracks: Track D can fill `data/data-report.json` Brier fields from `data/backtest.json` (`models.rubric_plus_twins.brier` = 0.232, `models.official_rate.brier` = 0.303) and should describe the result as weak at ranking. Track B should know the first_gen hook flag is probably over-set by the extractor (an A07 follow-up, not changed here).
+
+## D-045 — A17 coefficient fit rejected; priors stay
+- Step: A17 · Date: 2026-10-26 · By: Jmar L. Pineda via Claude Code
+- Plan said: refit `K_PILLAR`, `K_TEST` and hook effects with a GLM and adopt them only if they pass the §3.9.3 bounds.
+- Found: only 538 admit/deny rows qualify (first-year twins at the 5 schools that have real C7 weights; the plan's filter drops the other 260). Fit with the school's base rate and major multiplier as offset: K_PILLAR·academic 2.47 ± 0.43 (inside [1, 4]), K_PILLAR·extracurricular −0.61 ± 0.44, K_TEST −0.45 ± 0.38, first_gen 0.10 ± 0.19; no twin at those schools carries a legacy hook, so that column is empty. Priors are K_PILLAR 2.0, K_TEST 0.5.
+- We did: kept every prior. Extracurricular and test coefficients came out negative and are not significantly different from zero, which the Reddit sample cannot be trusted to show (self-selection, stats-only ratings with neutral personal pillar, tiers and test scores that correlate with school choice). The academic estimate supports the prior of 2.0. `etl/fit_coefficients.py` differs from the plan code in dropping waitlists, using `ec_rating_from_tiers` and `sat_equivalent` (the plan's `tier_derived_ec_rating` key is not stored in the twin rows), and dropping all-zero columns so the fit is not singular. No scoring constants changed.
+- Impact on other tracks: none. If a judge asks, the honest answer is that the coefficients are priors, and the one coefficient the data could test (academic) is consistent with them.
+
+## D-046 — Zero-cost deployment: Gemini's free tier replaces Claude as the alternative provider; B17 split into B17a–c
 - Step: plan change (no code) · Date: 2026-10-26 · By: Aron via Claude Code (human decision: the team agreed on a $0 deployment, recorded in AGENTS.md §4 "Plan B")
 - Plan said: Meterless Nightshift primary, with Claude (`claude-opus-5-5`, about $0.60–$1.00 per evaluation, §1.5) as the selectable alternative (§0.2, §1.7.2, D-011). This supersedes the model line of D-001.
 - Found: the provider switch (B17) was never built, so every live call still goes to the paid Anthropic API. Every other service fits a free tier: Supabase, Vercel Hobby, Tavily (1,000 credits a month, no card), NVIDIA's trial credits through Nightshift, local Ollama, Zetaris, Scorecard and Arctic Shift.
@@ -343,9 +367,9 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Open: per-model free-tier quotas are unverified (published figures range from 20 to 1,500 requests a day; read them in AI Studio). Whether Gemini's compatibility layer accepts the plan's schemas as strict `json_schema` is marked (verify). Google may use free-tier prompts to improve its products, so the intake page needs a notice before real users upload.
 - Impact on other tracks: no frozen contract changes. Track C: the intake notice. Track D: `docs/deployment.md` and `docs/meterless-evidence/README.md` still name Claude and B17, and D10 now waits on B17c.
 
-## D-044 — B17a: details of the OpenAI-compatible provider layer
+## D-047 — B17a: details of the OpenAI-compatible provider layer
 - Step: B17a · Date: 2026-10-26 · By: Aron via Claude Code
-- Plan said: §1.7.2 (as rewritten in D-043) lists four provider errors, falls back to the prompt and retries once on `ValidationError`, and maps `effort` to `reasoning_effort`.
+- Plan said: §1.7.2 (as rewritten in D-046) lists four provider errors, falls back to the prompt and retries once on `ValidationError`, and maps `effort` to `reasoning_effort`.
 - We did: (1) two more exceptions, `LLMBadRequest` (any other 4xx; it triggers the prompt fallback) and `LLMInvalidOutput` (a reply that still fails validation after the retry), so nodes 2 and 3 degrade on bad output instead of crashing; both are in `llm.PROVIDER_ERRORS`. (2) `llm.key_configured()` feeds `/api/health`'s `llm_key`. (3) `openai_compat.py` imports `llm` back for the exceptions; each module only reads the other's attributes at call time, so the cycle is safe and avoids a separate errors module. (4) `reasoning_effort` is sent to Meterless too, with the same retry-without-it on a 400 that names it. (5) Requests use `max_tokens`, not `max_completion_tokens` (verify on both providers). (6) Daily-quota 429s are recognised by "PerDay" in Gemini's quota id (verify against a real 429). (7) `Settings` sets `hide_input_in_errors=True`: the paid-provider check's error otherwise echoed part of the `.env` values. (8) The plan's §3.5.2 block is now the built `llm.py`; `openai_compat.py` is described there rather than copied.
 - Not verified: a real `LLM_PROVIDER=gemini` run (no `GEMINI_API_KEY` on this machine yet) and the fake-mode CLI past Node 1 (Supabase is not reachable from this machine; `test_graph` covers the whole graph in fake mode).
 - Impact on other tracks: `/api/health` now returns `llm_provider` and `llm_key` instead of `anthropic_key`; the web app does not read it. No frozen contract changes.

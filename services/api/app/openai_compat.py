@@ -1,7 +1,7 @@
 """OpenAI-compatible chat providers for the live agents: Meterless Nightshift (primary) and Gemini's free tier.
 
 `llm.parse` / `llm.stream_text` dispatch here unless LLM_PROVIDER=anthropic, and callers see the same exceptions
-as on the Anthropic path (plan §1.7.2, DECISIONS D-043).
+as on the Anthropic path (plan §1.7.2, DECISIONS D-046).
 """
 from __future__ import annotations
 

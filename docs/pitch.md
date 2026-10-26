@@ -4,7 +4,7 @@ Prepared by gridiii via Codex, 2026-10-24; real-data update 2026-10-26.
 
 **Status:** ready to rehearse with the fictional replay. This is not the final
 live-demo pitch: A15's real corpus and coverage figures are available, while
-A16's held-out backtest/bias audit, deployment and Meterless proof remain open.
+A16's held-out backtest and bias audit (2026-10-26) are in the data report; deployment and Meterless proof remain open.
 Do not present the authored replay as a live agent run or as a recording using
 the real corpus. Its applicant comparisons and school inputs are fictional.
 
@@ -21,7 +21,12 @@ Source: [Jmar's A15 data report](https://github.com/Galm007/GenAI-Hackathon-Proj
 - Median Reddit odds inflation **3.24×**, measured across 88 schools with at
   least 15 outcomes. This is an approximate self-selection adjustment, not an
   accuracy score or proof that the model is calibrated.
-- Brier scores, held-out accuracy and group bias results remain **not measured**.
+- Held-out backtest (A16, latest 30% of posts, 2,341 admit/deny decisions): Brier
+  **0.232** for the app's probability against **0.303** for the official admit rate.
+  The earlier Reddit admit rate at the school scores 0.216, which is better.
+  Ranking inside one school is weak (AUC about 0.53), and some groups are poorly
+  calibrated, for example under-$30k income: predicted 28%, observed 59%. Present
+  it as rough calibration, not as accuracy.
 - Say **947**, not “10,000+”. Further corpus growth is optional A18.
 
 ## Three-minute walkthrough
@@ -99,13 +104,12 @@ Backtesting, deployment and Meterless evidence remain open."
 | Real CDS and Zetaris federation coverage | 5 CDS schools, 260 IPEDS fallback; gold refreshed | A12/A15 data report |
 | Calibrated demo probability and pivot sizes | No live recording yet | Recorded fictional-persona run with real institutional data |
 | Typical odds correction | Median 3.24× across 88 schools with at least 15 outcomes | A15 calibration table summary |
-| Model and base-rate Brier scores; bias audit | Not measured | A16 held-out backtest |
+| Model and base-rate Brier scores; bias audit | Brier 0.232 vs 0.303 base rate; weak within-school ranking; subgroup gaps reported | A16 backtest, `docs/data-report.md` |
 | Real Nemotron request and World Model conformance | Not captured | D10 evidence |
 
 `data/data-report.json` now contains the reported corpus, coverage and odds
-adjustment figures, with a dated source link. Brier scores remain null and the
-About-the-data panel says "Not measured yet". These counts do not complete D09:
-the held-out backtest/bias audit and final recorded-run figures are still missing.
+adjustment figures, with a dated source link, and now the A16 Brier scores
+(0.232 model, 0.303 base rate). D09 still lacks the final recorded-run figures.
 
 ## Judge questions about the current data
 
@@ -115,8 +119,12 @@ the held-out backtest/bias audit and final recorded-run figures are still missin
 - **How do you handle Reddit self-selection?** The reported median odds inflation
   is 3.24× across the 88 schools with at least 15 outcomes. The scoring pipeline
   includes an approximate correction; its presence does not establish accuracy.
-- **What is your Brier score?** Not measured yet. A16's held-out comparison and
-  bias audit remain open, so we cannot claim a numerical accuracy result.
+- **What is your Brier score?** 0.232 on a held-out set of the latest 30% of posts,
+  against 0.303 for the official admit rate alone. Plainly: our calibration is
+  still rough. Ranking applicants within one school is only slightly better than
+  chance, and the Reddit rate at a school does slightly better on Brier (0.216).
+  That is why every number ships with an 80% range. The subgroup audit is in the
+  data report, including income groups where we under-predict.
 - **Is 947 enough to cover every school or student?** It does not establish that.
   Coverage is uneven, outcomes are self-reported, and the five demo schools were
   checked against explicit coverage targets. The UI shows the actual counts.

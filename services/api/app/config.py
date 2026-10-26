@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     zetaris_gold_profile: str = "ADCOM_LAKE.gold.school_profile"
     zetaris_enabled: bool = True                          # False → every read falls back to Supabase (§2.10.10)
 
-    # §1.7.2, D-043: Meterless primary, Gemini's free tier as the alternative, Claude paid and off by default
+    # §1.7.2, D-046: Meterless primary, Gemini's free tier as the alternative, Claude paid and off by default
     llm_provider: Literal["meterless", "gemini", "anthropic"] = "meterless"
     allow_paid_providers: bool = False
     meterless_base_url: str = "http://127.0.0.1:8088/v1"

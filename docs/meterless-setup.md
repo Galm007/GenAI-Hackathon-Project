@@ -2,13 +2,25 @@
 
 Steps only; no secrets in this file. Sources: the Open Agent Hackathon 2026 Participant Setup Guide (21 Oct 2026) and meterless.ai. Design and decisions: `MASTER_PLAN.md` §1.7 and `docs/DECISIONS.md` D-011.
 
-**Eligibility:** the hackathon requires Zetaris **and Meterless to be running on your machine**. Nightshift has no Linux edition (see below), so whoever demos must run it on Windows, Mac or a DGX Spark.
+**Eligibility:** the hackathon requires Zetaris **and Meterless to be running on your machine**. Nightshift has no Linux edition, so whoever demos runs it on Windows, Mac or a DGX Spark, or on Linux through Wine (see the Linux section in step 1; ask the organizers whether Wine counts as "running on your machine" before relying on it for judging).
 
 ## 1. Install Nightshift
 
 1. Go to meterless.ai and scroll to the install cards.
 2. Pick your edition: **Windows** (10/11, CUDA for NVIDIA GPUs), **Mac M1+** (older Macs, M1 to M4) or **Mac M5+** (Tahoe, M5 and later), or **DGX Spark**. There is no Linux x86 edition. The free **Web** edition is only for trying it out: it does not expose the local Runtime our app needs.
 3. Enter your email at the access gate and complete the verification email, then download, install and launch. Leave Nightshift running while you test the app.
+
+### Linux: run the Windows edition under Wine (tested 2026-10-26, Arch Linux x86_64)
+
+There is no Linux edition, but the Windows edition runs under Wine. It is a Tauri app, so it needs Microsoft's WebView2 runtime inside the Wine prefix. What worked (Wine 11.19 Staging, Nightshift 1.2.7):
+
+1. Make an isolated prefix: `export WINEPREFIX=$HOME/.local/share/wine-nightshift WINEARCH=win64; wineboot -u`.
+2. Install the Visual C++ runtimes: `winetricks -q vcrun2022`.
+3. Download Microsoft's **WebView2 standalone x64 installer** (`https://go.microsoft.com/fwlink/?linkid=2124701`, about 215 MB; the 2 MB link is only a bootstrapper) and run `wine MicrosoftEdgeWebView2RuntimeInstallerX64.exe /silent /install`. Without it the Nightshift installer shows an error and closes.
+4. Download `Nightshift-Setup-Windows.exe` from meterless.ai (email gate, about 660 MB) and run it with `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--disable-gpu --no-sandbox"`.
+5. Start the app with `wine 'C:\users\<you>\AppData\Local\Nightshift\meterless-runtime.exe'` (same environment variable). Do not pass `--help`: it starts the runtime without a window.
+
+What to expect: the runtime listens on `127.0.0.1:8088` (the URL `.env` already uses), because Wine shares the host network. The window may look empty in the Live field (a demo canvas), and the mouse cursor can be invisible over the window under Wayland; clicks still work. The app also serves a phone page on `0.0.0.0:8089`, protected by a pairing code. The Runtime API key is in the app (Setup, Quick Connect); the runtime's own error message says so.
 
 ## 2. Connect NVIDIA (Nemotron)
 
