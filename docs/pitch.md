@@ -2,15 +2,17 @@
 
 Prepared by gridiii via Codex, 2026-10-24; real-data update 2026-10-26.
 
-**Status:** ready to rehearse with the fictional replay. This is not the final
-live-demo pitch: A15's real corpus and coverage figures are available, while
-A16's held-out backtest and bias audit (2026-10-26) are in the data report; deployment and Meterless proof remain open.
+**Status:** ready to rehearse with the authored fictional replay. A15's corpus
+figures and A16's held-out backtest/bias audit are available. The shared database
+is now verified on gridiii's Mac. Final recorded-run figures, hosted live
+acceptance and Meterless/World Model judging proof remain open.
 Do not present the authored replay as a live agent run or as a recording using
 the real corpus. Its applicant comparisons and school inputs are fictional.
 
 ## Reported evidence — 2026-10-26
 
-Source: [Jmar's A15 data report](https://github.com/Galm007/GenAI-Hackathon-Project/blob/b6b3d37dd3b40c95c74b3f7d069947c60dc7cf7b/docs/data-report.md).
+Sources: [Jmar's A15/A16 report](https://github.com/Galm007/GenAI-Hackathon-Project/blob/c4d0772/docs/data-report.md)
+and [the held-out backtest output](https://github.com/Galm007/GenAI-Hackathon-Project/blob/bf03906/data/backtest.json).
 
 - **947** real self-reported applicant profiles: 830 first-year and 117 transfer.
 - **265** universities; **5** have 2024–25 CDS rubrics, with IPEDS fallback for
@@ -79,15 +81,17 @@ Use the currently displayed calculation if fixture inputs change.
 **2:45–3:00 — The engineering and remaining proof**
 
 "Our team has loaded 947 self-reported applicant profiles, 265 universities and
-five CDS rubrics. The graph and governed Zetaris views are implemented.
-Backtesting, deployment and Meterless evidence remain open."
+five CDS rubrics. Our held-out Brier score is 0.232 versus 0.303 for official
+admit rates, but ranking within a school is weak and subgroup errors remain.
+Hosted live acceptance and Meterless/World Model evidence are still pending."
 
 ## Answers we can support today
 
 - **Where do percentages come from?** Deterministic Python scoring code. Fixture
   tests verify that contributions conserve and counterfactuals reproduce.
-- **Does this prove admissions accuracy?** No. A real held-out backtest and bias
-  audit are not available yet.
+- **Does this prove admissions accuracy?** No. The held-out backtest improves on
+  official admit rates in this self-selected sample, but the earlier Reddit-rate
+  baseline does better, ranking within a school is weak, and subgroup gaps remain.
 - **Are these real Reddit applicants?** No. Every profile in this replay is fictional.
 - **Does the prototype make admission decisions?** No. It demonstrates an advisory
   interface; universities make their own decisions.
@@ -134,8 +138,11 @@ adjustment figures, with a dated source link, and now the A16 Brier scores
 Use `/room/demo/maya-uiuc`; **Shift+R** restarts the selected named replay, or
 switches a live room to the default Maya replay, and leaves text inputs alone.
 Projector mode is retained. The three fictional applicant packs are in `data/demo_dossiers`.
-B13 is implemented. Record two real fictional-persona runs once the shared
-database/demo data and provider setup are available, with human approval for
-provider usage, using `scripts.record_demo`; review the files before committing.
-B14 remains responsible for the complete fake-mode graph path. Keep a final demo
-video on both presenting machines once live evidence can be recorded.
+B13/B14 are implemented and the shared database is connected on this Mac.
+Record two actual graph runs of the fictional personas once the provider and
+host-specific Zetaris access are verified. Use `scripts.record_demo`, with human
+approval for trial/provider usage. Keep raw captures private and review them:
+the inputs are fictional, but retrieved comparable profiles can contain real
+student data and must not enter fixtures, committed recordings or public video.
+Only report aggregate run figures until a shareable capture has been reviewed.
+Keep a final demo video on both presenting machines once evidence can be recorded.
