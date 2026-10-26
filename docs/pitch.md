@@ -1,10 +1,28 @@
 # AdCom: current prototype pitch
 
-Prepared by gridiii via Codex, 2026-10-24; team-status update 2026-10-25.
+Prepared by gridiii via Codex, 2026-10-24; real-data update 2026-10-26.
 
 **Status:** ready to rehearse with the fictional replay. This is not the final
-live-demo pitch: real corpus, calibration, deployment and Meterless proof are
-still pending their owners. Do not present the replay as a live agent run.
+live-demo pitch: A15's real corpus and coverage figures are available, while
+A16's held-out backtest/bias audit, deployment and Meterless proof remain open.
+Do not present the authored replay as a live agent run or as a recording using
+the real corpus. Its applicant comparisons and school inputs are fictional.
+
+## Reported evidence — 2026-10-26
+
+Source: [Jmar's A15 data report](https://github.com/Galm007/GenAI-Hackathon-Project/blob/b6b3d37dd3b40c95c74b3f7d069947c60dc7cf7b/docs/data-report.md).
+
+- **947** real self-reported applicant profiles: 830 first-year and 117 transfer.
+- **265** universities; **5** have 2024–25 CDS rubrics, with IPEDS fallback for
+  the other 260 in the Zetaris school-profile view.
+- All five demo schools meet the reported coverage targets: UIUC 191 first-year
+  outcomes (132 CS), CMU 182 (139 CS), Michigan 254 (126 CS), Georgia Tech 212
+  (163 CS), and UC Berkeley 288 (160 CS). One applicant can appear at several schools.
+- Median Reddit odds inflation **3.24×**, measured across 88 schools with at
+  least 15 outcomes. This is an approximate self-selection adjustment, not an
+  accuracy score or proof that the model is calibrated.
+- Brier scores, held-out accuracy and group bias results remain **not measured**.
+- Say **947**, not “10,000+”. Further corpus growth is optional A18.
 
 ## Three-minute walkthrough
 
@@ -55,12 +73,9 @@ Use the currently displayed calculation if fixture inputs change.
 
 **2:45–3:00 — The engineering and remaining proof**
 
-“Our target architecture uses Zetaris for governed institutional data, Supabase
-for comparable-applicant search, and Meterless for the committee models. The local
-Zetaris platform and direct JDBC connection work. Track A has also verified
-AdCom's semantic views and least-privilege agent on its stack, and Track B's
-graph is implemented. Connecting the chosen demo host, recording a real run,
-deployment and Meterless judging evidence are our remaining gates.”
+"Our team has loaded 947 self-reported applicant profiles, 265 universities and
+five CDS rubrics. The graph and governed Zetaris views are implemented.
+Backtesting, deployment and Meterless evidence remain open."
 
 ## Answers we can support today
 
@@ -80,16 +95,31 @@ deployment and Meterless judging evidence are our remaining gates.”
 
 | Required evidence | Current status | Source when available |
 |---|---|---|
-| Real applicant count and school coverage | Not verified | Track A data report / database counts |
-| Real CDS and Zetaris federation coverage | Not verified | A12/A15 source audit |
+| Real applicant count and school coverage | 947 profiles; 265 universities; all five demo schools meet the reported coverage targets | A15 data report, 2026-10-26 |
+| Real CDS and Zetaris federation coverage | 5 CDS schools, 260 IPEDS fallback; gold refreshed | A12/A15 data report |
 | Calibrated demo probability and pivot sizes | No live recording yet | Recorded fictional-persona run with real institutional data |
-| Typical odds correction | Not measured on loaded corpus | Calibration table |
+| Typical odds correction | Median 3.24× across 88 schools with at least 15 outcomes | A15 calibration table summary |
 | Model and base-rate Brier scores; bias audit | Not measured | A16 held-out backtest |
 | Real Nemotron request and World Model conformance | Not captured | D10 evidence |
 
-`data/data-report.json` deliberately contains nulls until these facts are verified.
-The About-the-data panel displays “Not verified yet”, rather than a fabricated
-zero or the earlier unsupported 10,000+ corpus claim.
+`data/data-report.json` now contains the reported corpus, coverage and odds
+adjustment figures, with a dated source link. Brier scores remain null and the
+About-the-data panel says "Not measured yet". These counts do not complete D09:
+the held-out backtest/bias audit and final recorded-run figures are still missing.
+
+## Judge questions about the current data
+
+- **How much real data do you have?** 947 self-reported applicant profiles and
+  265 universities. Five demo schools have CDS rubrics. Those are the reported
+  A15 counts, separate from the authored fictional replay.
+- **How do you handle Reddit self-selection?** The reported median odds inflation
+  is 3.24× across the 88 schools with at least 15 outcomes. The scoring pipeline
+  includes an approximate correction; its presence does not establish accuracy.
+- **What is your Brier score?** Not measured yet. A16's held-out comparison and
+  bias audit remain open, so we cannot claim a numerical accuracy result.
+- **Is 947 enough to cover every school or student?** It does not establish that.
+  Coverage is uneven, outcomes are self-reported, and the five demo schools were
+  checked against explicit coverage targets. The UI shows the actual counts.
 
 ## Backup and rehearsal
 

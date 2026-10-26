@@ -297,3 +297,10 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - We did: ran the full capped extraction, loaded the twins, refreshed stats and the Zetaris gold table, and wrote `docs/data-report.md` with the real numbers. The first run lost many decisions to unaliased school names (Cornell, Columbia, USC, NYU…) and two alias entries pointed at slugs that do not exist (`upenn`, `washu`); `data/school_aliases.yaml` now covers 87 schools and the extraction was re-run (95 → 12 posts rejected for no resolved school).
 - Impact on other tracks: Track D can fill `data/data-report.json` with n_twins 947, n_schools 265, n_cds_schools 5 and must not claim 10,000+. Track B's calibration now rests on 947 twins.
 
+## D-038 — Report the real corpus without implying a completed accuracy backtest
+- Step: D09 data disclosure / pitch · Date: 2026-10-26 · By: gridiii via Codex.
+- A15 now supplies real corpus, school coverage and an approximate Reddit odds adjustment. The public manifest records those reported figures, its date and an immutable source-report link, with partial status; Brier values stay null until A16 exists.
+- The About-the-data panel displays 947 profiles, 265 universities, five CDS schools, the five demo-school coverage rows, and the scoped 3.24× median odds inflation. Its fictional-replay notice appears on the authored replay, and it explicitly distinguishes those profiles from the real dataset. An odds adjustment is not presented as predictive accuracy.
+- The panel uses the existing dialog trigger for keyboard focus restoration. Production checks verify the reported figures, unmeasured Brier labels, Escape returning focus, and a 390px layout without horizontal panel overflow. The pitch includes the same evidence and leaves live-run/backtest claims open.
+- Verified: 340 API tests and ruff; 43 web tests, lint, TypeScript and production build pass. Frozen event and schema contracts are unchanged. D09 remains open for A16 and the final recorded-run figures.
+

@@ -55,3 +55,26 @@ closing recommendation comes from the computed probability disposition.
 No live provider request or actual graph recording is included in these results.
 Track A's flag/fallback fixes and demo-school/twin data, plus Track B's B14 work,
 remain separate handoff items.
+
+## Reported-data disclosure — 2026-10-26
+
+Done by gridiii via Codex. The manifest and pitch now use A15's real reported
+947 profiles, 265 universities, five CDS schools, per-school coverage and median
+3.24× odds inflation across 88 qualifying schools. The source report is pinned
+to `b6b3d37`; the manifest is partial and both Brier fields remain null.
+
+- Locked Python dependencies / ruff: passed; **340 API tests passed**.
+- **43 web tests**, lint, TypeScript and production build: passed.
+- Production browser: the panel shows the reported counts and all five school
+  rows, a dated source link, and both Brier values as **Not measured yet**.
+- The fictional notice is scoped to the authored replay. The real dataset is
+  never described as the source of that replay's invented comparisons.
+- Phone layout at **390px**: dialog client width and scroll width both **389px**;
+  the table stays readable. Escape closes the dialog and returns focus to
+  **About the data**. The temporary viewport override was reset.
+- Screenshot: `outputs/track-d-real-data-2026-10-26.png` in gridiii's workspace
+  (outside this repository).
+
+D09's actual completion still requires A16 and final real-run figures. The
+reported corpus snapshot is not a claim of live credentials, deployed phone
+acceptance, model accuracy or provider judging evidence.
