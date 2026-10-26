@@ -1,0 +1,16 @@
+# docker-compose.adcom.yml: joins the AdCom API to the Zetaris Compose network. From the repo root:
+#   docker compose -f zetaris-platform/docker-compose.yml -f docker-compose.adcom.yml up -d adcom-api
+# Relative paths resolve against the first file's directory (zetaris-platform/), so `..` is the repo root.
+services:
+  adcom-api:
+    build: { context: .., dockerfile: services/api/Dockerfile }
+    env_file: ../.env
+    environment:
+      ZETARIS_URL: http://ui:3000          # the UI's API proxy, the same route verify.sh uses
+      OLLAMA_URL: http://host.docker.internal:11434   # Node 1's embedder runs on the host's Ollama (D-035)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"           # Linux hosts; Docker Desktop defines it already
+    depends_on:
+      ui: { condition: service_healthy }
+    ports:
+      - "127.0.0.1:8000:8000"              # Caddy (tls profile) or a tunnel publishes it, never the raw port

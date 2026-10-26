@@ -6883,9 +6883,12 @@ COPY services/api/ ./
 COPY data/demo_runs/ /srv/data/demo_runs/
 COPY data/fixtures/ /srv/data/fixtures/
 EXPOSE 8000
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", \
+# --frozen --no-dev: a bare `uv run` would re-sync the dev group at container start (see DECISIONS D-035)
+CMD ["uv", "run", "--frozen", "--no-dev", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", \
      "--workers", "1", "--timeout-keep-alive", "75", "--proxy-headers"]
 ```
+
+A repo-root `.dockerignore` keeps `zetaris-platform/`, `.env`, `.venv`, `node_modules` and `apps/` out of the build context (D-035).
 
 The `parents[3]` paths in `demo.py`, `fake_llm.py` and `record_demo.py` resolve to `/srv`, so `/srv/data/...` matches the repo layout.
 
@@ -6900,6 +6903,9 @@ services:
     env_file: ../.env
     environment:
       ZETARIS_URL: http://ui:3000          # the UI's API proxy, the same route verify.sh uses
+      OLLAMA_URL: http://host.docker.internal:11434   # Node 1's embedder runs on the host's Ollama (D-035)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"           # Linux hosts; Docker Desktop defines it already
     depends_on:
       ui: { condition: service_healthy }
     ports:

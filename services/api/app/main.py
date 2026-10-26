@@ -16,6 +16,7 @@ from .config import settings
 from .demo import register_demo_runs
 from .demo import router as demo_router
 from .runs import RateLimited, RunManager, script_frames, sse_frames
+from .zetaris import zetaris
 
 MAX_PDF_BYTES = 10 * 1024 * 1024
 SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"}
@@ -37,6 +38,7 @@ async def lifespan(app: FastAPI):
         if restore:
             restore()
         await runs.shutdown()
+        await zetaris.aclose()
 
 
 app = FastAPI(title="AdCom API", version="0.1.0", lifespan=lifespan)
@@ -155,7 +157,16 @@ async def fake_stream(request: Request, after: int = Query(-1), speed: float = Q
 
 @app.get("/api/health")
 async def health():
-    # B07/A13 add the db and zetaris probes (plan §4.3).
-    return {"ok": True, "anthropic_key": bool(settings.anthropic_api_key) or settings.fake_llm,
+    ok_db = ok_zetaris = True
+    try:
+        await db.get_school("mit")
+    except Exception:
+        ok_db = False
+    try:
+        await zetaris.query("SELECT 7 AS seven", page_limit=1)    # the same probe verify.sh runs
+    except Exception:
+        ok_zetaris = False
+    return {"ok": ok_db, "db": ok_db, "zetaris": ok_zetaris, "zetaris_enabled": settings.zetaris_enabled,
+            "anthropic_key": bool(settings.anthropic_api_key) or settings.fake_llm,
             "tavily": bool(settings.tavily_api_key), "demo_mode": settings.demo_mode,
             "fake_llm": settings.fake_llm, "ts": time.time()}

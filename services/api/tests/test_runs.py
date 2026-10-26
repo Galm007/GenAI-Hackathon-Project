@@ -287,5 +287,23 @@ async def test_dev_fake_stream_resumes_from_last_event_id(client):
     assert frames[-1]["event"] == "done"
 
 
-async def test_health(client):
-    assert (await client.get("/api/health")).json()["ok"] is True
+@pytest.mark.parametrize(("db_up", "zetaris_up"), [(True, True), (True, False), (False, True)])
+async def test_health_probes_the_database_and_zetaris(client, monkeypatch, db_up, zetaris_up):
+    from app import main
+
+    async def get_school(slug):
+        if not db_up:
+            raise httpx.ConnectError("supabase down")
+        return {"slug": slug}
+
+    async def query(sql, **kw):
+        if not zetaris_up:
+            raise httpx.ConnectError("zetaris down")
+        assert sql == "SELECT 7 AS seven" and kw == {"page_limit": 1}
+        return [{"seven": "7"}]
+
+    monkeypatch.setattr(main.db, "get_school", get_school)
+    monkeypatch.setattr(main.zetaris, "query", query)
+    h = (await client.get("/api/health")).json()
+    assert (h["ok"], h["db"], h["zetaris"]) == (db_up, db_up, zetaris_up)
+    assert {"zetaris_enabled", "anthropic_key", "tavily", "demo_mode", "fake_llm", "ts"} <= set(h)

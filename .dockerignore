@@ -1,0 +1,19 @@
+# The API image builds from the repo root (services/api/Dockerfile) and copies only services/api and
+# data/{demo_runs,fixtures}. Keep secrets, the Zetaris bundle and bulky local data out of the build context.
+.env
+.env.*
+!.env.example
+zetaris-platform/
+zetaris-platform.zip
+.git/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/node_modules/
+**/.next/
+apps/
+data/raw/
+data/processed/
+data/public/
+.local/
