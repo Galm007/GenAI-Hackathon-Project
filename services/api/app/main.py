@@ -12,7 +12,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFi
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
-from . import db, llm, zetaris_repo
+from . import db, llm, meterless_health, zetaris_repo
 from .api_models import IntakeForm
 from .config import settings
 from .demo import register_demo_runs
@@ -51,11 +51,13 @@ async def lifespan(app: FastAPI):
     if settings.fake_llm:
         from .fake_llm import install
         restore = install()                    # offline dev: fixtures instead of model calls (§4.9)
+    discovery = asyncio.create_task(meterless_health.startup_check())
     warm = asyncio.create_task(prewarm())      # in the background, so a missing Zetaris never delays startup (D-036)
     try:
         yield
     finally:
         warm.cancel()
+        discovery.cancel()
         if restore:
             restore()
         await runs.shutdown()
@@ -187,7 +189,9 @@ async def health():
         await zetaris.query("SELECT 7 AS seven", page_limit=1)    # the same probe verify.sh runs
     except Exception:
         ok_zetaris = False
-    return {"ok": ok_db, "db": ok_db, "zetaris": ok_zetaris, "zetaris_enabled": settings.zetaris_enabled,
+    runtime = await meterless_health.probe()
+    return {"meterless": runtime["ready"], "meterless_status": runtime["status"],
+            "ok": ok_db, "db": ok_db, "zetaris": ok_zetaris, "zetaris_enabled": settings.zetaris_enabled,
             "llm_provider": settings.llm_provider, "llm_key": llm.key_configured() or settings.fake_llm,
             "tavily": bool(settings.tavily_api_key), "demo_mode": settings.demo_mode,
             "fake_llm": settings.fake_llm, "ts": time.time()}

@@ -457,8 +457,13 @@ async def test_health_probes_the_database_and_zetaris(client, monkeypatch, db_up
         assert sql == "SELECT 7 AS seven" and kw == {"page_limit": 1}
         return [{"seven": "7"}]
 
+    async def runtime():
+        return {"ready": True, "status": "ready"}
+
+    monkeypatch.setattr(main.meterless_health, "probe", runtime)
     monkeypatch.setattr(main.db, "get_school", get_school)
     monkeypatch.setattr(main.zetaris, "query", query)
     h = (await client.get("/api/health")).json()
     assert (h["ok"], h["db"], h["zetaris"]) == (db_up, db_up, zetaris_up)
+    assert h["meterless"] is True and h["meterless_status"] == "ready"
     assert {"zetaris_enabled", "llm_provider", "llm_key", "tavily", "demo_mode", "fake_llm", "ts"} <= set(h)
