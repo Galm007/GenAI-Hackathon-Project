@@ -6,7 +6,7 @@ Run date: 2026-10-26 · Author: Jmar L. Pineda via Claude Code · All figures co
 
 | Item | Value |
 |---|---|
-| Applicant twins loaded | **950** (833 first-year from r/collegeresults, 117 transfer from r/TransferToTop25); 928 are from the 2026 cycle |
+| Applicant twins loaded | **947** (830 first-year from r/collegeresults, 117 transfer from r/TransferToTop25); 925 are from the 2026 cycle |
 | Roadmap target | ≥ 10,000. **Not met.** See "Why not 10K" |
 | Universities loaded | 265 (College Scorecard, admit rate ≤ 0.60) |
 | Schools with CDS rubric (C7) | **5** (CMU, UMich, Georgia Tech, UIUC, UC Berkeley, 2024-25) |
@@ -22,9 +22,9 @@ Throughput measured on `gemma4:e2b`: **8.9 s per post**, about 3.4 h for the 1,4
 ## Extraction quality
 
 - Kept 947 of 1,487 posts (64%). The newest 200 posts kept 86%; older posts are mostly not results posts.
-- 3 rows in the database come from an earlier smoke run and are not in the final extraction file (their posts are now rejected as not results or cut off). They are left in place pending a cleanup decision.
+- The database matches the final extraction file exactly: 3 rows left over from an earlier smoke run were deleted (2026-10-26) and stats and the Zetaris gold table refreshed.
 - School resolution: the first full run lost decisions at schools such as Cornell, Columbia, USC and NYU because their short names were not aliased, and two entries pointed at slugs that do not exist (`upenn`, `washu`). `data/school_aliases.yaml` now maps 87 schools (302 → 447 aliases in the database) and posts rejected for "no resolved school" fell from 95 to 12. Still unresolved, because the schools are not in the 265: Caltech, Penn State, UC Santa Cruz, RIT, UC Riverside, Harvey Mudd, UC Merced, CU Boulder, Ohio State.
-- Applicant detail: SAT present on 649 twins, unweighted GPA on 522.
+- Applicant detail: SAT present on 646 twins, unweighted GPA on 520.
 
 ## Demo-school coverage
 
@@ -33,29 +33,29 @@ Target: at least 80 first-year outcomes per demo school and at least 15 in the d
 | School | First-year outcomes | Computer science | Official admit rate | Reddit admit rate | Odds inflation |
 |---|---|---|---|---|---|
 | UIUC | 191 | 132 | 0.424 | 0.539 | 1.59 |
-| CMU | 183 | 139 | 0.117 | 0.290 | 3.09 |
+| CMU | 182 | 139 | 0.117 | 0.291 | 3.11 |
 | UMich | 254 | 126 | 0.156 | 0.350 | 2.91 |
 | Georgia Tech | 212 | 163 | 0.141 | 0.429 | 4.59 |
-| UC Berkeley | 289 | 160 | 0.110 | 0.308 | 3.59 |
+| UC Berkeley | 288 | 160 | 0.110 | 0.309 | 3.60 |
 
 All five meet both targets. The official admit rates come from the 2024-25 CDS for these five schools.
 
 ## Calibration
 
-`school_reddit_calibration` has 157 schools. For the 88 with at least 15 Reddit outcomes, **odds inflation** (Reddit odds divided by official odds, clamped to [1, 8]) has median **3.24** (min 1.11, max 8.0). Reddit applicants are admitted at roughly three times the official odds, which is the self-selection effect Node 3 divides out. 43 schools have at least 80 outcomes; `school_major_stats` has 119 (school, major) rows with n ≥ 15.
+`school_reddit_calibration` has 157 schools. For the 88 with at least 15 Reddit outcomes, **odds inflation** (Reddit odds divided by official odds, clamped to [1, 8]) has median **3.24** (min 1.12, max 8.0). Reddit applicants are admitted at roughly three times the official odds, which is the self-selection effect Node 3 divides out. 43 schools have at least 80 outcomes; `school_major_stats` has 119 (school, major) rows with n ≥ 15.
 
 ## Activity tier distribution
 
-Across the 950 twins, the extractor tiered 6,105 activities with the Node 1 rubric:
+Across the 947 twins, the extractor tiered 6,088 activities with the Node 1 rubric:
 
 | Tier | Activities | Share |
 |---|---|---|
-| 1 | 767 | 12.6% |
-| 2 | 2,237 | 36.6% |
-| 3 | 2,417 | 39.6% |
-| 4 | 684 | 11.2% |
+| 1 | 765 | 12.6% |
+| 2 | 2,231 | 36.6% |
+| 3 | 2,411 | 39.6% |
+| 4 | 681 | 11.2% |
 
-Median activity score is 9.75. Top majors: computer science 423, pre-health 110, political science 91, undecided 76, humanities 47, business 46.
+Median activity score is 9.75. Top majors: computer science 422, pre-health 110, political science 90, undecided 75, humanities 47, business 46.
 
 ## Federated sources (Zetaris)
 
@@ -70,4 +70,4 @@ C7 factors for all five schools were compared with the source PDFs and spreadshe
 ## Caveats for the pitch
 
 - Reddit outcomes are self-reported and self-selected; the calibration step exists to correct for that, and it is rough.
-- With about 950 twins and 5 CDS schools, say exactly that. Do not use "10,000+" anywhere. `data/data-report.json` (Track D's file, read by the About-the-data panel) still holds nulls; it can now be filled with n_twins 950, n_schools 265 and n_cds_schools 5.
+- With 947 twins and 5 CDS schools, say exactly that. Do not use "10,000+" anywhere. `data/data-report.json` (Track D's file, read by the About-the-data panel) still holds nulls; it can now be filled with n_twins 947, n_schools 265 and n_cds_schools 5.
