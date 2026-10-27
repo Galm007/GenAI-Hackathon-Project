@@ -177,3 +177,32 @@ laptop demo host, not an always-on production service.
 
 D08's final acceptance still requires a completed hosted live evaluation and
 a physical-phone check. A READY deployment or a replay alone does not satisfy it.
+
+## Backup: deploy from Jmar's own Vercel account
+
+For when gridiii's `adcom` project is unavailable. It links the repository directly,
+so every push to `main` deploys. The settings match gridiii's project above.
+
+1. Sign in at vercel.com with the GitHub account that owns `Galm007/GenAI-Hackathon-Project`
+   and authorize Vercel's GitHub app for that repository only.
+2. **Add New → Project → Import** `Galm007/GenAI-Hackathon-Project`, then set:
+
+   | Setting | Value |
+   |---|---|
+   | Root Directory | `apps/web` |
+   | Framework Preset | Next.js |
+   | Install / Build Command | from `apps/web/vercel.json` (`pnpm install --frozen-lockfile`, `pnpm build`) |
+   | Node.js Version | 24.x (Settings → Build and Deployment) |
+   | Include files outside the Root Directory | **on** (the app imports `data/` fixtures and the report) |
+   | Environment Variable | `ADCOM_API_URL` = the public API origin, no trailing slash |
+   | Production Branch | `main` |
+
+   Add no other variable. Never add database, model or Runtime keys to Vercel.
+3. Publish the API from the host that runs Zetaris. With the co-located container up on
+   loopback port 8000, `cloudflared tunnel --url http://127.0.0.1:8000` prints a temporary
+   `https://….trycloudflare.com` origin. Put that in `ADCOM_API_URL` and redeploy. Check
+   `GET <origin>/api/health` first: `db` and `zetaris` should be true. A new tunnel means a
+   new origin, so update the variable again. Do not commit the origin.
+4. The browser reaches the API through the same-origin `/api` rewrite, so the API's
+   `CORS_ORIGINS` needs no change while `NEXT_PUBLIC_API_URL` stays unset.
+5. Acceptance is the same as above: a hosted live run, then a physical phone on another network.
