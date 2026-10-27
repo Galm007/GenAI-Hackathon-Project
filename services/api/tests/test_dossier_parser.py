@@ -103,7 +103,7 @@ async def test_node_extracts_redacts_grades_clamps_and_embeds(run_node):
     # two calls, as the plan sets them up
     assert [c["schema"] for c in calls] == [ParsedDossier, DossierGrade]
     shape = [(c["system"], c["effort"], c["max_tokens"]) for c in calls]
-    assert shape == [(DOSSIER_EXTRACTOR_SYSTEM, "medium", 32000), (RUBRIC_GRADER_SYSTEM, "high", 24000)]
+    assert shape == [(DOSSIER_EXTRACTOR_SYSTEM, "low", 32000), (RUBRIC_GRADER_SYSTEM, "medium", 24000)]
     assert calls[0]["messages"][0]["content"][0]["type"] == "document"
     grader_input = calls[1]["messages"][0]["content"]
     assert "Maya" not in grader_input and "[redacted]" in grader_input        # the grader never sees PII

@@ -48,7 +48,7 @@ In Nightshift, open **Console** (top right) and copy the **Nightshift URL** and 
 LLM_PROVIDER=meterless
 METERLESS_BASE_URL=http://127.0.0.1:8088/v1      # the Console's URL; use the reachable URL if Nightshift is on another machine
 METERLESS_RUNTIME_TOKEN=<the Console's API key>   # never the NVIDIA key, never the placeholder rt-local
-METERLESS_MODEL=meterless/auto                    # a routing mode, not a model id
+METERLESS_MODEL=meterless/fast                    # a routing lane, not a model id (D-058: auto was throttled)
 ```
 
 `meterless/auto` may route to a non-NVIDIA model when several lanes qualify. To show Nemotron in the demo, pin a Nemotron-backed lane (or use the explicit `meterless/<...>` route that `/v1/models` lists for it).

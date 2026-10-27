@@ -83,7 +83,7 @@ async def delta_engine_node(state: AdComState) -> dict:
                 "Write the final report."
             )},
         ]}],
-        effort="high", max_tokens=16000,
+        effort="medium", max_tokens=8000,
     )
     report = bind_report(report, cfs, state)
     emit("final_report", report=report.model_dump())

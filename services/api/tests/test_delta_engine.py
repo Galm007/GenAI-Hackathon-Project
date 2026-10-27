@@ -116,7 +116,7 @@ async def test_node_binds_emits_and_persists(run_node, state):
     assert kw["embedding"] == state["profile_embedding"] and kw["rubric"] is state["school_rubric"]
 
     [p] = calls["parse"]
-    assert (p["schema"], p["system"], p["effort"], p["max_tokens"]) == (DeltaReport, DELTA_SYSTEM, "high", 16000)
+    assert (p["schema"], p["system"], p["effort"], p["max_tokens"]) == (DeltaReport, DELTA_SYSTEM, "medium", 8000)
     docket_block, ask = p["messages"][0]["content"]
     assert docket_block["text"] == f"<docket>\n{state['docket']}\n</docket>"
     assert "[Turn 4 — chair]" in ask["text"] and '"id":"cf_major_math_stats"' in ask["text"]

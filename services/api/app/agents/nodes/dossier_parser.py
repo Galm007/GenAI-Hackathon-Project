@@ -105,7 +105,7 @@ async def dossier_parser_node(state: AdComState) -> dict:
     dossier = await llm.parse(
         ParsedDossier, system=DOSSIER_EXTRACTOR_SYSTEM,
         messages=[{"role": "user", "content": _intake_blocks(inputs)}],
-        effort="medium", max_tokens=32000,
+        effort="low", max_tokens=32000,
     )
     dossier = redact(dossier)
     metrics = compute_metrics(dossier)
@@ -115,7 +115,7 @@ async def dossier_parser_node(state: AdComState) -> dict:
     grade = await llm.parse(
         DossierGrade, system=RUBRIC_GRADER_SYSTEM,
         messages=[{"role": "user", "content": _grader_payload(dossier, metrics, inputs)}],
-        effort="high", max_tokens=24000,
+        effort="medium", max_tokens=24000,
     )
     grade, metrics, warnings = enforce_grade_invariants(dossier, grade, metrics, inputs)
     emit("scorecard", grade=grade.model_dump(), metrics=metrics.model_dump(), warnings=warnings)
