@@ -15,6 +15,16 @@ export const EVENT_TYPES = [
 
 export const runIdOf = (src: RunSource) => (src.kind === "live" ? src.runId : `demo-${src.name}`);
 
+/** A proxy that buffers SSE (Cloudflare quick tunnels do) shows nothing until the run ends. When the stream goes quiet,
+ * live runs are read from the plain-JSON events endpoint instead; both sources are de-duplicated by `seq`. */
+export const STALL_MS = 4000;
+export const POLL_MS = 1500;
+
+export function pollUrlFor(streamUrl: string): string | null {
+  const m = streamUrl.match(/^(.*\/api\/evaluate\/[^/?#]+)\/stream(?:[?#].*)?$/);
+  return m ? `${m[1]}/events` : null;
+}
+
 export function connectStream(runId: string, streamUrl?: string): () => void {
   if (typeof window === "undefined") return () => {};
 
@@ -22,6 +32,7 @@ export function connectStream(runId: string, streamUrl?: string): () => void {
   ensureRun(runId);
 
   const url = streamUrl ?? `${API}/api/evaluate/${runId}/stream`;
+  const pollUrl = pollUrlFor(url);
   let es: EventSource;
   try {
     es = new EventSource(url);
@@ -31,6 +42,12 @@ export function connectStream(runId: string, streamUrl?: string): () => void {
 
   let buffer: Envelope[] = [];
   let raf = 0;
+  let lastSeq = -1;
+  let lastSseAt = Date.now();
+  let finished = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let polling = false;
+
   const flush = () => {
     raf = 0;
     if (buffer.length) {
@@ -39,16 +56,28 @@ export function connectStream(runId: string, streamUrl?: string): () => void {
     }
   };
 
+  const stop = () => {
+    finished = true;
+    es.close();
+    if (timer) clearTimeout(timer);
+  };
+
+  const ingest = (env: Envelope) => {
+    if (finished || env.seq <= lastSeq) return;
+    lastSeq = env.seq;
+    buffer.push(env);
+    if (env.event === "done") {
+      flush();
+      stop();
+      return;
+    }
+    if (!raf) raf = requestAnimationFrame(flush);
+  };
+
   const onEvent = (e: MessageEvent<string>) => {
     try {
-      const env = JSON.parse(e.data) as Envelope;
-      buffer.push(env);
-      if (env.event === "done") {
-        flush();
-        es.close();
-        return;
-      }
-      if (!raf) raf = requestAnimationFrame(flush);
+      lastSseAt = Date.now();
+      ingest(JSON.parse(e.data) as Envelope);
     } catch {
       // ignore parse error
     }
@@ -56,8 +85,28 @@ export function connectStream(runId: string, streamUrl?: string): () => void {
 
   EVENT_TYPES.forEach((t) => es.addEventListener(t, onEvent as EventListener));
 
+  const poll = async () => {
+    if (finished || !pollUrl) return;
+    if (!polling && Date.now() - lastSseAt > STALL_MS) {
+      polling = true;
+      try {
+        const res = await fetch(`${pollUrl}?after=${lastSeq}`, { cache: "no-store" });
+        if (res.status === 404) return stop();
+        if (res.ok) ((await res.json()).events as Envelope[]).forEach(ingest);
+      } catch {
+        // transient network error: try again on the next tick
+      } finally {
+        polling = false;
+      }
+    }
+    if (!finished) timer = setTimeout(poll, POLL_MS);
+  };
+  if (pollUrl) timer = setTimeout(poll, POLL_MS);
+
   return () => {
+    finished = true;
     es.close();
+    if (timer) clearTimeout(timer);
     if (raf) cancelAnimationFrame(raf);
   };
 }

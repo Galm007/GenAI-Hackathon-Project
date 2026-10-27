@@ -17,7 +17,7 @@ from .api_models import IntakeForm
 from .config import settings
 from .demo import register_demo_runs
 from .demo import router as demo_router
-from .runs import RateLimited, RunManager, script_frames, sse_frames
+from .runs import RateLimited, RunManager, events_after, script_frames, sse_frames
 from .zetaris import zetaris
 
 log = logging.getLogger("main")
@@ -134,6 +134,15 @@ async def stream_evaluation(run_id: str, request: Request, after: int = Query(-1
         raise HTTPException(404, "unknown or expired run")
     return EventSourceResponse(sse_frames(run, _start_after(request, after), request), ping=15,
                                headers=SSE_HEADERS)
+
+
+@app.get("/api/evaluate/{run_id}/events")
+async def poll_evaluation_events(run_id: str, after: int = Query(-1, ge=-1)):
+    """Polling fallback for the stream: everything after sequence `after`, as JSON (see runs.events_after)."""
+    run = runs.get(run_id)
+    if run is None:
+        raise HTTPException(404, "unknown or expired run")
+    return events_after(run, after)
 
 
 @app.post("/api/evaluate/{run_id}/schools/{slug}", status_code=202)

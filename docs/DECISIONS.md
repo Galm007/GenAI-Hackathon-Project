@@ -447,3 +447,10 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Measured cold, same dossier, fast lane: 1,269 s to 802 s. Node 1 544 s to 328 s (extract 246 s to 139 s, grade 293 s to 185 s); the final report 386 s to 17 s. Ratings, activity tiers and warnings matched the previous fast run (academic 2, EC 3 after the existing clamp, personal 2, athletic 4); P(UIUC) 53.4% against 55.6%, within the stated range. Debate turn time is noisy (second turn 95 s one run, 241 s the next) and was not changed.
 - Warm-cache runs skip Node 1 (about 6 minutes). The dossier cache is in memory, so an API restart clears it.
 - Impact on other tracks: none to events or schemas. Track B may revisit grade `medium` if rubric quality drops on other personas.
+
+## D-059 — Polling fallback for buffered streams
+- Step: D08 hosted verification (no roadmap step) · Date: 2026-10-27 · By: Jmar L. Pineda via Claude Code (human request, touches Tracks B and C)
+- Found: Cloudflare quick tunnels do not stream server-sent events. The API emitted the first event at 0.0 s, but through the tunnel all 101 events arrived together when the stream closed (13 s for a replay, about 15 minutes for a live run), so the hosted War Room showed "The committee is assembling" for the whole run. Quick tunnels document SSE as unsupported; HTTP/2 mode behaved the same.
+- We did: `GET /api/evaluate/{run_id}/events?after=<seq>` returns the run's events as JSON (`events`, `last_seq`, `done`) and counts as a viewer for the no-viewers watchdog. `lib/stream.ts` keeps SSE first; when a live run's stream has been silent for 4 s it polls that endpoint every 1.5 s. Both sources are de-duplicated by `seq` and stop at `done`. Demo replays never poll. No event names, payloads or schemas changed.
+- Effect: live progress reaches the hosted page in 1.5 s batches through a buffering tunnel; debate tokens arrive in bursts rather than one by one. A streaming-capable host still gives smoother output.
+- Tests: `test_runs.py` (events endpoint, watchdog), `lib/stream.test.ts` (stalled stream falls back to polling, no polling when healthy, late flush ignored, replays untouched).

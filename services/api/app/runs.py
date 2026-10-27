@@ -284,6 +284,15 @@ async def sse_frames(run: Run, after: int, request: Request) -> AsyncIterator[di
         run.last_seen = time.monotonic()
 
 
+def events_after(run: Run, after: int, limit: int = 500) -> dict:
+    """Plain-JSON read of a run's events for clients whose proxy buffers SSE (Cloudflare quick tunnels do).
+    Counts as a viewer, so the no-viewers watchdog leaves the run alone while a page is polling."""
+    run.last_seen = time.monotonic()
+    batch = run.events[after + 1:after + 1 + limit]
+    last = batch[-1]["seq"] if batch else after
+    return {"events": batch, "last_seq": last, "done": run.done and last >= len(run.events) - 1}
+
+
 async def script_frames(after: int, speed: float, request: Request) -> AsyncIterator[dict]:
     """`/api/dev/fake-stream`: the script straight to the wire, no RunManager. Resumes after `after` (Last-Event-ID)."""
     prev = None

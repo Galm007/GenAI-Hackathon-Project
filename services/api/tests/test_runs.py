@@ -415,6 +415,34 @@ async def test_evaluate_then_stream_with_last_event_id(client, stub):
     assert snap["status"] == "complete" and "probability" in snap["captured"]
 
 
+async def test_events_endpoint_pages_a_run_without_sse(client, stub):
+    stub()
+    r = await client.post("/api/evaluate", data={"intake": json.dumps(INTAKE | {"session_id": "test-session-poll"})})
+    from app.main import runs
+    run = runs.get(r.json()["run_id"])
+    await run.task
+    total = len(run.events)
+
+    first = (await client.get(f"/api/evaluate/{run.run_id}/events")).json()
+    assert [e["seq"] for e in first["events"]] == list(range(total)) and first["done"] is True
+
+    tail = (await client.get(f"/api/evaluate/{run.run_id}/events", params={"after": total - 3})).json()
+    assert [e["seq"] for e in tail["events"]] == [total - 2, total - 1]
+    assert tail["last_seq"] == total - 1 and tail["events"][-1]["event"] == "done"
+
+    caught_up = (await client.get(f"/api/evaluate/{run.run_id}/events", params={"after": total - 1})).json()
+    assert caught_up == {"events": [], "last_seq": total - 1, "done": True}
+    assert (await client.get("/api/evaluate/nope/events")).status_code == 404
+
+
+async def test_polling_counts_as_a_viewer_for_the_watchdog(stub):
+    from app.runs import Run, events_after
+    run = Run(run_id="r", session_id="s", school_slug="uiuc")
+    run.last_seen = 0.0
+    out = events_after(run, -1)
+    assert out == {"events": [], "last_seq": -1, "done": False} and run.last_seen > 0.0
+
+
 async def test_another_school_needs_a_finished_parent(client, stub):
     stub()
     assert (await client.post("/api/evaluate/nope/schools/umich")).status_code == 409
