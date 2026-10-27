@@ -24,6 +24,7 @@ from .config import settings
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
 ATTEMPTS = 3                          # per-minute 429s, 5xx and connection errors
 MAX_WAIT_S = 30.0
+MODELS_TIMEOUT = httpx.Timeout(5.0)   # discovery loads no model, so a slow answer means an unhealthy Runtime
 
 log = logging.getLogger("openai_compat")
 http = httpx.AsyncClient()
@@ -39,13 +40,17 @@ class Profile:
     fast_model: str                   # effort="low": debate turns and the SQL loop, to save free-tier quota
 
 
+def meterless_profile() -> Profile:
+    return Profile(
+        "meterless", settings.meterless_base_url.rstrip("/"),
+        {"Authorization": f"Bearer {settings.meterless_runtime_token or ''}",
+         "meterless-app": settings.meterless_app, "meterless-scope": "user"},
+        settings.meterless_model, settings.meterless_model)
+
+
 def profile() -> Profile:
     if settings.llm_provider == "meterless":
-        return Profile(
-            "meterless", settings.meterless_base_url.rstrip("/"),
-            {"Authorization": f"Bearer {settings.meterless_runtime_token or ''}",
-             "meterless-app": settings.meterless_app, "meterless-scope": "user"},
-            settings.meterless_model, settings.meterless_model)
+        return meterless_profile()
     return Profile("gemini", GEMINI_BASE_URL, {"Authorization": f"Bearer {settings.gemini_api_key or ''}"},
                    settings.gemini_model, settings.gemini_fast_model)
 
@@ -164,6 +169,21 @@ async def _choice(p: Profile, body: dict, name: str) -> dict:
         body = body | {"model": p.fast_model}
         resp = await send()
     return resp.json()["choices"][0]
+
+
+async def meterless_models() -> list[str]:
+    """GET /v1/models on the Nightshift Runtime: its health check (§1.7.2). Returns the listed model and route ids;
+    401/403 raises LLMAuthError, no answer raises LLMUnavailable. Checked whatever LLM_PROVIDER is selected."""
+    p = meterless_profile()
+    try:
+        resp = await http.get(f"{p.base_url}/models", headers=_headers(p), timeout=MODELS_TIMEOUT)
+    except httpx.TransportError as exc:
+        raise llm.LLMUnavailable(f"{p.name} unreachable: {type(exc).__name__}") from exc
+    _raise_for(resp, p)
+    try:
+        return [m["id"] for m in resp.json()["data"] if m.get("id")]
+    except (ValueError, KeyError, TypeError, AttributeError) as exc:   # something else is listening on that port
+        raise llm.LLMUnavailable(f"{p.name} /models did not return a model list") from exc
 
 
 async def _complete(p: Profile, body: dict, name: str) -> str:

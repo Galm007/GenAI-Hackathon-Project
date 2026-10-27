@@ -422,13 +422,20 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Also: the Zetaris setup needed the federal files copied into the driver and `ADCOM_PUBLIC` tables recreated after they were first registered empty (no repo change).
 - Impact on other tracks: Track D should stop quoting the fixture's +8.3 pp major pivot as live evidence. More major rows in `school_major_stats` (A18) would restore the arbitrage beat.
 
-## D-056 — Nonzero shape embedding for the database-backed fake graph
+## D-055 — B17c: Meterless discovery check; step left open until the pinned-lane turn is captured
+- Step: B17c · Date: 2026-10-26 · By: Aron via Claude Code
+- Plan said: a startup `GET /v1/models` check, `"meterless": true|false` in `/api/health`, remove the §1.7.2 **(verify)** markers a real Runtime confirms; done when a committee turn answers through a pinned Nemotron lane (§1.7.2, §1.7.4).
+- We did: `openai_compat.meterless_models()` uses the Meterless profile whatever `LLM_PROVIDER` is, with a 5 s timeout and no retry, and maps 401/403, 5xx, unreachable and a non-model-list body to the provider-neutral errors. The startup check runs in the background only when `LLM_PROVIDER=meterless` and `FAKE_LLM` is off, and only logs: a warning names `LLM_PROVIDER=gemini` as the fallback, or says that `METERLESS_MODEL` is not among the listed ids. `/api/health` always probes it, like Zetaris, so the demo machine can see whether the fallback rung is needed. `ok` still means the database only. The four §1.7.2 rows S03 exercised (D-043) lost their markers; the timeout, `rt-local` rejection and the lanes' `json_schema` handling keep theirs.
+- Why the step stays unchecked: Nightshift is not installed on this machine (nothing answers on 8088/8090/8787), and no capture of a pinned Nemotron lane exists yet (`docs/pitch.md` lists it as "Not captured"). The live check here only confirmed the down path: `ConnectError` → `LLMUnavailable` and the startup warning.
+- Impact on other tracks: D10 can use `/api/health`'s `"meterless"` field and the startup log line as part of its evidence. No frozen contract changed; the web app doesn't read `/api/health`.
+
+## D-056 — Do not accept a blank provider stream as a committee turn
+- Step: B17c live validation (follows D-055) · Date: 2026-10-26 · By: gridiii via Codex
+- The real Nightshift committee check returned no text, while its receipt said “No route completed”. The provider adapter previously returned an empty string, so the debate node misleadingly labeled the blank turn non-degraded. Empty/whitespace streams now raise `LLMInvalidOutput` and take the existing visible fallback. A mocked-transport regression covers the actual failure shape. No event/schema changes, provider/model swap or paid fallback.
+- Authenticated discovery and the earlier successful Nemotron extraction/smoke requests do not prove a working streamed committee turn. B17c and D10 remain open until that Runtime routing/stream issue is resolved. Gemini Free Tier completes the normal live workflow.
+
+## D-057 — Nonzero shape embedding for the database-backed fake graph
 - Step: D06 / D08 integration verification · Date: 2026-10-26 · By: gridiii via Codex
 - Found against the newly accessible shared Supabase project: the all-zero D06 embedding makes pgvector cosine similarity undefined. PostgREST returns the hybrid scores as the string `NaN`; the first database-backed fake graph failed in contrastive selection before its twins event. Converting that string to a float would leave an invalid similarity and hide the fixture problem.
 - Fixed the D06 generator and fixture to use a deterministic nonzero shape vector. It remains explicitly nonsemantic and is never retrieval evidence. The offline Node 1 regression now requires a finite positive vector norm; the fixture rebuild check covers regeneration. No scoring/RPC/schema or Track B runtime behavior changed; the fake-provider comment was corrected to describe a fixed vector.
 - D08/D09 live/provider acceptance remains separate from this fake-mode check.
-
-## D-055 — Do not accept a blank provider stream as a committee turn
-- Step: B17c live validation · Date: 2026-10-26 · By: gridiii via Codex
-- The real Nightshift committee check returned no text, while its receipt said “No route completed”. The provider adapter previously returned an empty string, so the debate node misleadingly labeled the blank turn non-degraded. Empty/whitespace streams now raise `LLMInvalidOutput` and take the existing visible fallback. A mocked-transport regression covers the actual failure shape. No event/schema changes, provider/model swap or paid fallback.
-- Authenticated discovery and the earlier successful Nemotron extraction/smoke requests do not prove a working streamed committee turn. B17c and D10 remain open until that Runtime routing/stream issue is resolved. Gemini Free Tier completes the normal live workflow.

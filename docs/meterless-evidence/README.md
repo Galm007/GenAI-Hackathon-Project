@@ -27,7 +27,7 @@ claim that a replay or a health check completes D10.
 
 The real streamed advocate check returned an empty string; Nightshift's receipt
 said **No route completed**. The app previously mislabeled an empty stream as a
-successful non-degraded turn. D-055 fixes that with `LLMInvalidOutput`, taking the
+successful non-degraded turn. D-056 fixes that with `LLMInvalidOutput`, taking the
 existing visible fallback. No empty reply is evidence of a Nemotron committee.
 
 Do not tick B17c or D10 until a real committee turn returns nonempty text through

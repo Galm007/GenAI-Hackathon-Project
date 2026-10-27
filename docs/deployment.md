@@ -152,7 +152,8 @@ in `gridiiis-projects` is deployed on the Hobby plan. Production build
 
 - App: https://adcom-orpin.vercel.app
 - Deployment: https://adcom-hwzy0uehv-gridiiis-projects.vercel.app
-- Public API origin: `https://marketing-childrens-latino-version.trycloudflare.com`
+- Public API origin: a temporary Cloudflare quick tunnel to loopback port 8000. The
+  URL is deliberately not committed; it lives only in the Vercel `ADCOM_API_URL`.
 - The API stays on this Mac, co-located with Zetaris; the tunnel points only to
   loopback port 8000. The World Model service is never tunneled.
 - Vercel contains only `ADCOM_API_URL`, not database keys, model keys or Runtime
@@ -166,6 +167,9 @@ in `gridiiis-projects` is deployed on the Hobby plan. Production build
 - Existing Vercel deployment protection remains configured. Use the user's own
   authenticated session where required. No bypass token is committed or shared.
 
+The tunnel makes `/api/evaluate` callable by anyone who learns its URL, and each run spends
+free-tier provider quota. Set `MAX_RUNS_PER_DAY=30` and `MAX_CONCURRENT_RUNS=2` (the
+`.env.example` values; the code defaults are 400 and 6) in the API host's `.env`.
 The free quick tunnel is temporary. Keep this Mac awake, Docker and Nightshift
 open, and the tunnel process running for a demo. Restarting the tunnel changes
 its URL: update `ADCOM_API_URL` in Vercel and redeploy afterwards. This is a

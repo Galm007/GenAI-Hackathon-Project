@@ -150,7 +150,7 @@ restarting Zetaris or touching the unrelated database project.
 
 The initial fake-LLM evaluation failed before its twins event: the zero-vector
 fixture produced cosine `NaN` values, serialized by PostgREST as strings.
-D-056 fixes the D06 fixture and generator, retaining an explicitly nonsemantic
+D-057 fixes the D06 fixture and generator, retaining an explicitly nonsemantic
 shape vector. The existing offline Node 1 regression now checks a positive,
 finite vector norm; the reproducible rebuild test also passes.
 
@@ -180,7 +180,7 @@ committed. D08/D09 provider/live gates remain separate.
   is configured in Vercel, not any model/database credential.
 - Remaining acceptance: physical-phone verification for D08, and a successful
   nonempty streamed Nemotron committee response/recording for D10. The current
-  Nightshift attempt returned no text and a No route completed receipt. D-055
+  Nightshift attempt returned no text and a No route completed receipt. D-056
   makes that visibly degraded rather than a successful blank turn.
 
 Raw retrieved profiles remain private and are not committed recordings. The

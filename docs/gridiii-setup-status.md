@@ -30,7 +30,7 @@ including Aron's B18a/B18b World Model implementation. Teammate work is retained
   project was created and visibly verified Free Tier. The Gemini key lives only
   in this Mac's private backend `.env`; billing was not enabled.
 - The shared-database fake graph completed 244 contiguous events and what-if.
-  D-056 fixes the nonsemantic demo embedding that previously yielded NaN cosine
+  D-057 fixes the nonsemantic demo embedding that previously yielded NaN cosine
   distances. This result is explicitly separate from real retrieval/provider proof.
 - With the latest upstream integration and local health additions: 422 API tests
   and ruff pass. Aron's World Model passes all seven Node tests and the unmodified
