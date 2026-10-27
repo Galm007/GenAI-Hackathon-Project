@@ -133,9 +133,36 @@ def _headers(p: Profile) -> dict[str, str]:
     return p.headers | ({"X-Request-ID": str(uuid.uuid4())} if p.name == "meterless" else {})
 
 
+NEMOTRON_LANES = {"meterless/fast", "meterless/cheap", "meterless/local"}     # all serve nemotron-3.5-bolt-e4b (D-058)
+
+
 def _body(p: Profile, chat: list[dict], *, effort: str, max_tokens: int, model: str | None) -> dict:
-    return {"model": model or (p.fast_model if effort == "low" else p.model), "messages": chat,
-            "max_tokens": max_tokens, "reasoning_effort": effort}
+    model = model or (p.fast_model if effort == "low" else p.model)
+    body = {"model": model, "messages": chat, "max_tokens": max_tokens, "reasoning_effort": effort}
+    if p.name == "meterless" and effort == "low" and model in NEMOTRON_LANES:
+        # effort="low" means no thinking on the Nemotron lanes: 1-2 s instead of 12-15 s for the same request. The model
+        # may still write a [[scratchpad]] into its answer, which strip_reasoning removes (D-060). Lane-gated because
+        # other lanes may reject the field.
+        body["chat_template_kwargs"] = {"enable_thinking": False}
+    return body
+
+
+REASONING_OPENERS = ("[[scratchpad]]", "<scratchpad>", "<think>")
+REASONING_CLOSERS = ("</scratchpad>", "</think>")
+
+
+def strip_reasoning(text: str) -> str:
+    """Some Nemotron lanes write their reasoning into the content, as <think>…</think> or a [[scratchpad]] block
+    (or only the closing tag): keep what follows the last closer."""
+    end = max((text.rfind(c) + len(c) for c in REASONING_CLOSERS if c in text), default=0)
+    return text[end:].lstrip() if end else text
+
+
+def _holding_reasoning(text: str) -> bool:
+    """True while the text so far is (the start of) an opener that has not been closed yet: show nothing."""
+    s = text.lstrip()
+    closed = any(c in text for c in REASONING_CLOSERS)
+    return not closed and any(s.startswith(o) or o.startswith(s) for o in REASONING_OPENERS)
 
 
 async def _choice(p: Profile, body: dict, name: str) -> dict:
@@ -193,7 +220,7 @@ async def _complete(p: Profile, body: dict, name: str) -> str:
         raise llm.LLMTruncated(f"{name} hit max_tokens={body['max_tokens']}")
     if choice.get("finish_reason") == "content_filter" or message.get("refusal"):
         raise llm.LLMRefusal(f"{name} refused ({p.name})")
-    return message.get("content") or ""
+    return strip_reasoning(message.get("content") or "")
 
 
 # ---------- parse ----------
@@ -239,13 +266,15 @@ async def parse[T: BaseModel](
 # ---------- stream_text ----------
 async def stream_text(
     *, system: str, messages: list[dict], on_text: Callable[[str], None], effort: str, max_tokens: int,
-    model: str | None,
+    model: str | None, on_reset: Callable[[], None] | None = None,
 ) -> str:
-    """Server-sent events. There are no fallback blocks here, so `on_reset` never fires; a failure is retried only
-    before the first token reaches the browser."""
+    """Server-sent events. There are no fallback blocks here; `on_reset` fires only when a lane leaks its reasoning
+    into the stream and the text shown so far has to be dropped. A failure is retried only before the first token
+    reaches the browser."""
     p = profile()
     body = _body(p, to_chat(system, messages), effort=effort, max_tokens=max_tokens, model=model) | {"stream": True}
     parts: list[str] = []
+    shown = [""]                                  # the text the browser currently has for this turn
 
     async def call() -> str | None:
         finish = None
@@ -264,7 +293,15 @@ async def stream_text(
                     for choice in json.loads(data).get("choices", []):
                         if text := (choice.get("delta") or {}).get("content"):
                             parts.append(text)
-                            on_text(text)
+                            acc = "".join(parts)
+                            visible = "" if _holding_reasoning(acc) else strip_reasoning(acc)
+                            if not visible.startswith(shown[0]):         # reasoning that was already on screen
+                                shown[0] = ""
+                                if on_reset:
+                                    on_reset()
+                            if len(visible) > len(shown[0]):
+                                on_text(visible[len(shown[0]):])
+                                shown[0] = visible
                         finish = choice.get("finish_reason") or finish
         except httpx.TransportError as exc:
             raise llm.LLMUnavailable(f"{p.name} unreachable: {type(exc).__name__}") from exc
@@ -280,9 +317,9 @@ async def stream_text(
         finish = await _retrying(call, may_retry=lambda: not parts)
     if finish == "content_filter":
         raise llm.LLMRefusal("debate turn refused")
-    text = "".join(parts)
-    if not text.strip():
-        raise llm.LLMInvalidOutput(f"{p.name} returned an empty debate stream")
+    text = strip_reasoning("".join(parts))
+    if not text.strip() or _holding_reasoning(text):
+        raise llm.LLMInvalidOutput(f"{p.name} returned an empty debate stream (or only reasoning)")
     return text
 
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { connectStream, POLL_MS, pollUrlFor, STALL_MS } from "./stream";
+import { connectStream, POLL_MS, pollUrlFor, replaySpeed, STALL_MS } from "./stream";
 import { useRunStore } from "../store/run-store";
 
 class FakeEventSource {
@@ -29,6 +29,20 @@ describe("pollUrlFor", () => {
   });
   it("leaves demo replays alone", () => {
     expect(pollUrlFor("/api/demo/maya-uiuc/stream")).toBeNull();
+  });
+});
+
+describe("replaySpeed", () => {
+  it("reads and clamps the speed query", () => {
+    expect(replaySpeed("?speed=4")).toBe(4);
+    expect(replaySpeed("?projector=1&speed=2.5")).toBe(2.5);
+    expect(replaySpeed("?speed=100")).toBe(8);
+    expect(replaySpeed("?speed=0.01")).toBe(0.25);
+  });
+  it("ignores missing or invalid values", () => {
+    expect(replaySpeed("")).toBeNull();
+    expect(replaySpeed("?speed=fast")).toBeNull();
+    expect(replaySpeed("?speed=-2")).toBeNull();
   });
 });
 

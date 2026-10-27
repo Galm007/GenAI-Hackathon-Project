@@ -388,3 +388,63 @@ async def test_empty_stream_is_invalid_instead_of_a_successful_blank_turn(api):
     api(httpx.Response(200, headers={"content-type": "text/event-stream"}, content=b"data: [DONE]\n\n"))
     with pytest.raises(llm.LLMInvalidOutput, match="empty debate stream"):
         await llm.stream_text(system="sys", messages=MSGS, on_text=lambda _: None)
+
+
+# ---------- Nemotron lanes: leaked reasoning and no-thinking mode (D-060) ----------
+async def test_stream_text_drops_reasoning_leaked_before_a_closing_think_tag(api):
+    api(_sse(_delta("I need to write in the "), _delta("voice of an officer.</th"), _delta("ink>The model says"),
+             _delta(" admit."), _delta(finish="stop")))
+    shown: list[str] = []
+    resets: list[None] = []
+
+    def on_reset() -> None:
+        resets.append(None)
+        shown.clear()
+
+    text = await llm.stream_text(system="sys", messages=MSGS, on_text=shown.append, on_reset=on_reset)
+    assert text == "The model says admit." and "".join(shown) == text and resets == [None]
+
+
+async def test_stream_text_never_shows_a_leading_scratchpad_block(api):
+    api(_sse(_delta("[[scratch"), _delta("pad]]\nREASON: 1. Spike"), _delta(" ...\n</scratch"),
+             _delta("pad>\n\nThe spike is X"), _delta(" [[model:twins]]."), _delta(finish="stop")))
+    shown: list[str] = []
+    resets: list[None] = []
+    text = await llm.stream_text(system="sys", messages=MSGS, on_text=shown.append,
+                                 on_reset=lambda: resets.append(None))
+    assert text == "The spike is X [[model:twins]]." and "".join(shown) == text and resets == []
+
+
+async def test_stream_text_rejects_a_stream_that_is_only_reasoning(api):
+    api(_sse(_delta("<think>still thinking"), _delta(finish="length")))
+    with pytest.raises(llm.LLMInvalidOutput):
+        await llm.stream_text(system="sys", messages=MSGS, on_text=lambda _t: None)
+
+
+def test_strip_reasoning_keeps_text_after_the_last_think_tag():
+    assert openai_compat.strip_reasoning("plain answer") == "plain answer"
+    assert openai_compat.strip_reasoning("thinking…</think>\n\nThe answer") == "The answer"
+    assert openai_compat.strip_reasoning("<think>a</think>b</think> c") == "c"
+    assert openai_compat.strip_reasoning("[[scratchpad]]\nREASON: x\n</scratchpad>\n\nAnswer") == "Answer"
+
+
+async def test_parse_ignores_leaked_reasoning_before_json(api):
+    api(ok('I should output JSON.</think>{"label": "yes"}'))
+    assert await llm.parse(Verdict, system="sys", messages=MSGS, effort="medium") == Verdict(label="yes")
+
+
+@pytest.mark.parametrize(("model", "effort", "thinking_off"), [
+    ("meterless/fast", "low", True), ("meterless/cheap", "low", True),
+    ("meterless/fast", "medium", False), ("meterless/auto", "low", False),
+])
+def test_meterless_nemotron_lanes_skip_thinking_only_at_low_effort(monkeypatch, model, effort, thinking_off):
+    monkeypatch.setattr(settings, "llm_provider", "meterless")
+    monkeypatch.setattr(settings, "meterless_model", model)
+    b = openai_compat._body(openai_compat.profile(), [], effort=effort, max_tokens=10, model=None)
+    assert b.get("chat_template_kwargs") == ({"enable_thinking": False} if thinking_off else None)
+
+
+def test_gemini_requests_never_carry_chat_template_kwargs(monkeypatch):
+    monkeypatch.setattr(settings, "llm_provider", "gemini")
+    b = openai_compat._body(openai_compat.profile(), [], effort="low", max_tokens=10, model=None)
+    assert "chat_template_kwargs" not in b

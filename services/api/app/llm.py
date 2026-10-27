@@ -161,8 +161,8 @@ async def stream_text(
 ) -> str:
     """Stream plain text token-by-token. Returns the final text from the model that actually answered."""
     if settings.llm_provider != "anthropic":
-        return await openai_compat.stream_text(system=system, messages=messages, on_text=on_text, effort=effort,
-                                               max_tokens=max_tokens, model=model)
+        return await openai_compat.stream_text(system=system, messages=messages, on_text=on_text, on_reset=on_reset,
+                                               effort=effort, max_tokens=max_tokens, model=model)
     async with client.beta.messages.stream(
         model=model or settings.reasoning_model,
         max_tokens=max_tokens,

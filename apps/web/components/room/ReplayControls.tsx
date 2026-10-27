@@ -2,15 +2,19 @@
 
 import { useCallback, useEffect } from "react";
 import { Play, RotateCcw } from "lucide-react";
-import type { RunSource } from "@/lib/stream";
+import { replaySpeed, type RunSource } from "@/lib/stream";
 import { AboutData } from "./AboutData";
 
 export function ReplayControls({ source }: { source: RunSource }) {
   const replayName = source.kind === "demo" ? source.name : "maya-uiuc";
   const replay = useCallback(() => {
-    const projector = new URLSearchParams(window.location.search).get("projector") === "1";
+    const query = new URLSearchParams(window.location.search);
+    const keep = new URLSearchParams();
+    if (query.get("projector") === "1") keep.set("projector", "1");
+    const speed = replaySpeed(window.location.search);
+    if (speed) keep.set("speed", String(speed));
     // A fresh navigation resets sequence state so replaying a completed demo works again.
-    window.location.assign(`/room/demo/${encodeURIComponent(replayName)}${projector ? "?projector=1" : ""}`);
+    window.location.assign(`/room/demo/${encodeURIComponent(replayName)}${keep.size ? `?${keep}` : ""}`);
   }, [replayName]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {

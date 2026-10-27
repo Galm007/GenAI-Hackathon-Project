@@ -16,6 +16,15 @@ from app import db
 OUT = Path(__file__).resolve().parents[3] / "data/demo_runs"
 
 
+def without_reset_text(events: list[dict]) -> list[dict]:
+    """A lane that leaks its reasoning is corrected live with `debate_reset`. A replay should show only the final text,
+    so drop each turn's tokens that came before its last reset and the resets themselves, then renumber `seq`."""
+    last_reset = {e["turn"]: i for i, e in enumerate(events) if e["event"] == "debate_reset"}
+    leaked = lambda i, e: e["event"] == "debate_token" and i < last_reset.get(e["turn"], -1)  # noqa: E731
+    kept = [e for i, e in enumerate(events) if e["event"] != "debate_reset" and not leaked(i, e)]
+    return [e | {"seq": n} for n, e in enumerate(kept)]
+
+
 async def record(run_id: str, name: str, *, fictional: bool) -> Path:
     if not fictional or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", name):
         raise ValueError("Use a safe replay name and confirm that the applicant is fictional")
@@ -27,6 +36,7 @@ async def record(run_id: str, name: str, *, fictional: bool) -> Path:
         raise ValueError("The saved stream must end with a successful done event")
     if [e["seq"] for e in events] != list(range(len(events))):
         raise ValueError("The saved event log is incomplete")
+    events = without_reset_text(events)
     by = {e["event"]: e for e in events}
     school = await db.get_school(row["school_slug"])
     if not school:

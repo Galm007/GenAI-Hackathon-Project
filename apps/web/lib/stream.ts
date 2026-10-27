@@ -13,6 +13,13 @@ export const EVENT_TYPES = [
   "counterfactuals", "final_report", "error", "done",
 ] as const;
 
+/** `?speed=4` on a demo room speeds the recorded replay up (the API allows 0.25x to 8x). */
+export function replaySpeed(search: string): number | null {
+  const raw = new URLSearchParams(search).get("speed");
+  const n = raw === null ? NaN : Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.min(8, Math.max(0.25, n)) : null;
+}
+
 export const runIdOf = (src: RunSource) => (src.kind === "live" ? src.runId : `demo-${src.name}`);
 
 /** A proxy that buffers SSE (Cloudflare quick tunnels do) shows nothing until the run ends. When the stream goes quiet,
@@ -121,9 +128,10 @@ export function useRunStream(src: RunSource) {
     setActive(runId);
     setParentRunId(runId);
 
+    const speed = src.kind === "demo" ? replaySpeed(window.location.search) : null;
     const url = src.kind === "live"
       ? `${API}/api/evaluate/${src.runId}/stream`
-      : `${API}/api/demo/${src.name}/stream`;
+      : `${API}/api/demo/${src.name}/stream${speed ? `?speed=${speed}` : ""}`;
 
     return connectStream(runId, url);
     // eslint-disable-next-line react-hooks/exhaustive-deps
