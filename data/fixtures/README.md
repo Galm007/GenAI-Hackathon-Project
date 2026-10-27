@@ -5,8 +5,10 @@ Done by gridiii via Codex, 2026-10-24.
 All applicants, school inputs, outcomes and reference cohorts here are fictional.
 They are not admissions evidence, current university policies, calibration results
 or proof that Zetaris/Nightshift answered a request. Missing original-post URLs
-are intentional. `profile_embedding.json` is a zero-vector shape fixture, not a
-semantic embedding for use against a real database.
+are intentional. `profile_embedding.json` is a fixed, nonzero shape fixture.
+It keeps cosine-distance RPC smoke checks finite, but is not a semantic embedding
+or evidence that retrieved applicants are similar to Maya. Real runs must use
+the local embedding model.
 
 The per-schema JSON inputs support the plan's hand-written fallback. From
 `services/api`, run `uv run python -m scripts.build_demo_fixtures` to rebuild the
@@ -19,7 +21,7 @@ The six-axis radar follows plan section 4.7; Personal remains an assumed referen
 fixtures in the API. The existing B08 parser is tested through this path. B13's
 complete graph is now implemented, but its database reads still require a
 configured Supabase project and school/twin data; fake model calls do not replace
-that database. The CLI and direct-client fake-mode work remain B14's responsibility.
+that database. B14's CLI/direct-client fake-mode support is implemented.
 For the self-contained UI replay, use `/room/demo/maya-uiuc`.
 
 This replay was authored and generated, not recorded from a live graph, so

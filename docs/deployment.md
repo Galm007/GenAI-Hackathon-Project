@@ -142,3 +142,38 @@ Sources checked: [Vercel monorepos](https://vercel.com/docs/monorepos),
 Do not check D08 or X01 complete until that acceptance has run against the hosted
 stack. The configuration in this commit is a deployable web handoff, not a claim
 that the unfinished API is production-ready.
+
+
+## gridiii deployment verified 2026-10-26
+
+Done by gridiii via Codex. Project `adcom` / `prj_ZddoCSUXdNOHs8DqcIOe26WOK9tj`
+in `gridiiis-projects` is deployed on the Hobby plan. Production build
+`dpl_AfuwHDnLXB5n1xS39WoDvAvtyfj6` reached READY.
+
+- App: https://adcom-orpin.vercel.app
+- Deployment: https://adcom-hwzy0uehv-gridiiis-projects.vercel.app
+- Public API origin: a temporary Cloudflare quick tunnel to loopback port 8000. The
+  URL is deliberately not committed; it lives only in the Vercel `ADCOM_API_URL`.
+- The API stays on this Mac, co-located with Zetaris; the tunnel points only to
+  loopback port 8000. The World Model service is never tunneled.
+- Vercel contains only `ADCOM_API_URL`, not database keys, model keys or Runtime
+  credentials. Build root is `apps/web`, Node 24, locked pnpm install and build.
+  **Include files outside the root directory** must be enabled so the app can
+  import the public report and fictional fixtures from repository `data/`.
+  The first build exposed this missing setting; the next build succeeded.
+- This deployment used uploaded public source files because Vercel's Git
+  connection currently lists only gridiii-owned repositories. Galm's repository
+  is not linked for automatic deploys; PR pushes do not deploy automatically.
+- Existing Vercel deployment protection remains configured. Use the user's own
+  authenticated session where required. No bypass token is committed or shared.
+
+The tunnel makes `/api/evaluate` callable by anyone who learns its URL, and each run spends
+free-tier provider quota. Set `MAX_RUNS_PER_DAY=30` and `MAX_CONCURRENT_RUNS=2` (the
+`.env.example` values; the code defaults are 400 and 6) in the API host's `.env`.
+The free quick tunnel is temporary. Keep this Mac awake, Docker and Nightshift
+open, and the tunnel process running for a demo. Restarting the tunnel changes
+its URL: update `ADCOM_API_URL` in Vercel and redeploy afterwards. This is a
+laptop demo host, not an always-on production service.
+
+D08's final acceptance still requires a completed hosted live evaluation and
+a physical-phone check. A READY deployment or a replay alone does not satisfy it.

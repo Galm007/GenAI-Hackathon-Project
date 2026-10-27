@@ -1,64 +1,61 @@
-# Meterless judging evidence: pending
+# Meterless evidence and remaining acceptance
 
-Updated by gridiii via Codex, 2026-10-26. No real Nightshift request or World Model
-conformance result has been captured. A fictional UI replay cannot complete D10.
+Updated by gridiii via Codex, 2026-10-26. These are actual observations, not a
+claim that a replay or a health check completes D10.
 
-## Setup prepared on gridiii's Mac — 2026-10-26
+## Verified
 
-The official [Mac M1+ download](https://meterless.ai/Nightshift/M1%2B/) was
-downloaded for this M4 Pro Mac. The disk image was mounted read-only, its setup
-application copied to `/Users/gridiii/Applications/Nightshift Setup.app`, and the
-image detached. This is the installer bootstrap, **not an installed Runtime**.
+- Nightshift M1-M4 installed through the official setup app on this Mac. The
+  earlier `spctl` assessment was a historical installer check; no protection was
+  disabled and no quarantine attribute was removed.
+- NVIDIA was configured inside Nightshift. Its key is not in application source,
+  coding-tool settings, the frontend or Vercel.
+- `scripts.smoke_meterless` passed settings, authenticated discovery and an
+  actual answer served by `nvidia/nemotron-3.5-lightning-30b-a3b`.
+- Nightshift has genuine successful application extraction receipts and the
+  smoke receipt. Its UI labels the captured receipts **unsigned**; do not claim
+  a verified daemon signature.
+- Aron's B18a/B18b implementation is integrated from main `5798dbb`. This Mac
+  independently ran its seven Node tests, real-sidecar Python integration tests,
+  and the unmodified upstream conformance runner: **8/8**. The committed upstream
+  scorecard is `world-model-conformance.txt`; upstream revision is
+  `1742dec56a66e58eef9dda2d2b865823758ca8cd`.
+- The World Model Docker image builds and its container is healthy beside the
+  API and Zetaris. A full real Gemini evaluation completed using it.
 
-| Check | Observed result |
-|---|---|
-| Download size | 17,778,594 bytes |
-| SHA-256 | `f387ea2668ff8f767f3e95a5e5463c975e738ab9836768b09ab21ca09e336fa8` |
-| Setup bundle | `ai.meterless.installer.mac-m1`, version 1.0.0, arm64 |
-| macOS execution assessment | Rejected by `spctl --assess --type execute` |
-| Code signature | Ad-hoc; no TeamIdentifier |
-| Installer launch / Runtime installation | Not performed |
+## Still open: B17c / D10
 
-The hash identifies this download; it is not proof of publisher identity.
-gridiii must review the vendor's signing/install guidance, or obtain an accepted
-build, before continuing. No Gatekeeper setting or quarantine attribute was
-changed. No NVIDIA connection, lane, Runtime token or model request exists here
-yet. Continue with [the setup guide](../meterless-setup.md) after installation is
-resolved, then capture genuine evidence below.
+The real streamed advocate check returned an empty string; Nightshift's receipt
+said **No route completed**. The app previously mislabeled an empty stream as a
+successful non-degraded turn. D-056 fixes that with `LLMInvalidOutput`, taking the
+existing visible fallback. No empty reply is evidence of a Nemotron committee.
 
-## Required inputs
+Do not tick B17c or D10 until a real committee turn returns nonempty text through
+Nightshift, its served Nemotron model is visible in request details, and the
+short recording shows that successful feature with all credentials hidden.
+Gemini Free Tier is configured for normal live evaluations; Claude stays off.
 
-- S03: Nightshift installed and running, NVIDIA connected inside its Providers
-  tab, and a Nemotron-backed lane pinned. Keep the NVIDIA key there.
-- B17: the application routes a real committee request through Nightshift.
-- B18: the actual World Model engine passes its upstream conformance suite, with
-  its scorecard saved as `world-model-conformance.txt` in this directory.
-- D07: a tested replay fallback for the fictional demo persona.
+## Private evidence locations on gridiii's Mac
 
-## Capture the proof
+- `outputs/nightshift-smoke-receipt-2026-10-26.png` (outside the repository).
+- `.local/readiness/maya-gemini-events.json`: private raw run capture; **do not
+  commit or publish** because comparison profiles come from real students.
+- `.local/readiness/maya-world-context.json`: private engine context, same rule.
+- `.local/readiness/nemotron-committee-turn.json`: failed empty-turn diagnostic,
+  not successful judging evidence.
+- Public aggregate verification: `docs/live-verification-2026-10-26.json`.
 
-1. Run `uv run python -m scripts.smoke_meterless` and retain its three PASS lines.
-   This makes a real provider request; get the human's approval for provider usage.
-2. Confirm the responding model in Nightshift's request details is the selected
-   Nemotron lane. A routing label such as `meterless/auto` alone is not proof.
-3. Record a short walkthrough that shows the app, the provider connection and that
-   request's served-model details. Hide keys/tokens, terminal environment values,
-   private account details and unrelated applications before capture.
-4. Run the upstream World Model conformance suite against the actual sidecar.
-   Save its genuine output; do not create a substitute scorecard from a mock.
-5. Add the video location, request time, served model, source revision and genuine
-   scorecard path below. Review the capture once before sharing.
+Capture only the fictional applicant, aggregate results and provider metadata.
+Individual retrieved profiles must not enter fixtures or a public video.
+The user's private handoff contains the exact next check and current hosting
+instructions. No credential is included in this public evidence record.
 
-## Evidence record
+## Team recording added while this PR was prepared
 
-| Item | Result |
-|---|---|
-| Nightshift smoke test | Not run: installer prepared, macOS assessment rejected; Runtime and token unavailable |
-| Request through the application | Pending B17 |
-| Served Nemotron model | Not verified |
-| World Model conformance | Pending B18 |
-| Recording | Not captured |
-| D10 acceptance | Open |
-
-This preparation contains no credential or claim of partner compliance. Replace
-the pending results only with evidence from the real configured services.
+Jmar's main commit `e73b568` includes a completed Meterless/Nemotron Maya run
+(`maya-uiuc-live`, 54.7%). It is retained. Its result is separate from gridiii's
+56.66% Gemini evaluation. The easiest remaining D10 capture can use Jmar's
+already working demo machine: show its actual served-model receipt and app
+feature, with keys hidden. This Mac's failed stream must not be generalized to
+Jmar's host or described as proof that his run failed. Review comparison-profile
+content before using any raw recording publicly.

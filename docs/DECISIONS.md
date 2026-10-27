@@ -429,3 +429,13 @@ Publication note: Track D entries originally numbered D-014/D-015 were renumbere
 - Why the step stays unchecked: Nightshift is not installed on this machine (nothing answers on 8088/8090/8787), and no capture of a pinned Nemotron lane exists yet (`docs/pitch.md` lists it as "Not captured"). The live check here only confirmed the down path: `ConnectError` → `LLMUnavailable` and the startup warning.
 - Impact on other tracks: D10 can use `/api/health`'s `"meterless"` field and the startup log line as part of its evidence. No frozen contract changed; the web app doesn't read `/api/health`.
 
+## D-056 — Do not accept a blank provider stream as a committee turn
+- Step: B17c live validation (follows D-055) · Date: 2026-10-26 · By: gridiii via Codex
+- The real Nightshift committee check returned no text, while its receipt said “No route completed”. The provider adapter previously returned an empty string, so the debate node misleadingly labeled the blank turn non-degraded. Empty/whitespace streams now raise `LLMInvalidOutput` and take the existing visible fallback. A mocked-transport regression covers the actual failure shape. No event/schema changes, provider/model swap or paid fallback.
+- Authenticated discovery and the earlier successful Nemotron extraction/smoke requests do not prove a working streamed committee turn. B17c and D10 remain open until that Runtime routing/stream issue is resolved. Gemini Free Tier completes the normal live workflow.
+
+## D-057 — Nonzero shape embedding for the database-backed fake graph
+- Step: D06 / D08 integration verification · Date: 2026-10-26 · By: gridiii via Codex
+- Found against the newly accessible shared Supabase project: the all-zero D06 embedding makes pgvector cosine similarity undefined. PostgREST returns the hybrid scores as the string `NaN`; the first database-backed fake graph failed in contrastive selection before its twins event. Converting that string to a float would leave an invalid similarity and hide the fixture problem.
+- Fixed the D06 generator and fixture to use a deterministic nonzero shape vector. It remains explicitly nonsemantic and is never retrieval evidence. The offline Node 1 regression now requires a finite positive vector norm; the fixture rebuild check covers regeneration. No scoring/RPC/schema or Track B runtime behavior changed; the fake-provider comment was corrected to describe a fixed vector.
+- D08/D09 live/provider acceptance remains separate from this fake-mode check.

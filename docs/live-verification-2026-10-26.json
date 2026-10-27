@@ -1,0 +1,46 @@
+{
+  "verified_by": "gridiii via Codex",
+  "date": "2026-10-26",
+  "run_id": "cd712489-e9e2-4940-8e5b-6fed71adb07e",
+  "persona": "fictional Maya",
+  "provider": "Gemini Free Tier",
+  "fake_llm": false,
+  "events": 97,
+  "contiguous_sequences": true,
+  "status": "complete",
+  "debate_turns": 4,
+  "degraded_turns": 0,
+  "citation_warning_events": 3,
+  "p_uiuc": 0.5666,
+  "what_if": {
+    "sat_plus_50": {
+      "p_final": 0.5702,
+      "delta_pp": 0.36,
+      "confidence": "data_backed",
+      "warnings": []
+    },
+    "math_stats": {
+      "p_final": 0.571,
+      "delta_pp": 0.44,
+      "confidence": "model_estimate",
+      "warnings": [
+        "No major-specific data for this school; using the school-wide rate."
+      ]
+    },
+    "tier2": {
+      "p_final": 0.5864,
+      "delta_pp": 1.98,
+      "confidence": "model_estimate",
+      "warnings": []
+    }
+  },
+  "world_model_upstream": "1742dec56a66e58eef9dda2d2b865823758ca8cd",
+  "world_model_conformance": "8/8",
+  "physical_phone_verified": false,
+  "nightshift_committee_verified": false,
+  "limitations": [
+    "Some model citations are visibly flagged unverified.",
+    "No qualifying empirical Math/Stats pivot; do not invent an N.",
+    "Nightshift streamed committee returned empty; B17c/D10 remain open."
+  ]
+}

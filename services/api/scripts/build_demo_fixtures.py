@@ -285,7 +285,8 @@ def build() -> dict:
         "scoring_context": context,
         "WhatIfResponse": simulation.model_dump(),
         "debate": {str(i): content for i, (_, content) in enumerate(turns, 1)},
-        "profile_embedding": [0.0] * 768,
+        # Cosine-distance RPCs require a nonzero vector, even for a shape-only fixture.
+        "profile_embedding": [1.0] + [0.0] * 767,
     }.items():
         save(FIXTURES / f"{name}.json", value)
     save(FIXTURES / "fake_stream.json", bundle)

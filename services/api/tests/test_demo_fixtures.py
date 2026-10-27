@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -96,4 +97,8 @@ async def test_existing_node_one_runs_offline_without_a_model_or_embedding_servi
     assert result["metrics"].gpa_uw_4 == 3.94
     assert result["metrics"].gpa_w_5 == 4.52
     assert len(result["profile_embedding"]) == 768
+    # A zero vector produces NaN cosine similarities in the real pgvector RPC,
+    # returned by PostgREST as strings that fail contrastive selection.
+    norm = math.hypot(*result["profile_embedding"])
+    assert math.isfinite(norm) and norm > 0
     assert result["grade"].major_category == "computer_science"

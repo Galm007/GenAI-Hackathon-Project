@@ -382,3 +382,9 @@ def test_key_configured_follows_the_selected_provider(monkeypatch, provider, fie
     assert llm.key_configured() is False
     monkeypatch.setattr(settings, field, "set")
     assert llm.key_configured() is True
+
+
+async def test_empty_stream_is_invalid_instead_of_a_successful_blank_turn(api):
+    api(httpx.Response(200, headers={"content-type": "text/event-stream"}, content=b"data: [DONE]\n\n"))
+    with pytest.raises(llm.LLMInvalidOutput, match="empty debate stream"):
+        await llm.stream_text(system="sys", messages=MSGS, on_text=lambda _: None)

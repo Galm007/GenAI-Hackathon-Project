@@ -280,7 +280,10 @@ async def stream_text(
         finish = await _retrying(call, may_retry=lambda: not parts)
     if finish == "content_filter":
         raise llm.LLMRefusal("debate turn refused")
-    return "".join(parts)
+    text = "".join(parts)
+    if not text.strip():
+        raise llm.LLMInvalidOutput(f"{p.name} returned an empty debate stream")
+    return text
 
 
 # ---------- chat_with_tools ----------
