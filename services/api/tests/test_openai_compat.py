@@ -306,6 +306,82 @@ async def test_stream_text_retries_only_before_the_first_token(api):
     assert len(requests) == 2 and sleeps == [1.0]
 
 
+# ---------- served model: which model answered each request (D-061) ----------
+NEMOTRON = "nvidia/nemotron-3.5-bolt-e4b"
+
+
+async def _in_graph(node: str, fn) -> list[dict]:
+    """Run `fn` inside a one-node LangGraph graph and return the custom events it emitted."""
+    from typing import TypedDict
+
+    from langgraph.graph import END, START, StateGraph
+
+    class State(TypedDict, total=False):
+        done: bool
+
+    async def run(_state: State) -> dict:
+        await fn()
+        return {"done": True}
+
+    g = StateGraph(State)
+    g.add_node(node, run)
+    g.add_edge(START, node)
+    g.add_edge(node, END)
+    return [e async for e in g.compile().astream({}, {"configurable": {"thread_id": "run-1"}}, stream_mode="custom")]
+
+
+def _served_events(events: list[dict]) -> list[dict]:
+    return [{k: v for k, v in e.items() if k != "ts"} for e in events if e["event"] == "tool_call"]
+
+
+async def test_parse_records_the_model_nightshift_routed_to(api, monkeypatch, caplog):
+    monkeypatch.setattr(settings, "llm_provider", "meterless")
+    monkeypatch.setattr(settings, "meterless_model", "meterless/fast")
+    api(httpx.Response(200, json=_chat('{"label": "admit"}') | {"model": NEMOTRON}))
+    with caplog.at_level("INFO", logger="llm"):
+        events = await _in_graph("dossier_parser", lambda: llm.parse(Verdict, system="sys", messages=MSGS))
+    assert _served_events(events) == [{
+        "event": "tool_call", "node": "dossier_parser", "tool": f"meterless:{NEMOTRON}", "status": "done",
+        "provider": "meterless", "model": NEMOTRON, "requested": "meterless/fast", "call": "Verdict"}]
+    line = f"run run-1 node dossier_parser: meterless answered Verdict with {NEMOTRON} (requested meterless/fast)"
+    assert line in caplog.text
+
+
+async def test_every_parse_attempt_is_recorded(api, monkeypatch):
+    monkeypatch.setattr(settings, "llm_provider", "meterless")
+    api(httpx.Response(400, text="response_format not supported"),
+        httpx.Response(200, json=_chat('{"label": "admit"}') | {"model": NEMOTRON}))
+    events = await _in_graph("institutional", lambda: llm.parse(Verdict, system="sys", messages=MSGS))
+    assert [e["model"] for e in _served_events(events)] == [NEMOTRON]   # the rejected strict call got no reply
+
+
+async def test_debate_stream_records_the_model_named_in_its_chunks(api, monkeypatch):
+    monkeypatch.setattr(settings, "llm_provider", "meterless")
+    api(_sse(_delta("The file ") | {"model": NEMOTRON}, _delta("is strong.") | {"model": NEMOTRON},
+             _delta(finish="stop")))
+    events = await _in_graph("advocate", lambda: llm.stream_text(system="sys", messages=MSGS, on_text=lambda _t: None))
+    assert [(e["node"], e["model"], e["call"]) for e in _served_events(events)] == [
+        ("advocate", NEMOTRON, "debate turn")]
+
+
+async def test_gemini_overload_records_the_fast_model_it_moved_to(api):
+    api(OVERLOADED, OVERLOADED, OVERLOADED,
+        httpx.Response(200, json=_chat('{"label": "admit"}') | {"model": settings.gemini_fast_model}))
+    events = await _in_graph("delta_engine", lambda: llm.parse(Verdict, system="sys", messages=MSGS, effort="high"))
+    [e] = _served_events(events)
+    assert (e["provider"], e["requested"], e["model"]) == ("gemini", settings.gemini_fast_model,
+                                                          settings.gemini_fast_model)
+
+
+async def test_outside_a_graph_the_model_is_only_logged(api, caplog):
+    api(httpx.Response(200, json={"choices": [{"index": 0, "finish_reason": "stop",
+                                               "message": {"role": "assistant", "content": "ok"}}]}))
+    with caplog.at_level("INFO", logger="llm"):
+        turn = await llm.chat_with_tools(system="sys", messages=MSGS, tools=[], name="zetaris tool turn")
+    assert turn.text == "ok"
+    assert "node None: gemini answered zetaris tool turn with unknown" in caplog.text    # no model id in the reply
+
+
 # ---------- Meterless discovery (B17c) ----------
 MODELS = {"object": "list", "data": [{"id": "meterless/auto"}, {"id": "nvidia/nemotron-3.5-lightning-30b-a3b"}]}
 

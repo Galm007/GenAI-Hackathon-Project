@@ -391,7 +391,7 @@ sequenceDiagram
 | `run_started` | API | `run_id`, `school_slug` |
 | `node_start` / `node_end` / `node_complete` | nodes / nodes / API (from LangGraph `updates`) | `node`, `label`, `elapsed_ms` |
 | `progress` | any node | `node`, `message`, `pct?` |
-| `tool_call` | N2, N3, N5 | `tool` (`zetaris.sql`, `zetaris.profile`, `tavily.search`, `rpc.match_applicant_twins`…), `args`, `status`, `result_count`; Zetaris calls add `id` (Z#), `purpose`, `sql` |
+| `tool_call` | N2, N3, N5; every LLM node | `tool` (`zetaris.sql`, `zetaris.profile`, `tavily.search`, `rpc.match_applicant_twins`…), `args`, `status`, `result_count`; Zetaris calls add `id` (Z#), `purpose`, `sql`. Each model reply adds one `<provider>:<served model>` chip (for example `meterless:nvidia/nemotron-3.5-bolt-e4b`) with `provider`, `model`, `requested` and `call` (D-061) |
 | `dossier_parsed` | N1 | redacted `ParsedDossier` |
 | `scorecard` | N1 | `DossierGrade` + `ComputedMetrics` |
 | `school_rubric` / `fact_checks` | N2 | `SchoolRubric`; `InstitutionalBrief`, web `snippets`, `zetaris_queries` (Z# id, purpose, sql, rows) |
@@ -439,6 +439,7 @@ How the switch works (B01 owns `llm.py`; steps B17a–B17c add this, D-046):
 - `stream_text`: `stream: true` server-sent events, concatenating `delta.content`. There are no fallback blocks, so `on_reset` is never called.
 - Anthropic-only features (prompt caching, server-side fallbacks, adaptive thinking) are ignored on this path. Node prompts are unchanged; numbers still come only from `app/scoring/` (§0.1).
 - A startup check calls `GET /v1/models` on Meterless in the background (only when `LLM_PROVIDER=meterless` and not `FAKE_LLM`) and logs whether `METERLESS_MODEL` is listed; it never blocks startup. `/api/health` replaces `anthropic_key` with `llm_provider` and `llm_key`, and reports `"meterless": true|false` next to `"zetaris"` (B17c). If the Runtime is unreachable at demo time, set `LLM_PROVIDER=gemini` (a rung of the fallback ladder in §6.3). If Gemini's daily quota is also used up, serve the recorded replay.
+- Every reply is traced (`llm.record_model`, D-061): the model id the reply names, which on Nightshift is the NVIDIA model behind a route such as `meterless/fast`, is logged with the run, node, call and requested route, and inside a graph run becomes a `tool_call` chip on that node, so live rooms and recordings show which model answered each request. The API configures INFO logging so these lines reach the console.
 
 #### 1.7.3 World Model engine: the committee's shared case file (steps B18a–B18b)
 

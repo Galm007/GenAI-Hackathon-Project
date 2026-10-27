@@ -29,7 +29,7 @@ def use(i: int, sql: str = GOOD_SQL, purpose: str = "CS sample size") -> SimpleN
 
 
 def reply(*blocks, stop: str = "tool_use") -> SimpleNamespace:
-    return SimpleNamespace(stop_reason=stop, content=list(blocks))
+    return SimpleNamespace(stop_reason=stop, content=list(blocks), model="claude-opus-5-5")
 
 
 def done(text: str = "Summary.") -> SimpleNamespace:

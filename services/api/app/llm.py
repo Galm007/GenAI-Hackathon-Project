@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -7,10 +8,14 @@ from typing import Any
 import anthropic
 from anthropic import AsyncAnthropic, Timeout
 from anthropic.types.beta import BetaMessage
+from langgraph.config import get_config
 from pydantic import BaseModel
 
 from . import openai_compat
+from .agents.events import tool_call
 from .config import settings
+
+log = logging.getLogger("llm")
 
 # Server-side refusal fallback: if a safety classifier declines, the API re-runs the request on Anthropic's
 # recommended fallback model inside the same call. "default" routes by refusal category. Remove these two
@@ -86,6 +91,23 @@ class ToolTurn:
     native: Any
 
 
+def record_model(provider: str, requested: str | None, served: str | None, call: str) -> None:
+    """Which model answered one provider request: `served` is the reply's own model id (Nightshift names the NVIDIA
+    model behind a route such as meterless/fast), `requested` what we asked for. Logged for every reply, and inside a
+    graph run also sent as a `tool_call` chip on the node that made the call, so recordings keep it (D-061)."""
+    served = served or "unknown"
+    try:
+        config = get_config()
+    except RuntimeError:                       # outside a graph run (smoke scripts, unit tests)
+        config = {}
+    node = config.get("metadata", {}).get("langgraph_node")
+    run_id = config.get("configurable", {}).get("thread_id")
+    log.info("run %s node %s: %s answered %s with %s (requested %s)", run_id, node, provider, call, served, requested)
+    if node:
+        tool_call(node, f"{provider}:{served}", "done", provider=provider, model=served, requested=requested,
+                  call=call)
+
+
 def key_configured() -> bool:
     """Whether the selected provider has its credential (reported by /api/health)."""
     return bool({"meterless": settings.meterless_runtime_token, "gemini": settings.gemini_api_key,
@@ -131,6 +153,7 @@ async def parse[T: BaseModel](
         timeout=parse_timeout(max_tokens),
     )
     resp = BetaMessage.model_validate(raw.http_response.json())
+    record_model("anthropic", model or settings.reasoning_model, resp.model, schema.__name__)
     if resp.stop_reason == "refusal":
         category = getattr(resp.stop_details, "category", None) if resp.stop_details else None
         raise LLMRefusal(f"{schema.__name__} refused (category={category})")
@@ -182,6 +205,7 @@ async def stream_text(
                     on_reset()
         final = await stream.get_final_message()
 
+    record_model("anthropic", model or settings.reasoning_model, final.model, "debate turn")
     if final.stop_reason == "refusal":
         raise LLMRefusal("debate turn refused")
     return _final_text(final.content)
@@ -214,6 +238,7 @@ async def chat_with_tools(
         betas=[FALLBACK_BETA],
         fallbacks="default",
     )
+    record_model("anthropic", settings.reasoning_model, resp.model, name)
     if resp.stop_reason == "refusal":
         raise LLMRefusal(f"{name} refused")
     calls = [ToolCall(b.id, b.name, dict(b.input)) for b in resp.content if b.type == "tool_use"]

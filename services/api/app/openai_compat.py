@@ -195,7 +195,9 @@ async def _choice(p: Profile, body: dict, name: str) -> dict:
         log.warning("%s overloaded for %s; retrying on %s", body["model"], name, p.fast_model)
         body = body | {"model": p.fast_model}
         resp = await send()
-    return resp.json()["choices"][0]
+    data = resp.json()
+    llm.record_model(p.name, body["model"], data.get("model"), name)
+    return data["choices"][0]
 
 
 async def meterless_models() -> list[str]:
@@ -275,6 +277,7 @@ async def stream_text(
     body = _body(p, to_chat(system, messages), effort=effort, max_tokens=max_tokens, model=model) | {"stream": True}
     parts: list[str] = []
     shown = [""]                                  # the text the browser currently has for this turn
+    served: list[str] = []                        # the model id the chunks name: who actually answered
 
     async def call() -> str | None:
         finish = None
@@ -290,7 +293,10 @@ async def stream_text(
                         continue
                     if data == "[DONE]":
                         break
-                    for choice in json.loads(data).get("choices", []):
+                    chunk = json.loads(data)
+                    if not served and chunk.get("model"):
+                        served.append(chunk["model"])
+                    for choice in chunk.get("choices", []):
                         if text := (choice.get("delta") or {}).get("content"):
                             parts.append(text)
                             acc = "".join(parts)
@@ -315,6 +321,7 @@ async def stream_text(
         log.warning("%s overloaded for a stream; retrying on %s", body["model"], p.fast_model)
         body = body | {"model": p.fast_model}
         finish = await _retrying(call, may_retry=lambda: not parts)
+    llm.record_model(p.name, body["model"], served[0] if served else None, "debate turn")
     if finish == "content_filter":
         raise llm.LLMRefusal("debate turn refused")
     text = strip_reasoning("".join(parts))

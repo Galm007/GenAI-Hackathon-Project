@@ -21,6 +21,9 @@ from .runs import RateLimited, RunManager, events_after, script_frames, sse_fram
 from .zetaris import zetaris
 
 log = logging.getLogger("main")
+# Without this the app's INFO lines (served models, the Meterless startup check) never reach the console.
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)       # one line per HTTP request would drown the run log
 MAX_PDF_BYTES = 10 * 1024 * 1024
 SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"}
 
